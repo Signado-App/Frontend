@@ -1,5 +1,4 @@
-import type { TypographyOptions } from '@mui/material/styles/createTypography';
-
+import type { TypographyVariantsOptions } from "@mui/material/styles";
 export const typography = {
   fontFamily:
     '"Open Sans", system-ui',
@@ -22,4 +21,4 @@ export const typography = {
   h4: { fontSize: '2rem', fontWeight: 500, lineHeight: 1.2, fontFamily: '"Open Sans", system-ui' },
   h5: { fontSize: '1.5rem', fontWeight: 500, lineHeight: 1.2, fontFamily: '"Open Sans", system-ui' },
   h6: { fontSize: '1.125rem', fontWeight: 500, lineHeight: 1.2, fontFamily: '"Open Sans", system-ui' },
-} satisfies TypographyOptions;
+} satisfies TypographyVariantsOptions;
