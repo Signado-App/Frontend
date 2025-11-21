@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.scss";
-import { LanguageContextProvider } from "@/context/LanguageContex";
+import { LanguageContextProvider } from "@/context/LanguageContext";
 import { AuthContextProvider } from "@/context/AuthContext";
 import { UserContextProvider } from "@/context/UserContext";
 import { ThemeProvider } from "@/context/themeProvider/ThemeContext";
