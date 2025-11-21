@@ -1,3 +1,4 @@
+"use client"
 import Headline from "@/components/Headline";
 import { Button, Typography } from "@mui/material";
 

@@ -4,10 +4,7 @@ import "./globals.scss";
 import { LanguageContextProvider } from "@/context/LanguageContex";
 import { AuthContextProvider } from "@/context/AuthContext";
 import { UserContextProvider } from "@/context/UserContext";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-
-const theme = createTheme({
-});
+import { ThemeProvider } from "@/context/themeProvider/ThemeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ThemeProvider theme={theme}>
+        <ThemeProvider>
           <LanguageContextProvider>
             <AuthContextProvider>
               <UserContextProvider>

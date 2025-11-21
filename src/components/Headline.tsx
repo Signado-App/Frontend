@@ -1,4 +1,5 @@
 // src/components/Headline.tsx
+"use client";
 import { Box, Typography } from "@mui/material";
 import { ReactNode } from "react";
 
@@ -33,7 +34,7 @@ export default function Headline({
           {title}
         </Typography>
         {description && (
-          <Typography variant="body1" sx={{ color: "text.secondary", mt: 0.5 }}>
+          <Typography variant="body1" sx={{ mt: 0.5 }}>
             {description}
           </Typography>
         )}
