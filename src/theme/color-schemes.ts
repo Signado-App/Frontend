@@ -1,6 +1,6 @@
 import type { ColorSystemOptions } from '@mui/material/styles';
 
-import { base, scarletFire, blue, seaGreen} from './colors';
+import { base, scarletFire, blue, seaGreen, eggschellYellow} from './colors';
 import type { ColorScheme } from './types';
 
 export const colorSchemes = {
@@ -9,6 +9,7 @@ export const colorSchemes = {
       action: { disabledBackground: 'rgba(0, 0, 0, 0.06)' },
       background: {
         default: base[50],
+        secondary: eggschellYellow[50]
       },
       common: { black: base[950], white: base[50] },
       divider: base[200],

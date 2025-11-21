@@ -6,12 +6,14 @@ interface HeadlineProps {
   title: string;
   description?: string;
   children?: ReactNode;
+  marginBottom?: number;
 }
 
 export default function Headline({
   title,
   description,
   children,
+  marginBottom = 2
 }: HeadlineProps) {
   return (
     <Box
@@ -21,7 +23,7 @@ export default function Headline({
         alignItems: "center",
         flexWrap: "wrap",
         gap: 2,
-        mb: 4,
+        mb: marginBottom,
       }}
     >
       <Box>
@@ -34,7 +36,8 @@ export default function Headline({
         </Typography>
         {description && (
           <Typography variant="body1" sx={{ mt: 0.5 }}>
-            {description}
+            <span dangerouslySetInnerHTML={{ __html: description }}></span>
+
           </Typography>
         )}
       </Box>

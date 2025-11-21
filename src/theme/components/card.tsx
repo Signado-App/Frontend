@@ -8,8 +8,12 @@ export const MuiCard = {
     root: ({ theme }) => {
       return {
         borderRadius: '10px',
+        border: `1px solid ${theme.palette.divider}`,
+        [`&.${paperClasses.elevation0}`]: {
+          boxShadow: "none",
+        },
         [`&.${paperClasses.elevation1}`]: {
-          boxShadow: '0 5px 22px 0 rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(0, 0, 0, 0.08)',
+          boxShadow: theme.shadows[2],
         },
       };
     },

@@ -5,6 +5,7 @@ import { components } from './components/components';
 import { shadows } from './shadows';
 import type { Theme } from './types';
 import { typography } from './typography';
+import { eggschellYellow } from './colors';
 
 declare module '@mui/material/styles' {
   interface PaletteRange {
@@ -33,6 +34,7 @@ declare module '@mui/material/styles' {
     level1: string;
     level2: string;
     level3: string;
+    secondary: string;
   }
 }
 
@@ -44,8 +46,16 @@ export function createTheme(): Theme {
     shadows,
     shape: { borderRadius: 8 },
     typography,
-    zIndex: {modal: 9999}
-  });
+    zIndex: {modal: 9999},
+  }, {pallette: {
+    eggschellYellow: {
+      ...eggschellYellow,
+      light: eggschellYellow[400],
+      main: eggschellYellow[500],
+      dark: eggschellYellow[600],
+      contrastText: 'var(--mui-palette-common-white)',
+    }
+  }});
 
   return theme;
 }
