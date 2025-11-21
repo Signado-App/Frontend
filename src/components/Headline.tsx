@@ -1,4 +1,3 @@
-// src/components/Headline.tsx
 "use client";
 import { Box, Typography } from "@mui/material";
 import { ReactNode } from "react";
@@ -43,7 +42,7 @@ export default function Headline({
         sx={{
           display: "flex",
           alignItems: "center",
-          gap: 2, 
+          gap: 2,
         }}
       >
         {children}

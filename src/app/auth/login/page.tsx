@@ -1,6 +1,8 @@
-"use client"
+"use client";
 import Headline from "@/components/Headline";
 import { Button, Typography } from "@mui/material";
+import SignadoButton from "@/components/Button";
+import { Sign } from "crypto";
 
 export default function LoginPage() {
   return (
@@ -11,8 +13,11 @@ export default function LoginPage() {
       ></Headline>
       <Headline title="Headline test 2" description="Headline s dětmi">
         <Button variant="contained" color="primary">
-          Přidat klienta
+          Normal MUI Button
         </Button>
+        <SignadoButton variant="contained" color="primary">
+          Signado Button
+        </SignadoButton>
         <Button variant="outlined" color="secondary">
           Zaregistrovat se
         </Button>
