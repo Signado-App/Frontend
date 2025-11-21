@@ -1,15 +1,34 @@
-import type { Components } from '@mui/material/styles';
-
-import type { Theme } from '../types';
+import type { Components } from "@mui/material/styles";
+import type { Theme } from "../types";
 
 export const MuiButton = {
-  styleOverrides: {
-    root: { borderRadius: '5px', textTransform: 'none' },
-    sizeSmall: { padding: '6px 16px' },
-    sizeMedium: { padding: '8px 20px' },
-    sizeLarge: { padding: '11px 24px' },
-    textSizeSmall: { padding: '7px 12px' },
-    textSizeMedium: { padding: '9px 16px' },
-    textSizeLarge: { padding: '12px 16px' },
+  defaultProps: {
+    disableElevation: true,
   },
-} satisfies Components<Theme>['MuiButton'];
+
+  styleOverrides: {
+    root: ({}) => ({
+      textTransform: "none",
+      borderRadius: "6px",
+      fontWeight: 500,
+      fontSize: "0.875rem",
+      lineHeight: 1.5,
+      gap: "8px",
+    }),
+
+    sizeSmall: {
+      height: "32px",
+      padding: "0 12px",
+      fontSize: "0.8125rem",
+    },
+    sizeMedium: {
+      height: "36px",
+      padding: "0 16px",
+    },
+    sizeLarge: {
+      height: "40px",
+      padding: "0 24px",
+      fontSize: "1rem",
+    },
+  },
+} satisfies Components<Theme>["MuiButton"];
