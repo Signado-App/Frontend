@@ -37,7 +37,7 @@ export default function RootLayout({
               </UserContextProvider>
             </AuthContextProvider>
           </LanguageContextProvider>
-        </ThemeProvider>;
+        </ThemeProvider>
       </body>
     </html>
   );
