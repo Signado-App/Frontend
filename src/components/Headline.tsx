@@ -21,7 +21,7 @@ export default function Headline({
         alignItems: "center",
         flexWrap: "wrap",
         gap: 2,
-        mb: 4,
+        mb: 1,
       }}
     >
       <Box>
