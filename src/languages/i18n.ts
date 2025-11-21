@@ -10,6 +10,9 @@ i18next.use(initReactI18next).init({
     resources: {
         cz: {
             translation: {
+              pages: {
+                
+              }
                 //appLayout: cz_AppLayout,
             }
         }
