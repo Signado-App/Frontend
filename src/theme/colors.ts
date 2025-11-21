@@ -1,113 +1,71 @@
 import type { PaletteRange } from '@mui/material/styles';
 
-export const california = {
-  50: '#fffaea',
-  100: '#fff3c6',
-  200: '#ffe587',
-  300: '#ffd049',
-  400: '#ffbb1f',
-  500: '#fb9c0c',
-  600: '#de7101',
-  700: '#b84d05',
-  800: '#953b0b',
-  900: '#7b310c',
-  950: '#479701',
-} satisfies PaletteRange;
+export const base: PaletteRange = {
+  50: '#FFFFFF',
+  100: "#E0E0E0",
+  200: '#C2C2C2',
+  300: '#A3A3A3',
+  400: '#858585',
+  500: '#666666',
+  600: '#4D4D4D',
+  700: '#333333',
+  800: '#1A1A1A',
+  900: '#0D0D0D',
+  950: '#000000',
+}
 
-export const kepple = {
-  50: '#f0fdfa',
-  100: '#ccfbef',
-  200: '#9af5e1',
-  300: '#5fe9ce',
-  400: '#2ed3b8',
-  500: '#15b79f',
-  600: '#0e9382',
-  700: '#107569',
-  800: '#115e56',
-  900: '#134e48',
-  950: '#042f2c',
-} satisfies PaletteRange;
+export const blue: PaletteRange = {
+  50: "#E0E9F5",
+  100: '#D1DEF0',
+  200: '#C3D3EB',
+  300: '#A6BDDF',
+  400: '#89A8D4',
+  500: '#4778C2',
+  600: '#3A5DA3',
+  700: '#2E4685',
+  800: '#1f232aff',
+  900: '#1F375C',
+  950: '#0B1A2C',
+}
 
-export const success = {
-  950: '#061208',
-  900: '#0c2410',
-  800: '#256b30',
-  700: '#256b30',
-  600: '#3eb250',
-  500: '#3eb250',
-  400: '#65c173',
-  300: '#8bd196',
-  200: '#8bd196',
-  100: '#d8f0dc',
-  50: '#ecf7ee',
-} satisfies PaletteRange;
+export const eggschellYellow: PaletteRange = {
+  50: '#FFFDF9',
+  100: '#FFF9E6',
+  200: '#FFF5D2',
+  300: '#EEE8D3',
+  400: '#E3DCC2',
+  500: '#D8D0B0',
+  600: '#BFB18A',
+  700: '#A69973',
+  800: '#8C7F5C',
+  900: '#736644',
+  950: '#4C452E',
+}
 
-export const robinEggBlue = {
-  50: '#F5FFFF',
-  100: '#C2FFFF',
-  200: '#70FFFF',
-  300: '#47FFFF',
-  400: '#1FFFFF',
-  500: 'rgba(0, 210, 211);',
-  600: '#00E0E0',
-  700: '#00B8B8',
-  800: '#008F8F',
-  900: '#006666',
-  950: '#002929',
-} satisfies PaletteRange;
+export const seaGreen: PaletteRange = {
+  50: "#E6F6F1",
+  100: "#BFF0E0",
+  200: "#99E9D0",
+  300: "#4DD9B3",
+  400: "#26CFA3",
+  500: "#0A8754",
+  600: "#086E44",
+  700: "#065734",
+  800: "#04402A",
+  900: "#03391F",
+  950: "#022712",
+}
 
-export const nevada = {
-  50: '#fbfcfe',
-  100: '#f0f4f8',
-  200: '#dde7ee',
-  300: '#cdd7e1',
-  400: '#9fa6ad',
-  500: '#636b74',
-  600: '#555e68',
-  700: '#32383e',
-  800: '#202427',
-  900: '#121517',
-  950: '#090a0b',
-} satisfies PaletteRange;
-
-export const redOrange = {
-  50: '#fef3f2',
-  100: '#fee4e2',
-  200: '#ffcdc9',
-  300: '#fdaaa4',
-  400: '#f97970',
-  500: '#f04438',
-  600: '#de3024',
-  700: '#bb241a',
-  800: '#9a221a',
-  900: '#80231c',
-  950: '#460d09',
-} satisfies PaletteRange;
-
-export const shakespeare = {
-  50: '#ecfdff',
-  100: '#cff7fe',
-  200: '#a4eefd',
-  300: '#66e0fa',
-  400: '#10bee8',
-  500: '#04aad6',
-  600: '#0787b3',
-  700: '#0d6d91',
-  800: '#145876',
-  900: '#154964',
-  950: '#082f44',
-} satisfies PaletteRange;
-
-export const stormGrey = {
-  50: '#f9fafb',
-  100: '#f1f1f4',
-  200: '#dcdfe4',
-  300: '#b3b9c6',
-  400: '#8a94a6',
-  500: '#667085',
-  600: '#565e73',
-  700: '#434a60',
-  800: '#313749',
-  900: '#212636',
-  950: '#121621',
-} satisfies PaletteRange;
+export const scarletFire: PaletteRange = {
+  50: "#FFF1ED",
+  100: "#FFD6D0",
+  200: "#FFBBB3",
+  300: "#FF7F66",
+  400: "#FF4C33",
+  500: "#FF2E00",
+  600: "#CC2300",
+  700: "#991900",
+  800: "#660F00",
+  900: "#330700",
+  950: "#1A0300",
+};
