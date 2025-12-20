@@ -13,7 +13,7 @@ export const MuiButton = {
       fontWeight: 500,
       fontSize: "0.875rem",
       lineHeight: 1.5,
-      gap: "8px",
+      gap: "6px",
     }),
 
     sizeSmall: {

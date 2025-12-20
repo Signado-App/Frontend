@@ -1,5 +1,5 @@
 import React from "react";
-import { styled, alpha } from "@mui/material/styles";
+import { styled, alpha, SxProps, Theme } from "@mui/material/styles";
 import InputBase from "@mui/material/InputBase";
 import SearchIcon from "@mui/icons-material/Search";
 
@@ -21,19 +21,13 @@ const Search = styled("div")(({ theme }) => ({
   border: "1px solid transparent",
   transition: theme.transitions.create(["background-color", "border-color"]),
 
-  //   "&:hover": {
-  //     backgroundColor: "#e5e7eb",
-  //   },
+  width: "100%",
 
   "&:focus-within": {
     backgroundColor: "#f3f4f6",
     borderColor: theme.palette.primary.main,
     boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}`,
   },
-
-  marginRight: theme.spacing(2),
-  marginLeft: 0,
-  width: "100%",
 }));
 
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
@@ -53,11 +47,12 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 type SearchbarProps = {
   placeholder: string;
+  sx?: SxProps<Theme>;
 };
 
-export default function Searchbar({ placeholder }: SearchbarProps) {
+export default function Searchbar({ placeholder, sx }: SearchbarProps) {
   return (
-    <Search>
+    <Search sx={sx}>
       <SearchIconWrapper>
         <SearchIcon />
       </SearchIconWrapper>

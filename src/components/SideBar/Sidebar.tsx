@@ -27,7 +27,6 @@ export default function Sidebar() {
         flexDirection: "column",
         borderRight: "1px solid",
         borderColor: "divider",
-        // backgroundColor: "palette.eggshell",
         p: 3,
         position: "fixed",
         left: 0,
@@ -46,24 +45,31 @@ export default function Sidebar() {
 
       <Divider />
 
-      <Button variant="contained" fullWidth sx={{}} startIcon={<AddIcon />}>
+      <Button
+        variant="contained"
+        fullWidth
+        sx={{
+          py: 1.5,
+        }}
+        startIcon={<AddIcon />}
+      >
         Create Contract
       </Button>
-
       <Typography
         variant="caption"
         sx={{
           color: "text.secondary",
           fontWeight: "bold",
           letterSpacing: 1,
-          mb: 2,
-          px: 1,
+          // px: 1,
           textTransform: "uppercase",
         }}
       >
         Navigation
       </Typography>
-      <PagesList />
+      <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+        <PagesList />
+      </Box>
     </Box>
   );
 }

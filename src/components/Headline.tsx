@@ -13,7 +13,7 @@ export default function Headline({
   title,
   description,
   children,
-  marginBottom = 2
+  marginBottom = 2,
 }: HeadlineProps) {
   return (
     <Box
@@ -35,9 +35,8 @@ export default function Headline({
           {title}
         </Typography>
         {description && (
-          <Typography variant="body1" sx={{ mt: 0.5 }}>
+          <Typography variant="body1" sx={{ mt: 0.5, color: "text.secondary" }}>
             <span dangerouslySetInnerHTML={{ __html: description }}></span>
-
           </Typography>
         )}
       </Box>

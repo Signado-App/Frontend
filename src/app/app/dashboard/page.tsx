@@ -4,7 +4,10 @@ import Headline from "@/components/Headline";
 function DashboardPage() {
   return (
     <Box>
-      <Headline title="Dashboard" />
+      <Headline
+        title="Dashboard"
+        description="Monitor your client relationships and financial performance"
+      />
     </Box>
   );
 }

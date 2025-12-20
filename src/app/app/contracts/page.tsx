@@ -9,13 +9,16 @@ import Typography from "@mui/material/Typography";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import Button from "@mui/material/Button";
 import Headline from "@/components/Headline";
+import Searchbar from "@/components/Searchbar/Searchbar";
+import StatusTabs from "@/components/StatusTabs";
+import { useState } from "react";
+
 type Contract = {
   id: string;
   name: string;
   status: "Active" | "Signed" | "Expired" | "Draft";
   lastActivity: string;
 };
-import Searchbar from "@/components/Searchbar/Searchbar";
 
 const data: Contract[] = [
   {
@@ -29,6 +32,18 @@ const data: Contract[] = [
     name: "Consulting Contract",
     status: "Signed",
     lastActivity: "Dec 15, 2024",
+  },
+  {
+    id: "3",
+    name: "NDA Agreement",
+    status: "Expired",
+    lastActivity: "Nov 30, 2024",
+  },
+  {
+    id: "4",
+    name: "Service Level Agreement",
+    status: "Draft",
+    lastActivity: "Dec 18, 2024",
   },
 ];
 
@@ -79,27 +94,37 @@ const columns: ColumnDef<Contract>[] = [
     header: "Actions",
     align: "left",
     cell: (row) => (
-      <Button sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <VisibilityOutlinedIcon sx={{ fontSize: 18, color: "text.primary" }} />
-        <Typography
-          variant="body2"
-          fontWeight={600}
-          fontSize="0.8rem"
-          color="text.primary"
-        >
-          View
-        </Typography>
+      <Button
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          color: "text.primary",
+        }}
+        startIcon={<VisibilityOutlinedIcon />}
+      >
+        View
       </Button>
     ),
   },
 ];
 function ContractsPage() {
+  const [currentTab, setCurrentTab] = useState("All");
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <Headline title="Contracts" />
-      <Box sx={{ width: 320 }}>
-        <Searchbar placeholder="Search by contract name or client" />
+      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+        <StatusTabs
+          currentTab={currentTab}
+          onTabChange={setCurrentTab}
+          Tabs={["All", "Active", "Signed", "Expired", "Draft"]}
+        />
       </Box>
+
+      <Searchbar
+        placeholder="Search by contract name or client"
+        sx={{ width: 320 }}
+      />
       <Box>
         <AppTable<Contract> data={data} columns={columns} />
       </Box>
