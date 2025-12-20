@@ -1,5 +1,12 @@
+import { Box } from "@mui/material";
+import Headline from "@/components/Headline";
+
 function ClientsPage() {
-    return (<>Clients</>);
+  return (
+    <Box>
+      <Headline title="Clients" />
+    </Box>
+  );
 }
 
 export default ClientsPage;
