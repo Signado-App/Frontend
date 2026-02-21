@@ -3,5 +3,9 @@ import type { Theme } from "../types";
 
 export const MuiSelect = {
   defaultProps: {},
-  styleOverrides: {},
+  styleOverrides: {
+    select: {
+      backgroundColor: "red",
+    },
+  },
 } satisfies Components<Theme>["MuiSelect"];
