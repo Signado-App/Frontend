@@ -5,10 +5,9 @@ type StatCardProps = {
   icon: React.ReactNode;
   name: string;
   value: string;
-  iconBg?: string;
 };
 
-export default function StatCard({ icon, name, value, iconBg }: StatCardProps) {
+export default function StatCard({ icon, name, value }: StatCardProps) {
   return (
     <FloatingContainer>
       <Box
@@ -31,7 +30,6 @@ export default function StatCard({ icon, name, value, iconBg }: StatCardProps) {
             width: 40,
             height: 40,
             borderRadius: 2,
-            bgcolor: iconBg ?? "#f0f9ff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

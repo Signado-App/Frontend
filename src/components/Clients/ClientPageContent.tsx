@@ -9,7 +9,6 @@ import ContractsTab from "@/components/Clients/ContractsTab";
 import InvoicesTab from "@/components/Clients/InvoicesTab";
 import DocumentsTab from "@/components/Clients/DocumentsTab";
 
-
 export default function ClientPageContent() {
   const [tab, setTab] = useState(0);
 

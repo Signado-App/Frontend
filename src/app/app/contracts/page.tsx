@@ -12,13 +12,9 @@ import Headline from "@/components/Headline";
 import Searchbar from "@/components/Searchbar/Searchbar";
 import StatusTabs from "@/components/StatusTabs";
 import { useState } from "react";
+import { Contract } from "@/components/types";
 
-type Contract = {
-  id: string;
-  name: string;
-  status: "Active" | "Signed" | "Expired" | "Draft";
-  lastActivity: string;
-};
+
 
 const data: Contract[] = [
   {

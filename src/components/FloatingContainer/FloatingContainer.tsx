@@ -11,9 +11,6 @@ function FloatingContainer({ children, padding = 25 }: FloatingContainerProps) {
       variant="outlined"
       sx={{
         p: `${padding}px`,
-        // borderRadius: 2,
-        // border: "1px solid #e5e7eb",
-        // boxShadow: "0.5",
       }}
     >
       {children}
