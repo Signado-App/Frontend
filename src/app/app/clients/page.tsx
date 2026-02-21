@@ -12,6 +12,8 @@ import { ColumnDef } from "@/components/Table/AppTable";
 import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import { Console } from "console";
+import { useRouter } from "next/navigation";
 
 type Client = {
   id: string;
@@ -52,84 +54,89 @@ const data: Client[] = [
   },
 ];
 
-const columns: ColumnDef<Client>[] = [
-  {
-    id: "name",
-    header: "Client Name",
-    cell: (row) => (
-      <Typography variant="body2" fontWeight={600} color="text.primary">
-        {row.name}
-      </Typography>
-    ),
-  },
-  {
-    id: "status",
-    header: "Status",
-    cell: (row) => {
-      const colors = {
-        Active: { bg: "#e0f2fe", text: "#0ea5e9" },
-        Signed: { bg: "#dcfce7", text: "#22c55e" },
-        Expired: { bg: "#f3f4f6", text: "#64748b" },
-        Draft: { bg: "#fef9c3", text: "#eab308" },
-      };
-      const style = colors[row.status];
-
-      return (
-        <Chip
-          label={row.status}
-          size="small"
-          sx={{
-            bgcolor: style.bg,
-            color: style.text,
-            fontWeight: 600,
-            borderRadius: "6px",
-            height: "24px",
-            fontSize: "0.75rem",
-          }}
-        />
-      );
-    },
-  },
-  {
-    id: "contractsCount",
-    header: "Contracts Count",
-    cell: (row) => (
-      <Typography variant="body2" fontWeight={600} color="text.primary">
-        {row.contractsCount}
-      </Typography>
-    ),
-  },
-  {
-    id: "totalValue",
-    header: "Total Value",
-    cell: (row) => (
-      <Typography variant="body2" fontWeight={600} color="text.primary">
-        {row.totalValue}
-      </Typography>
-    ),
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    align: "left",
-    cell: (row) => (
-      <Button
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          color: "text.primary",
-        }}
-        startIcon={<VisibilityOutlinedIcon />}
-      >
-        View
-      </Button>
-    ),
-  },
-];
-
 function ClientsPage() {
   const [currentTab, setCurrentTab] = useState("Active");
+  const router = useRouter();
+
+  const columns: ColumnDef<Client>[] = [
+    {
+      id: "name",
+      header: "Client Name",
+      cell: (row) => (
+        <Typography variant="body2" fontWeight={600} color="text.primary">
+          {row.name}
+        </Typography>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: (row) => {
+        const colors = {
+          Active: { bg: "#e0f2fe", text: "#0ea5e9" },
+          Signed: { bg: "#dcfce7", text: "#22c55e" },
+          Expired: { bg: "#f3f4f6", text: "#64748b" },
+          Draft: { bg: "#fef9c3", text: "#eab308" },
+        };
+        const style = colors[row.status];
+
+        return (
+          <Chip
+            label={row.status}
+            size="small"
+            sx={{
+              bgcolor: style.bg,
+              color: style.text,
+              fontWeight: 600,
+              borderRadius: "6px",
+              height: "24px",
+              fontSize: "0.75rem",
+            }}
+          />
+        );
+      },
+    },
+    {
+      id: "contractsCount",
+      header: "Contracts Count",
+      cell: (row) => (
+        <Typography variant="body2" fontWeight={600} color="text.primary">
+          {row.contractsCount}
+        </Typography>
+      ),
+    },
+    {
+      id: "totalValue",
+      header: "Total Value",
+      cell: (row) => (
+        <Typography variant="body2" fontWeight={600} color="text.primary">
+          {row.totalValue}
+        </Typography>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      align: "left",
+      cell: (row) => (
+        <Button
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+          variant="outlined"
+          startIcon={<VisibilityOutlinedIcon />}
+          onClick={() => {
+            console.log("View client", row.id);
+            router.push(`/app/clients/${row.id}`);
+          }}
+        >
+          View
+        </Button>
+      ),
+    },
+  ];
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
