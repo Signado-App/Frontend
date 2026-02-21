@@ -25,14 +25,14 @@ export default function Sidebar() {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        borderRight: "1px solid",
-        borderColor: "divider",
+        border: "1px solid #e5e7eb",
+        boxShadow: "0px 1px 3px rgba(0, 0, 0, 0.05)",
         p: 3,
         position: "fixed",
         left: 0,
         top: 0,
         zIndex: 1200,
-        gap: 3,
+        gap: 2,
         bgcolor: "background.paper",
       }}
     >

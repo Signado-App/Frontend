@@ -14,9 +14,9 @@ import {
 } from "@mui/material";
 
 export type ColumnDef<T> = {
-  id: string; 
-  header: string; 
-  width?: string | number; 
+  id: string;
+  header: string;
+  width?: string | number;
   align?: "left" | "center" | "right";
 
   cell?: (row: T) => React.ReactNode;
@@ -54,10 +54,11 @@ export default function AppTable<T extends { id?: string | number }>({
     <TableContainer
       component={Paper}
       elevation={0}
+      variant="outlined"
       sx={{
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: "12px",
+        // border: "1px solid",
+        // borderColor: "divider",
+        // borderRadius: "12px",
         overflow: "hidden",
       }}
     >

@@ -16,6 +16,7 @@ import { MuiOutlinedInput } from "./outlined-input";
 import { MuiInputLabel } from "./input-label";
 import { MuiFormControl } from "./form-control";
 import { MuiTabs } from "./tabs";
+import { MuiPaper } from "./paper";
 
 export const components = {
   MuiAvatar,
@@ -33,4 +34,5 @@ export const components = {
   MuiInputLabel,
   MuiFormControl,
   MuiTabs,
+  MuiPaper,
 } satisfies Components<Theme>;
