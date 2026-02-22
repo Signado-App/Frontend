@@ -12,7 +12,7 @@ import { Invoice } from "../types";
 const columns: ColumnDef<Invoice>[] = [
   {
     id: "id",
-    header: "Contract ID",
+    header: "Invoice ID",
     cell: (row) => (
       <Typography variant="body2" fontWeight={600} color="text.primary">
         {row.id}
@@ -21,7 +21,7 @@ const columns: ColumnDef<Invoice>[] = [
   },
   {
     id: "name",
-    header: "Contract Name",
+    header: "Invoice Name",
     cell: (row) => (
       <Typography variant="body2" color="text.primary">
         {row.client}
