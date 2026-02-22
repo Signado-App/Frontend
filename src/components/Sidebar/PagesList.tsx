@@ -34,28 +34,28 @@ export default function PagesList() {
       />
 
       <PagesListItem
-        href="/app/dashboard"
+        href="/app/invoices"
         icon={<LocalAtmIcon fontSize="small" />}
         primary="Invoices"
         secondary="Payments & billing"
       />
 
       <PagesListItem
-        href="/app/dashboard"
+        href="/app/reports"
         icon={<BarChartIcon fontSize="small" />}
         primary="Reports"
         secondary="Analytics & trends"
       />
 
       <PagesListItem
-        href="/app/dashboard"
+        href="/app/notifications"
         icon={<NotificationsNoneIcon fontSize="small" />}
         primary="Notifications"
         secondary="Alerts & messages"
       />
 
       <PagesListItem
-        href="/app/dashboard"
+        href="/app/settings"
         icon={<SettingsIcon fontSize="small" />}
         primary="Settings"
         secondary="Account & company"

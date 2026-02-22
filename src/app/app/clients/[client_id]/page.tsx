@@ -2,6 +2,7 @@ import { Box, Typography, Button, Tabs, Tab } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ClientInfo from "@/components/Clients/ClientInfo";
 import ClientPageContent from "@/components/Clients/ClientPageContent";
+import BackButton from "@/components/Clients/BackButton";
 
 async function ClientPage({
   params,
@@ -12,9 +13,7 @@ async function ClientPage({
 
   return (
     <Box>
-      <Button variant="text" startIcon={<ArrowBackIcon />}>
-        Back to Clients
-      </Button>
+      <BackButton />
       <Box sx={{ display: "flex", flexDirection: "column", gap: 4, mt: 4 }}>
         <Box>
           <ClientInfo
