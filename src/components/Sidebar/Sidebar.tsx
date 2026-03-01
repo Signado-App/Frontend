@@ -16,6 +16,8 @@ import CompanyInfo from "./CompanyInfo";
 const SIDEBAR_WIDTH = 280;
 
 export default function Sidebar() {
+  const [view, setView] = React.useState<"main" | "second">("main");
+
   return (
     <Box
       component="aside"
@@ -38,9 +40,13 @@ export default function Sidebar() {
     >
       <CompanyInfo />
 
-      <Select value="main" size="small" sx={{}}>
-        <MenuItem value="main">SupplierPro Solutions (Admin View)</MenuItem>
-        <MenuItem value="second">Client Account (Client View)</MenuItem>
+      <Select
+        value={view}
+        size="small"
+        onChange={(e) => setView(e.target.value as "main" | "second")}
+      >
+        <MenuItem value="main">Client Account</MenuItem>
+        <MenuItem value="second">Organization Account</MenuItem>
       </Select>
 
       <Divider />
@@ -68,7 +74,7 @@ export default function Sidebar() {
         Navigation
       </Typography>
       <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
-        <PagesList />
+        <PagesList view={view} />
       </Box>
     </Box>
   );
