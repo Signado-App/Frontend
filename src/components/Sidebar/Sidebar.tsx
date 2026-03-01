@@ -12,6 +12,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import PagesList from "./PagesList";
 import CompanyInfo from "./CompanyInfo";
+import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 
 const SIDEBAR_WIDTH = 280;
 
@@ -48,6 +49,19 @@ export default function Sidebar() {
         <MenuItem value="main">Client Account</MenuItem>
         <MenuItem value="second">Organization Account</MenuItem>
       </Select>
+
+      {view === "main" && (
+        <Button
+          variant="contained"
+          fullWidth
+          sx={{
+            py: 1.5,
+          }}
+          startIcon={<BusinessOutlinedIcon />}
+        >
+          Create Organization
+        </Button>
+      )}
 
       <Divider />
 
