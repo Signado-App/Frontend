@@ -2,7 +2,6 @@
 import Headline from "@/components/Headline";
 import { useRegisterForm } from "@/hooks/useRegisterForm";
 import { Box, Button, Link, TextField, Typography } from "@mui/material";
-import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const {
@@ -14,9 +13,9 @@ export default function RegisterPage() {
     isPasswordValid,
     passwordsMatch,
     isEmailValid,
+    isPwnedPassword,
   } = useRegisterForm();
 
-  const router = useRouter();
   return (
     <>
       <Headline
@@ -66,6 +65,12 @@ export default function RegisterPage() {
               : ""
           }
         />
+        {isPwnedPassword && (
+          <Typography variant="body2" color="error">
+            This password has been found in data breaches. Please choose a
+            different one.
+          </Typography>
+        )}
         <TextField
           name="confirmPassword"
           label="Confirm Password"
