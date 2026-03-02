@@ -22,7 +22,7 @@ export function useRegisterForm() {
   const [isPwnedPassword, setIsPwnedPassword] = React.useState(false);
 
   React.useEffect(() => {
-    setIsPwnedPassword(false); 
+    setIsPwnedPassword(false);
 
     if (!isPasswordValid) return;
 
@@ -30,11 +30,9 @@ export function useRegisterForm() {
       try {
         const found = await checkPwnedPassword(form.password);
 
-        console.log("[HIBP] Password pwned:", found);
 
         setIsPwnedPassword(found);
       } catch (e) {
-        console.error("[HIBP] Error:", e);
       }
     }, 1000);
     return () => clearTimeout(timer);
@@ -63,6 +61,10 @@ export function useRegisterForm() {
     }
     if (!isPasswordValid) {
       setError("Password must be at least 8 characters");
+      return;
+    }
+    if (isPwnedPassword) {
+      setError("Please choose a different password");
       return;
     }
     if (!passwordsMatch) {
@@ -96,5 +98,7 @@ export function useRegisterForm() {
     passwordsMatch,
     isEmailValid,
     isPwnedPassword,
+    isFirstNameValid,
+    isLastNameValid
   };
 }

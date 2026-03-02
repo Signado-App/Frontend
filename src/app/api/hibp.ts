@@ -10,7 +10,9 @@ export async function checkPwnedPassword(password: string): Promise<boolean> {
   const prefix = hash.slice(0, 5);
   const suffix = hash.slice(5);
 
-  const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+  const response = await fetch(
+    `https://api.pwnedpasswords.com/range/${prefix}`,
+  );
   const text = await response.text();
 
   return text.split("\n").some((line) => {

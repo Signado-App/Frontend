@@ -4,6 +4,6 @@ export async function registerUser(data: {
   email: string;
   password: string;
 }) {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000)); // mock
   return { success: true };
 }

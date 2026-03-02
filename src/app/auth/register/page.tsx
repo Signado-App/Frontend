@@ -14,6 +14,8 @@ export default function RegisterPage() {
     passwordsMatch,
     isEmailValid,
     isPwnedPassword,
+    isFirstNameValid,
+    isLastNameValid,
   } = useRegisterForm();
 
   return (
@@ -29,6 +31,12 @@ export default function RegisterPage() {
             label="First Name"
             value={form.firstName}
             onChange={handleChange}
+            error={form.firstName.length > 0 && !isFirstNameValid}
+            helperText={
+              form.firstName.length > 0 && !isFirstNameValid
+                ? "First name is required"
+                : ""
+            }
             sx={{ flex: 1 }}
           />
           <TextField
@@ -36,6 +44,12 @@ export default function RegisterPage() {
             label="Last Name"
             value={form.lastName}
             onChange={handleChange}
+            error={form.lastName.length > 0 && !isLastNameValid}
+            helperText={
+              form.lastName.length > 0 && !isLastNameValid
+                ? "Last name is required"
+                : ""
+            }
             sx={{ flex: 1 }}
           />
         </Box>
