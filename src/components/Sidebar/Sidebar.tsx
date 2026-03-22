@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -13,11 +13,22 @@ import AddIcon from "@mui/icons-material/Add";
 import PagesList from "./PagesList";
 import CompanyInfo from "./CompanyInfo";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
+import PersonAddAltOutlinedIcon from "@mui/icons-material/PersonAddAltOutlined";
+import CreateOrganizationModal from "../Organization/CreateOrganizationModal";
+import { useSnackbar } from "@/context/SnackbarContext";
+import { useRouter } from "next/navigation";
 
 const SIDEBAR_WIDTH = 280;
 
 export default function Sidebar() {
-  const [view, setView] = React.useState<"main" | "second">("main");
+  const [view, setView] = useState<"main" | "second">("main");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [organizations, setOrganizations] = useState([
+    { id: 1, name: "SupplierPro Solutions" },
+  ]);
+  const [selectedOrg, setSelectedOrg] = useState(0);
+  const { showSnackbar } = useSnackbar();
+  const router = useRouter();
 
   return (
     <Box
@@ -42,26 +53,33 @@ export default function Sidebar() {
       <CompanyInfo />
 
       <Select
-        value={view}
+        value={selectedOrg}
         size="small"
-        onChange={(e) => setView(e.target.value as "main" | "second")}
+        onChange={(e) => {
+          const value = e.target.value as number;
+          setSelectedOrg(value);
+          setView(value === 0 ? "main" : "second");
+        }}
       >
-        <MenuItem value="main">Client Account</MenuItem>
-        <MenuItem value="second">Organization Account</MenuItem>
+        <MenuItem value={0}>Client Account</MenuItem>
+        {organizations.map((org) => (
+          <MenuItem key={org.id} value={org.id}>
+            {org.name}
+          </MenuItem>
+        ))}
       </Select>
 
-      {view === "main" && (
-        <Button
-          variant="contained"
-          fullWidth
-          sx={{
-            py: 1.5,
-          }}
-          startIcon={<BusinessOutlinedIcon />}
-        >
-          Create Organization
-        </Button>
-      )}
+      <Button
+        variant="contained"
+        fullWidth
+        sx={{
+          py: 1.5,
+        }}
+        startIcon={<BusinessOutlinedIcon />}
+        onClick={() => setModalOpen(true)}
+      >
+        New Organization
+      </Button>
 
       <Divider />
 
@@ -72,6 +90,7 @@ export default function Sidebar() {
           py: 1.5,
         }}
         startIcon={<AddIcon />}
+        onClick={() => router.push("/app/contracts/new")}
       >
         Create Contract
       </Button>
@@ -90,6 +109,17 @@ export default function Sidebar() {
       <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
         <PagesList view={view} />
       </Box>
+      <CreateOrganizationModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={(org) => {
+          console.log("Organization created:", org);
+          showSnackbar("Organization created successfully", "success");
+          setOrganizations((prev) => [...prev, { id: org.id, name: org.name }]);
+          setSelectedOrg(org.id);
+          setModalOpen(false);
+        }}
+      />
     </Box>
   );
 }

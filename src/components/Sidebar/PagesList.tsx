@@ -1,6 +1,8 @@
 import List from "@mui/material/List";
 import GridViewIcon from "@mui/icons-material/GridView";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import React from "react";
 import PagesListItem from "./PagesListItem";
@@ -35,26 +37,40 @@ const pages: PageItem[] = [
     views: ["second"],
   },
   {
+    href: "/app/users",
+    icon: <PersonOutlineOutlinedIcon fontSize="small" />,
+    primary: "Users",
+    secondary: "Organization users",
+    views: ["second"],
+  },
+  {
+    href: "/app/groups",
+    icon: <GroupsOutlinedIcon fontSize="small" />,
+    primary: "Groups",
+    secondary: "Groups within organization",
+    views: ["second"],
+  },
+  {
     href: "/app/contracts",
     icon: <EditNoteIcon fontSize="small" />,
     primary: "Contracts",
     secondary: "Contracts & agreements",
     views: ["main", "second"],
   },
-  {
-    href: "/app/invoices",
-    icon: <LocalAtmIcon fontSize="small" />,
-    primary: "Invoices",
-    secondary: "Payments & billing",
-    views: ["second"],
-  },
-  {
-    href: "/app/reports",
-    icon: <BarChartIcon fontSize="small" />,
-    primary: "Reports",
-    secondary: "Analytics & trends",
-    views: ["second"],
-  },
+  // {
+  //   href: "/app/invoices",
+  //   icon: <LocalAtmIcon fontSize="small" />,
+  //   primary: "Invoices",
+  //   secondary: "Payments & billing",
+  //   views: ["second"],
+  // },
+  // {
+  //   href: "/app/reports",
+  //   icon: <BarChartIcon fontSize="small" />,
+  //   primary: "Reports",
+  //   secondary: "Analytics & trends",
+  //   views: ["second"],
+  // },
   {
     href: "/app/notifications",
     icon: <NotificationsNoneIcon fontSize="small" />,

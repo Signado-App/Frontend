@@ -7,7 +7,7 @@ import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
 import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import AppTable, { ColumnDef } from "../Table/AppTable";
-import { Contract } from "../types";
+import { Contract } from "../../types/types";
 
 const columns: ColumnDef<Contract>[] = [
   {

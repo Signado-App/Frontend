@@ -11,27 +11,43 @@ import AppTable from "@/components/Table/AppTable";
 import { ColumnDef } from "@/components/Table/AppTable";
 import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import { useRouter } from "next/navigation";
-import { Client } from "@/types/types";
-import { getClients } from "@/services/clients";
+import { getUsers } from "@/services/users";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import { User } from "@/types/types";
 
-function ClientsPage() {
+function UsersPage() {
   const [currentTab, setCurrentTab] = useState("Active");
-  const router = useRouter();
-  const [data, setData] = useState<Client[]>([]);
+  const [data, setData] = useState<User[]>([]);
 
   useEffect(() => {
-    getClients().then(setData);
+    getUsers().then(setData);
   }, []);
 
-  const columns: ColumnDef<Client>[] = [
+  const columns: ColumnDef<User>[] = [
     {
       id: "name",
-      header: "Client Name",
+      header: "User Name",
       cell: (row) => (
         <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.name}
+          {row.firstName} {row.lastName}
+        </Typography>
+      ),
+    },
+    {
+      id: "email",
+      header: "Email",
+      cell: (row) => (
+        <Typography variant="body2" fontWeight={600} color="text.primary">
+          {row.email}
+        </Typography>
+      ),
+    },
+    {
+      id: "phone",
+      header: "Phone Number",
+      cell: (row) => (
+        <Typography variant="body2" fontWeight={600} color="text.primary">
+          {row.phone}
         </Typography>
       ),
     },
@@ -40,10 +56,9 @@ function ClientsPage() {
       header: "Status",
       cell: (row) => {
         const colors = {
-          Active: { bg: "#e0f2fe", text: "#0ea5e9" },
-          Signed: { bg: "#dcfce7", text: "#22c55e" },
-          Expired: { bg: "#f3f4f6", text: "#64748b" },
-          Draft: { bg: "#fef9c3", text: "#eab308" },
+          Active: { bg: "#dcfce7", text: "#22c55e" },
+          Disabled: { bg: "#f3f4f6", text: "#64748b" },
+          Invited: { bg: "#fef9c3", text: "#eab308" },
         };
         const style = colors[row.status];
 
@@ -63,43 +78,21 @@ function ClientsPage() {
         );
       },
     },
-    {
-      id: "contractsCount",
-      header: "Contracts Count",
-      cell: (row) => (
-        <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.contractsCount}
-        </Typography>
-      ),
-    },
-    {
-      id: "totalValue",
-      header: "Total Value",
-      cell: (row) => (
-        <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.totalValue}
-        </Typography>
-      ),
-    },
+
     {
       id: "actions",
       header: "Actions",
       align: "left",
       cell: (row) => (
         <Button
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-          }}
           variant="outlined"
-          startIcon={<VisibilityOutlinedIcon />}
+          color="error"
+          startIcon={<DeleteOutlineIcon />}
           onClick={() => {
-            console.log("View client", row.id);
-            router.push(`/app/clients/${row.id}`);
+            console.log("Remove user", row.id);
           }}
         >
-          View
+          Remove
         </Button>
       ),
     },
@@ -108,11 +101,11 @@ function ClientsPage() {
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
         <Headline
-          title="Clients"
-          description="Manage your client relationships"
+          title="Users"
+          description="Manage clients of your organization."
         />
         <Button variant="contained" color="primary" startIcon={<AddIcon />}>
-          Add New Client
+          Invite User
         </Button>
       </Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
@@ -130,10 +123,10 @@ function ClientsPage() {
         </Box>
       </Box>
       <Box>
-        <AppTable<Client> data={data} columns={columns} />
+        <AppTable<User> data={data} columns={columns} />
       </Box>
     </Box>
   );
 }
 
-export default ClientsPage;
+export default UsersPage;

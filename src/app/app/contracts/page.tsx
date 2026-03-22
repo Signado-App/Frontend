@@ -11,42 +11,21 @@ import Button from "@mui/material/Button";
 import Headline from "@/components/Headline";
 import Searchbar from "@/components/Searchbar/Searchbar";
 import StatusTabs from "@/components/StatusTabs";
-import { useState } from "react";
-import { Contract } from "@/components/types";
+import { useEffect, useState } from "react";
+import { Contract } from "@/types/types";
 import ContractDetailModal from "@/components/Contract/ContractDetailModal";
-
-const data: Contract[] = [
-  {
-    id: "1",
-    name: "Software Agreement",
-    status: "Active",
-    lastActivity: "Dec 20, 2024",
-  },
-  {
-    id: "2",
-    name: "Consulting Contract",
-    status: "Signed",
-    lastActivity: "Dec 15, 2024",
-  },
-  {
-    id: "3",
-    name: "NDA Agreement",
-    status: "Expired",
-    lastActivity: "Nov 30, 2024",
-  },
-  {
-    id: "4",
-    name: "Service Level Agreement",
-    status: "Draft",
-    lastActivity: "Dec 18, 2024",
-  },
-];
+import { getContracts } from "@/services/contracts";
 
 function ContractsPage() {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(
     null,
   );
   const [currentTab, setCurrentTab] = useState("All");
+  const [data, setData] = useState<Contract[]>([]);
+
+  useEffect(() => {
+    getContracts().then(setData);
+  }, []);
   const columns: ColumnDef<Contract>[] = [
     {
       id: "name",

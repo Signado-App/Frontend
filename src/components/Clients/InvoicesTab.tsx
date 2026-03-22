@@ -7,7 +7,7 @@ import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import AppTable, { ColumnDef } from "../Table/AppTable";
-import { Invoice } from "../types";
+import { Invoice } from "../../types/types";
 
 const columns: ColumnDef<Invoice>[] = [
   {

@@ -5,7 +5,7 @@ import Headline from "@/components/Headline";
 import AppTable, { ColumnDef } from "@/components/Table/AppTable";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 
-import { Invoice } from "@/components/types";
+import { Invoice } from "@/types/types";
 import { useState } from "react";
 import InvoiceDetailModal from "@/components/Invoice/InvoiceDetailModal";
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
-import { registerUser } from "@/app/api/auth";
-import { checkPwnedPassword } from "@/app/api/hibp";
+import { registerUser } from "@/services/auth";
+import { checkPwnedPassword } from "@/services/hibp";
 
 export function useRegisterForm() {
   const router = useRouter();

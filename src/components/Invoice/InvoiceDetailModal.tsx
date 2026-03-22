@@ -18,7 +18,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
-import { Invoice } from "@/components/types";
+import { Invoice } from "@/types/types";
 
 type Props = {
   open: boolean;

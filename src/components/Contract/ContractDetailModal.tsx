@@ -17,7 +17,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-import { Contract } from "@/components/types";
+import { Contract } from "@/types/types";
 
 const activityHistory = [
   { title: "Contract renewed", date: "Dec 20, 2024", author: "Martin Tetour" },
