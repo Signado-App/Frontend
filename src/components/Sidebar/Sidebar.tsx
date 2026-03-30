@@ -59,6 +59,7 @@ export default function Sidebar() {
           const value = e.target.value as number;
           setSelectedOrg(value);
           setView(value === 0 ? "main" : "second");
+          router.push("/app/dashboard");
         }}
       >
         <MenuItem value={0}>Client Account</MenuItem>

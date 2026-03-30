@@ -49,7 +49,7 @@ export default function Headline({
             variant={descVariant as any}
             sx={{ mt: 0.5, color: "text.secondary" }}
           >
-            <span dangerouslySetInnerHTML={{ __html: description }}></span>
+            {description}
           </Typography>
         )}
       </Box>
