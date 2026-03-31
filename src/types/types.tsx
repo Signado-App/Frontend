@@ -1,9 +1,27 @@
+export type Mode = "client" | "organization";
+
+export type PageItem = {
+  href: string;
+  icon: React.ReactNode;
+  primary: string;
+  secondary: string;
+  modes: Mode[];
+  privilege?: Privilege;
+};
+
 export type Contract = {
   id: string;
   name: string;
   description?: string;
   status: "Active" | "Signed" | "Expired" | "Draft";
   lastActivity: string;
+};
+
+export type Member = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
 };
 
 export type Invoice = {
@@ -15,6 +33,22 @@ export type Invoice = {
   status: "Paid" | "Pending" | "Overdue";
 };
 
+export type Privilege =
+  | "view_contracts"
+  | "manage_users"
+  | "manage_groups"
+  | "manage_clients"
+  | "manage_contracts";
+
+export type GroupPrivilege = {
+  id: string;
+  privilegeId: string;
+  name: Privilege;
+  description: string;
+  grantedAt: string;
+  grantedById: string;
+  expiresAt: string | null;
+};
 export type Client = {
   id: string;
   name: string;

@@ -6,6 +6,7 @@ import { AuthContextProvider } from "@/context/AuthContext";
 import { UserContextProvider } from "@/context/UserContext";
 import { ThemeProvider } from "@/context/themeProvider/ThemeContext";
 import { SnackbarProvider } from "@/context/SnackbarContext";
+import { PrivilegesProvider } from "@/context/PrivilegesContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +35,9 @@ export default function RootLayout({
           <SnackbarProvider>
             <LanguageContextProvider>
               <AuthContextProvider>
-                <UserContextProvider>{children}</UserContextProvider>
+                <UserContextProvider>
+                  <PrivilegesProvider>{children}</PrivilegesProvider>
+                </UserContextProvider>
               </AuthContextProvider>
             </LanguageContextProvider>
           </SnackbarProvider>

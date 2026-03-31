@@ -6,23 +6,43 @@ import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useState } from "react";
+import { GroupPrivilege, Privilege } from "@/types/types";
 
-type Privilege = {
-  id: string;
-  name: string;
-  expiresAt: string | null;
-};
-
-const mockPrivileges: Privilege[] = [
-  { id: "1", name: "view_contracts", expiresAt: null },
-  { id: "2", name: "edit_contracts", expiresAt: "Jan 15, 2025" },
-  { id: "3", name: "manage_users", expiresAt: null },
+const mockPrivileges: GroupPrivilege[] = [
+  {
+    id: "1",
+    privilegeId: "1",
+    name: "view_contracts",
+    description: "View all contracts",
+    grantedAt: "Jan 1, 2024",
+    grantedById: "1",
+    expiresAt: null,
+  },
+  {
+    id: "2",
+    privilegeId: "2",
+    name: "manage_contracts",
+    description: "Create and edit contracts",
+    grantedAt: "Jan 1, 2024",
+    grantedById: "1",
+    expiresAt: "Jan 15, 2025",
+  },
+  {
+    id: "3",
+    privilegeId: "3",
+    name: "manage_users",
+    description: "Manage organization users",
+    grantedAt: "Jan 1, 2024",
+    grantedById: "1",
+    expiresAt: null,
+  },
 ];
 
 export default function GroupPrivileges({ groupId }: { groupId: string }) {
-  const [privileges, setPrivileges] = useState<Privilege[]>(mockPrivileges);
+  const [privileges, setPrivileges] =
+    useState<GroupPrivilege[]>(mockPrivileges);
 
-  const columns: ColumnDef<Privilege>[] = [
+  const columns: ColumnDef<GroupPrivilege>[] = [
     {
       id: "name",
       header: "Privilege",
@@ -49,7 +69,9 @@ export default function GroupPrivileges({ groupId }: { groupId: string }) {
           variant="outlined"
           color="error"
           startIcon={<DeleteOutlineIcon />}
-          onClick={() => setPrivileges((prev) => prev.filter((p) => p.id !== row.id))}
+          onClick={() =>
+            setPrivileges((prev) => prev.filter((p) => p.id !== row.id))
+          }
         >
           Revoke
         </Button>
@@ -64,7 +86,7 @@ export default function GroupPrivileges({ groupId }: { groupId: string }) {
           Add Privilege
         </Button>
       </Headline>
-      <AppTable<Privilege> data={privileges} columns={columns} />
+      <AppTable<GroupPrivilege> data={privileges} columns={columns} />
     </Box>
   );
 }

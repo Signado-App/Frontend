@@ -10,16 +10,10 @@ import LocalAtmIcon from "@mui/icons-material/LocalAtm";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import SettingsIcon from "@mui/icons-material/Settings";
+import { Mode, PageItem, Privilege } from "@/types/types";
+import { usePrivileges } from "@/context/PrivilegesContext";
 
-type View = "main" | "second";
 
-type PageItem = {
-  href: string;
-  icon: React.ReactNode;
-  primary: string;
-  secondary: string;
-  views: View[];
-};
 
 const pages: PageItem[] = [
   {
@@ -27,35 +21,35 @@ const pages: PageItem[] = [
     icon: <GridViewIcon fontSize="small" />,
     primary: "Dashboard",
     secondary: "Overview & metrics",
-    views: ["main", "second"],
+    modes: ["client", "organization"],
   },
   {
     href: "/app/clients",
     icon: <PeopleOutlineIcon fontSize="small" />,
     primary: "Clients",
     secondary: "Client management",
-    views: ["second"],
+    modes: ["organization"],
   },
   {
     href: "/app/users",
     icon: <PersonOutlineOutlinedIcon fontSize="small" />,
     primary: "Users",
     secondary: "Organization users",
-    views: ["second"],
+    modes: ["organization"],
   },
   {
     href: "/app/groups",
     icon: <GroupsOutlinedIcon fontSize="small" />,
     primary: "Groups",
     secondary: "Groups within organization",
-    views: ["second"],
+    modes: ["organization"],
   },
   {
     href: "/app/contracts",
     icon: <EditNoteIcon fontSize="small" />,
     primary: "Contracts",
     secondary: "Contracts & agreements",
-    views: ["main", "second"],
+    modes: ["client", "organization"],
   },
   // {
   //   href: "/app/invoices",
@@ -76,22 +70,25 @@ const pages: PageItem[] = [
     icon: <NotificationsNoneIcon fontSize="small" />,
     primary: "Notifications",
     secondary: "Alerts & messages",
-    views: ["main", "second"],
+    modes: ["client", "organization"],
   },
   {
     href: "/app/settings",
     icon: <SettingsIcon fontSize="small" />,
     primary: "Settings",
     secondary: "Account & company",
-    views: ["main", "second"],
+    modes: ["client", "organization"],
   },
 ];
 
-export default function PagesList({ view }: { view: View }) {
+export default function PagesList({ mode }: { mode: Mode }) {
+  const { hasPrivilege } = usePrivileges();
+
   return (
     <List sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}>
       {pages
-        .filter((page) => page.views.includes(view))
+        .filter((page) => page.modes.includes(mode))
+        .filter((page) => !page.privilege || hasPrivilege(page.privilege))
         .map((page) => (
           <PagesListItem key={page.href} {...page} />
         ))}

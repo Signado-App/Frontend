@@ -6,13 +6,9 @@ import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useState } from "react";
+import { Member } from "@/types/types";
 
-type Member = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-};
+
 
 const mockMembers: Member[] = [
   { id: "1", firstName: "Martin", lastName: "Novák", email: "martin.novak@company.com" },
