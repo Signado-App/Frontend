@@ -66,7 +66,26 @@ export type User = {
   status: "Active" | "Invited" | "Disabled";
 };
 
-interface OrganizationClient {
+export interface DBUser {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  status: string;
+  two_factor_enabled: boolean;
+  created_at: string;
+}
+
+export interface DBGroup {
+  id: number;
+  name: string;
+  description: string;
+  organization_id: number;
+  created_by_id: number;
+}
+
+export interface DBOrganizationClient {
   id: number;
   organization_id: number;
   user_id: number;

@@ -1,15 +1,38 @@
 "use client";
-
-import { Box, Button, TextField, Typography } from "@mui/material";
+import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
+import {
+  Box,
+  Button,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  TextField,
+  Typography,
+} from "@mui/material";
 import Headline from "@/components/Headline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import { useCreateContractForm } from "@/hooks/useContractForm";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+
+import { useState } from "react";
 
 export default function NewContractPage() {
   const router = useRouter();
-  const { form, error, loading, handleChange, handleSubmit, isTitleValid } =
-    useCreateContractForm();
+  const {
+    form,
+    error,
+    loading,
+    handleChange,
+    handleSubmit,
+    isTitleValid,
+    files,
+    setFiles,
+    handleFileChange,
+    removeFile,
+  } = useCreateContractForm();
+
   return (
     <Box>
       <Button
@@ -70,6 +93,37 @@ export default function NewContractPage() {
               htmlInput: { style: { paddingTop: "25px" } },
             }}
           />
+
+          <Box>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<AttachFileOutlinedIcon />}
+            >
+              Attach Files
+              <input type="file" hidden multiple onChange={handleFileChange} />
+            </Button>
+
+            {files.length > 0 && (
+              <List dense sx={{ mt: 1 }}>
+                {files.map((file, index) => (
+                  <ListItem
+                    key={index}
+                    secondaryAction={
+                      <IconButton onClick={() => removeFile(index)}>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText
+                      primary={file.name}
+                      secondary={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
 
           <Button
             variant="contained"

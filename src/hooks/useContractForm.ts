@@ -1,5 +1,5 @@
 // src/hooks/useCreateContractForm.ts
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/context/SnackbarContext";
 
@@ -13,6 +13,17 @@ export function useCreateContractForm() {
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
   const { showSnackbar } = useSnackbar();
+  const [files, setFiles] = useState<File[]>([]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const isTitleValid = form.title.trim().length > 0;
 
@@ -41,5 +52,16 @@ export function useCreateContractForm() {
     }
   };
 
-  return { form, error, loading, handleChange, handleSubmit, isTitleValid };
+  return {
+    form,
+    error,
+    loading,
+    handleChange,
+    handleSubmit,
+    isTitleValid,
+    files,
+    setFiles,
+    handleFileChange,
+    removeFile
+  };
 }
