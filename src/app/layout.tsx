@@ -5,6 +5,8 @@ import { LanguageContextProvider } from "@/context/LanguageContext";
 import { AuthContextProvider } from "@/context/AuthContext";
 import { UserContextProvider } from "@/context/UserContext";
 import { ThemeProvider } from "@/context/themeProvider/ThemeContext";
+import { SnackbarProvider } from "@/context/SnackbarContext";
+import { PrivilegesProvider } from "@/context/PrivilegesContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,13 +32,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ThemeProvider>
-          <LanguageContextProvider>
-            <AuthContextProvider>
-              <UserContextProvider>
-                {children}
-              </UserContextProvider>
-            </AuthContextProvider>
-          </LanguageContextProvider>
+          <SnackbarProvider>
+            <LanguageContextProvider>
+              <AuthContextProvider>
+                <UserContextProvider>
+                  <PrivilegesProvider>{children}</PrivilegesProvider>
+                </UserContextProvider>
+              </AuthContextProvider>
+            </LanguageContextProvider>
+          </SnackbarProvider>
         </ThemeProvider>
       </body>
     </html>

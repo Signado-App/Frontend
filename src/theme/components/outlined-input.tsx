@@ -6,6 +6,11 @@ import { bgcolor } from "@mui/system";
 export const MuiOutlinedInput = {
   styleOverrides: {
     root: {
+      backgroundColor: "#f3f4f6",
+      "& fieldset": {
+        border: "none",
+      },
+
       ".MuiInputBase-input": {
         padding: "10px 14px",
         ":-webkit-autofill": {
@@ -16,4 +21,4 @@ export const MuiOutlinedInput = {
       },
     },
   },
-} satisfies Components<Theme>["MuiLink"];
+} satisfies Components<Theme>["MuiOutlinedInput"];

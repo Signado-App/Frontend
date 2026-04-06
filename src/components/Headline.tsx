@@ -7,14 +7,24 @@ interface HeadlineProps {
   description?: string;
   children?: ReactNode;
   marginBottom?: number;
+  size?: "small" | "medium" | "large";
 }
+
+const sizeMap = {
+  small: { title: "h6", description: "body2" },
+  medium: { title: "h5", description: "body1" },
+  large: { title: "h4", description: "body1" },
+};
 
 export default function Headline({
   title,
   description,
   children,
-  marginBottom = 2
+  marginBottom = 2,
+  size = "medium",
 }: HeadlineProps) {
+  const { title: titleVariant, description: descVariant } = sizeMap[size];
+
   return (
     <Box
       sx={{
@@ -28,16 +38,18 @@ export default function Headline({
     >
       <Box>
         <Typography
-          variant="h4"
+          variant={titleVariant as any}
           component="h1"
           sx={{ color: "text.primary", fontWeight: "bold" }}
         >
           {title}
         </Typography>
         {description && (
-          <Typography variant="body1" sx={{ mt: 0.5 }}>
-            <span dangerouslySetInnerHTML={{ __html: description }}></span>
-
+          <Typography
+            variant={descVariant as any}
+            sx={{ mt: 0.5, color: "text.secondary" }}
+          >
+            {description}
           </Typography>
         )}
       </Box>

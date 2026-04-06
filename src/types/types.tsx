@@ -1,0 +1,109 @@
+export type Mode = "client" | "organization";
+
+export type PageItem = {
+  href: string;
+  icon: React.ReactNode;
+  primary: string;
+  secondary: string;
+  modes: Mode[];
+  privilege?: Privilege;
+};
+
+export type Contract = {
+  id: string;
+  name: string;
+  description?: string;
+  status: "Active" | "Signed" | "Expired" | "Draft";
+  lastActivity: string;
+};
+
+export type Member = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
+export type Invoice = {
+  id: string;
+  client: string;
+  issueDate: string;
+  dueDate: string;
+  amount: string;
+  status: "Paid" | "Pending" | "Overdue";
+};
+
+export type Privilege =
+  | "view_contracts"
+  | "manage_users"
+  | "manage_groups"
+  | "manage_clients"
+  | "manage_contracts";
+
+export type GroupPrivilege = {
+  id: string;
+  privilegeId: string;
+  name: Privilege;
+  description: string;
+  grantedAt: string;
+  grantedById: string;
+  expiresAt: string | null;
+};
+export type Client = {
+  id: string;
+  name: string;
+  status: "Active" | "Signed" | "Expired" | "Draft";
+  contractsCount: number;
+  totalValue: string;
+};
+
+export type User = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  status: "Active" | "Invited" | "Disabled";
+};
+
+export interface DBUser {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  status: string;
+  two_factor_enabled: boolean;
+  created_at: string;
+}
+
+export interface DBGroup {
+  id: number;
+  name: string;
+  description: string;
+  organization_id: number;
+  created_by_id: number;
+}
+
+export interface DBOrganizationClient {
+  id: number;
+  organization_id: number;
+  user_id: number;
+  status: string;
+  client_metadata: Record<string, unknown>;
+  created_at: string;
+  created_by_id: number;
+}
+
+interface DBContract {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  expires_at: string;
+  created_at: string;
+  deleted_at: string | null;
+  created_by_user_id: number;
+  organization_id: number;
+  creator_member_id: number;
+}

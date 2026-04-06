@@ -1,23 +1,32 @@
 "use client";
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useState } from "react";
+
+type Mode = "client" | "organization";
 
 type UserContextValue = {
-
+  mode: Mode;
+  selectedOrgId: number | null;
+  setMode: (mode: Mode, orgId: number | null) => void;
 };
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
-type UserContextProviderProps = {
-  children: React.ReactNode;
-};
 
-export const UserContextProvider: React.FC<UserContextProviderProps> = ({
+export const UserContextProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  return <UserContext.Provider value={
-    {
-        
-    }
-  }>{children}</UserContext.Provider>;
+  const [mode, setModeState] = useState<Mode>("client");
+  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+
+  const setMode = (mode: Mode, orgId: number | null) => {
+    setModeState(mode);
+    setSelectedOrgId(orgId);
+  };
+
+  return (
+    <UserContext.Provider value={{ mode, selectedOrgId, setMode }}>
+      {children}
+    </UserContext.Provider>
+  );
 };
 
 export const useUserContext = () => {

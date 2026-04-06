@@ -7,13 +7,38 @@ export const MuiButton = {
   },
 
   styleOverrides: {
-    root: ({}) => ({
+    root: ({ ownerState }) => ({
       textTransform: "none",
       borderRadius: "6px",
       fontWeight: 500,
       fontSize: "0.875rem",
       lineHeight: 1.5,
-      gap: "8px",
+      gap: "6px",
+      "&:hover": {
+        opacity: 0.85,
+      },
+
+      ...(ownerState.variant === "contained" && {
+        color: "#ffffff",
+        backgroundColor: "#000000",
+      }),
+
+      ...(ownerState.variant === "text" && {
+        backgroundColor: "transparent",
+        color: "#0f172a",
+        "&:hover": {
+          backgroundColor: "#f1f5f9",
+          opacity: 1,
+        },
+      }),
+
+      ...(ownerState.variant === "outlined" && {
+        color: "#0f172a",
+        borderColor: "#e5e7eb",
+        "&:hover": {
+          opacity: 1,
+        },
+      }),
     }),
 
     sizeSmall: {
