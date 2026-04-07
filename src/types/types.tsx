@@ -1,5 +1,18 @@
 export type Mode = "client" | "organization";
 
+export type AuthContextValue = {
+  token: string | null;
+  isAuthenticated: boolean;
+  login: (token: string) => void;
+  logout: () => void;
+};
+
+export type ApiResponse<T> = {
+  status: string; // "OK", "UNAUTHENTICATED", "ERROR"
+  specification: string; // error detail
+  data: T;
+};
+
 export type PageItem = {
   href: string;
   icon: React.ReactNode;

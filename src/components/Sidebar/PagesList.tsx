@@ -13,8 +13,6 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import { Mode, PageItem, Privilege } from "@/types/types";
 import { usePrivileges } from "@/context/PrivilegesContext";
 
-
-
 const pages: PageItem[] = [
   {
     href: "/app/dashboard",
@@ -65,13 +63,13 @@ const pages: PageItem[] = [
   //   secondary: "Analytics & trends",
   //   views: ["second"],
   // },
-  {
-    href: "/app/notifications",
-    icon: <NotificationsNoneIcon fontSize="small" />,
-    primary: "Notifications",
-    secondary: "Alerts & messages",
-    modes: ["client", "organization"],
-  },
+    // {
+    //   href: "/app/notifications",
+    //   icon: <NotificationsNoneIcon fontSize="small" />,
+    //   primary: "Notifications",
+    //   secondary: "Alerts & messages",
+    //   modes: ["client", "organization"],
+    // },
   {
     href: "/app/settings",
     icon: <SettingsIcon fontSize="small" />,

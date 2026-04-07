@@ -1,23 +1,33 @@
 "use client";
-import React, { createContext, useContext } from "react";
+import { AuthContextValue } from "@/types/types";
+import React, { createContext, useContext, useState } from "react";
 
-type AuthContextValue = {
 
-};
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-type AuthContextProviderProps = {
-  children: React.ReactNode;
-};
 
-export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
+export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  return <AuthContext.Provider value={
-    {
-        
-    }
-  }>{children}</AuthContext.Provider>;
+  const [token, setToken] = useState<string | null>(
+    typeof window !== "undefined" ? localStorage.getItem("token") : null
+  );
+
+  const login = (token: string) => {
+    localStorage.setItem("token", token);
+    setToken(token);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setToken(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ token, isAuthenticated: !!token, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuthContext = () => {
