@@ -7,10 +7,13 @@ export type AuthContextValue = {
   logout: () => void;
 };
 
-export type ApiResponse<T> = {
-  status: string; // "OK", "UNAUTHENTICATED", "ERROR"
-  specification: string; // error detail
-  data: T;
+export type RegisterResponse = {
+  status: string; 
+};
+
+export type LoginResponse = {
+  status: string; 
+  specification: string;
 };
 
 export type PageItem = {

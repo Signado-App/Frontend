@@ -13,9 +13,10 @@ export default function RegisterPage() {
     isPasswordValid,
     passwordsMatch,
     isEmailValid,
-    isPwnedPassword,
+    // isPwnedPassword,
     isFirstNameValid,
     isLastNameValid,
+    isFormValid,
   } = useRegisterForm();
 
   return (
@@ -24,7 +25,12 @@ export default function RegisterPage() {
         title="Register"
         description="Welcome to Signado. Please fill in the details below to create an account."
       />
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2 }}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2 }}
+        noValidate
+      >
         <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
           <TextField
             name="firstName"
@@ -79,12 +85,12 @@ export default function RegisterPage() {
               : ""
           }
         />
-        {isPwnedPassword && (
+        {/* {isPwnedPassword && (
           <Typography variant="body2" color="error">
             This password has been found in data breaches. Please choose a
             different one.
           </Typography>
-        )}
+        )} */}
         <TextField
           name="confirmPassword"
           label="Confirm Password"
@@ -98,6 +104,23 @@ export default function RegisterPage() {
               : ""
           }
         />
+        {error && (
+          <Typography color="error" sx={{ textAlign: "center" }}>
+            {error}
+          </Typography>
+        )}
+
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          size="large"
+          disabled={loading || !isFormValid}
+          fullWidth
+          sx={{ mt: 2 }}
+        >
+          {loading ? "Registering..." : "Register"}
+        </Button>
       </Box>
       <Box
         sx={{
@@ -107,17 +130,6 @@ export default function RegisterPage() {
           gap: 1,
         }}
       >
-        {error && <Typography color="error">{error}</Typography>}
-        <Button
-          variant="contained"
-          color="primary"
-          size="large"
-          sx={{ width: "100%" }}
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? "Registering..." : "Register"}
-        </Button>
         <Typography variant="body1" sx={{ textAlign: "center" }}>
           By registering, you agree to our{" "}
           <Link href="/terms-of-service">Terms of Service</Link> and{" "}

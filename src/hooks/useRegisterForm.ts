@@ -19,58 +19,38 @@ export function useRegisterForm() {
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
   const isFirstNameValid = form.firstName.trim().length > 0;
   const isLastNameValid = form.lastName.trim().length > 0;
-  const [isPwnedPassword, setIsPwnedPassword] = React.useState(false);
+  const isFormValid =
+    isFirstNameValid &&
+    isLastNameValid &&
+    isEmailValid &&
+    isPasswordValid &&
+    passwordsMatch;
+  // const [isPwnedPassword, setIsPwnedPassword] = React.useState(false);
 
-  React.useEffect(() => {
-    setIsPwnedPassword(false);
+  // React.useEffect(() => {
+  //   setIsPwnedPassword(false);
 
-    if (!isPasswordValid) return;
+  //   if (!isPasswordValid) return;
 
-    const timer = setTimeout(async () => {
-      try {
-        const found = await checkPwnedPassword(form.password);
+  //   const timer = setTimeout(async () => {
+  //     try {
+  //       const response = await checkPwnedPassword(form.password);
 
-
-        setIsPwnedPassword(found);
-      } catch (e) {
-      }
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [form.password, isPasswordValid]);
+  //       setIsPwnedPassword(response.allowed);
+  //     } catch (e) {
+  //     }
+  //   }, 1000);
+  //   return () => clearTimeout(timer);
+  // }, [form.password, isPasswordValid]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setError(null);
-
-    if (!isFirstNameValid) {
-      setError("First name is required");
-      return;
-    }
-
-    if (!isLastNameValid) {
-      setError("Last name is required");
-      return;
-    }
-
-    if (!isEmailValid) {
-      setError("Invalid email address");
-      return;
-    }
-    if (!isPasswordValid) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-    if (isPwnedPassword) {
-      setError("Please choose a different password");
-      return;
-    }
-    if (!passwordsMatch) {
-      setError("Passwords don't match");
-      return;
-    }
+    if (!isFormValid) return;
 
     try {
       setLoading(true);
@@ -97,8 +77,9 @@ export function useRegisterForm() {
     isPasswordValid,
     passwordsMatch,
     isEmailValid,
-    isPwnedPassword,
+    // isPwnedPassword,
     isFirstNameValid,
-    isLastNameValid
+    isLastNameValid,
+    isFormValid
   };
 }
