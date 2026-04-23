@@ -12,6 +12,9 @@ export default function LoginPage() {
     handleSubmit,
     isEmailValid,
     isPasswordValid,
+    isFormValid,
+    touched,
+    handleBlur,
   } = useLoginForm();
 
   return (
@@ -32,11 +35,10 @@ export default function LoginPage() {
           label="E-mail"
           value={form.email}
           onChange={handleChange}
-          error={form.email.length > 0 && !isEmailValid}
+          onBlur={handleBlur}
+          error={touched.email && !isEmailValid}
           helperText={
-            form.email.length > 0 && !isEmailValid
-              ? "Invalid email address"
-              : ""
+            touched.email && !isEmailValid ? "Invalid email address" : ""
           }
         />
         <TextField
@@ -46,9 +48,10 @@ export default function LoginPage() {
           type="password"
           value={form.password}
           onChange={handleChange}
-          error={form.password.length > 0 && !isPasswordValid}
+          onBlur={handleBlur}
+          error={touched.password && !isPasswordValid}
           helperText={
-            form.password.length > 0 && !isPasswordValid
+            touched.password && !isPasswordValid
               ? "Password must be at least 8 characters"
               : ""
           }
@@ -62,9 +65,8 @@ export default function LoginPage() {
           variant="contained"
           color="primary"
           size="large"
-          onClick={handleSubmit}
           type="submit"
-          disabled={loading || !isEmailValid || !isPasswordValid}
+          disabled={loading || !isFormValid}
           fullWidth
           sx={{ mt: 2 }}
         >

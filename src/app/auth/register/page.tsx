@@ -6,7 +6,7 @@ import { Box, Button, Link, TextField, Typography } from "@mui/material";
 export default function RegisterPage() {
   const {
     form,
-    error,
+    fieldErrors,
     loading,
     handleChange,
     handleSubmit,
@@ -17,6 +17,8 @@ export default function RegisterPage() {
     isFirstNameValid,
     isLastNameValid,
     isFormValid,
+    touched,
+    handleBlur,
   } = useRegisterForm();
 
   return (
@@ -37,11 +39,13 @@ export default function RegisterPage() {
             label="First Name"
             value={form.firstName}
             onChange={handleChange}
-            error={form.firstName.length > 0 && !isFirstNameValid}
+            onBlur={handleBlur}
+            error={touched.firstName && !isFirstNameValid}
             helperText={
-              form.firstName.length > 0 && !isFirstNameValid
+              fieldErrors.firstName ||
+              (touched.firstName && !isFirstNameValid
                 ? "First name is required"
-                : ""
+                : "")
             }
             sx={{ flex: 1 }}
           />
@@ -50,11 +54,13 @@ export default function RegisterPage() {
             label="Last Name"
             value={form.lastName}
             onChange={handleChange}
-            error={form.lastName.length > 0 && !isLastNameValid}
+            onBlur={handleBlur}
+            error={touched.lastName && !isLastNameValid}
             helperText={
-              form.lastName.length > 0 && !isLastNameValid
+              fieldErrors.lastName ||
+              (touched.lastName && !isLastNameValid
                 ? "Last name is required"
-                : ""
+                : "")
             }
             sx={{ flex: 1 }}
           />
@@ -64,25 +70,28 @@ export default function RegisterPage() {
           label="E-mail"
           value={form.email}
           onChange={handleChange}
-          error={form.email.length > 0 && !isEmailValid}
+          onBlur={handleBlur}
+          error={(touched.email && !isEmailValid) || !!fieldErrors.email}
           helperText={
-            form.email.length > 0 && !isEmailValid
-              ? "Invalid email address"
-              : ""
+            fieldErrors.email ||
+            (touched.email && !isEmailValid ? "Invalid email address" : "")
           }
         />
         <TextField
           label="Password"
           type="password"
           name="password"
-          variant="outlined"
           value={form.password}
           onChange={handleChange}
-          error={form.password.length > 0 && !isPasswordValid}
+          onBlur={handleBlur}
+          error={
+            (touched.password && !isPasswordValid) || !!fieldErrors.password
+          }
           helperText={
-            form.password.length > 0 && !isPasswordValid
+            fieldErrors.password ||
+            (touched.password && !isPasswordValid
               ? "Password must be at least 8 characters"
-              : ""
+              : "")
           }
         />
         {/* {isPwnedPassword && (
@@ -97,19 +106,20 @@ export default function RegisterPage() {
           type="password"
           value={form.confirmPassword}
           onChange={handleChange}
-          error={form.confirmPassword.length > 0 && !passwordsMatch}
+          onBlur={handleBlur}
+          error={
+            touched.confirmPassword &&
+            !passwordsMatch &&
+            form.confirmPassword.length > 0
+          }
           helperText={
-            form.confirmPassword.length > 0 && !passwordsMatch
+            touched.confirmPassword &&
+            form.confirmPassword.length > 0 &&
+            !passwordsMatch
               ? "Passwords don't match."
               : ""
           }
         />
-        {error && (
-          <Typography color="error" sx={{ textAlign: "center" }}>
-            {error}
-          </Typography>
-        )}
-
         <Button
           type="submit"
           variant="contained"

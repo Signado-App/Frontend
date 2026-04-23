@@ -48,7 +48,6 @@ function GroupsPage() {
   const [data, setData] = useState<Group[]>(mockGroups);
   const router = useRouter();
 
-  // v actions cell:
 
   const columns: ColumnDef<Group>[] = [
     {

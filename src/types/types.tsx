@@ -1,18 +1,24 @@
 export type Mode = "client" | "organization";
 
-export type AuthContextValue = {
-  token: string | null;
-  isAuthenticated: boolean;
-  login: (token: string) => void;
-  logout: () => void;
+export type RegisterData = {
+  name: string;
+  surname: string;
+  email: string;
+  password: string;
 };
 
-export type RegisterResponse = {
-  status: string; 
+export type LoginCredentials = {
+  email: string;
+  password: string;
 };
 
 export type LoginResponse = {
-  status: string; 
+  status: string;
+  specification: string;
+};
+
+export type RegisterResponse = {
+  status: string;
   specification: string;
 };
 
@@ -123,3 +129,19 @@ interface DBContract {
   organization_id: number;
   creator_member_id: number;
 }
+
+export type AuthContextValue = {
+  user: User | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  login: (user: User) => void;
+  logout: () => Promise<void>;
+  refresh: () => Promise<void>;
+};
+
+export type ApiErrorShape = {
+  type: "NETWORK_ERROR" | "UNAUTHORIZED" | "SERVER_ERROR" | "API_ERROR";
+  status: number | null;
+  message: string;
+  data: unknown;
+};

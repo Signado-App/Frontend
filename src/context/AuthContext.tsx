@@ -1,6 +1,7 @@
 "use client";
-import { AuthContextValue } from "@/types/types";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import apiClient from "@/services/apiClient";
+import { AuthContextValue, User } from "@/types/types";
 
 
 
@@ -9,22 +10,48 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [token, setToken] = useState<string | null>(
-    typeof window !== "undefined" ? localStorage.getItem("token") : null
-  );
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (token: string) => {
-    localStorage.setItem("token", token);
-    setToken(token);
+  const refresh = async () => {
+    try {
+      const response = await apiClient.get("/auth/me");
+      setUser(response.data);
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    setToken(null);
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const login = (userData: User) => {
+    setUser(userData);
+  };
+
+  const logout = async () => {
+    try {
+      await apiClient.post("/auth/logout"); // backend smaže cookie
+    } catch {
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ token, isAuthenticated: !!token, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        loading,
+        login,
+        logout,
+        refresh,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
