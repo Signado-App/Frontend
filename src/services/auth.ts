@@ -59,3 +59,7 @@ export async function getLoggedInUser(): Promise<User> {
     throw err;
   }
 }
+
+export async function verifyUser(token: string): Promise<void> {
+  await apiClient.post(`/public/auth/registration/${token}`);
+}
