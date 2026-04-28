@@ -94,12 +94,6 @@ export default function RegisterPage() {
               : "")
           }
         />
-        {/* {isPwnedPassword && (
-          <Typography variant="body2" color="error">
-            This password has been found in data breaches. Please choose a
-            different one.
-          </Typography>
-        )} */}
         <TextField
           name="confirmPassword"
           label="Confirm Password"

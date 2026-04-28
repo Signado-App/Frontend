@@ -74,10 +74,15 @@ export default function LoginPage() {
         </Button>
       </Box>
 
-      <Typography variant="body1" sx={{ mt: 1, textAlign: "center" }}>
-        Don&apos;t have an account?{" "}
-        <Link href="/auth/register">Register here</Link>.
-      </Typography>
+      <Box sx={{ mt: 1, textAlign: "center" }}>
+        <Typography variant="body1">
+          Don&apos;t have an account?{" "}
+          <Link href="/auth/register">Register here</Link>.
+        </Typography>
+        <Typography variant="body2">
+          <Link href="/auth/forgot-password">Forgot password?</Link>
+        </Typography>
+      </Box>
     </>
   );
 }

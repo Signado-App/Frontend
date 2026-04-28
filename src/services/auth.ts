@@ -63,3 +63,11 @@ export async function getLoggedInUser(): Promise<User> {
 export async function verifyUser(token: string): Promise<void> {
   await apiClient.post(`/public/auth/registration/${token}`);
 }
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiClient.get(`/public/auth/password_reset/${email}`);
+}
+
+export async function resetPassword(token: string, password: string): Promise<void> {
+  await apiClient.post(`/public/auth/password_reset/${token}`, { password });
+}
