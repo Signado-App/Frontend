@@ -45,9 +45,10 @@ export function useLoginForm() {
     try {
       setLoading(true);
       const data = await loginUser(form);
+      console.log("[Login] Full response:", data);
+      await login(data.data.access_csrf, data.data.refresh_csrf);
       showSnackbar("Login successful!", "success");
       console.log(data);
-      login(data.access_csrf, data.refresh_csrf);
       router.push("/app/dashboard");
     } catch (err) {
       if (err instanceof InvalidCredentialsError) {

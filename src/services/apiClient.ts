@@ -1,8 +1,6 @@
 import { ApiErrorShape } from "@/types/types";
 import axios, { AxiosError } from "axios";
 
-
-
 export function isApiError(err: unknown): err is ApiErrorShape {
   return (
     typeof err === "object" &&
@@ -17,8 +15,7 @@ export const setUnauthorizedHandler = (fn: () => void) => {
   onUnauthorized = fn;
 };
 
-// By these endpoints 401 doesn't mean "session expired"
-const AUTH_BYPASS_ENDPOINTS = ["/auth/login", "/auth/register", "/auth/me"];
+const AUTH_BYPASS_ENDPOINTS = ["/auth/login", "/auth/register"];
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -78,10 +75,17 @@ apiClient.interceptors.response.use(
   },
 );
 apiClient.interceptors.request.use((config) => {
-  const accessCsrf = localStorage.getItem("access_csrf");
+  console.log("[Request] cookies:", document.cookie);
+  const accessCsrf =
+    getCookie("csrf_access_token") ?? localStorage.getItem("access_csrf");
   if (accessCsrf) {
     config.headers["X-CSRF-TOKEN"] = accessCsrf;
   }
   return config;
 });
+
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  return match ? match[2] : null;
+}
 export default apiClient;

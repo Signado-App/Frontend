@@ -57,16 +57,6 @@ export async function logoutUser(): Promise<ApiResponse> {
   return response.data;
 }
 
-export async function getLoggedInUser(): Promise<User> {
-  try {
-    const response = await apiClient.get("/auth/me");
-    return response.data;
-  } catch (err) {
-    mapCommonApiErrors(err);
-    throw err;
-  }
-}
-
 export async function verifyUser(token: string): Promise<void> {
   await apiClient.post(`/public/auth/registration/${token}`);
 }

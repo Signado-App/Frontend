@@ -18,6 +18,8 @@ import { useSnackbar } from "@/context/SnackbarContext";
 import { useRouter } from "next/navigation";
 import { usePrivileges } from "@/context/PrivilegesContext";
 import { useUserContext } from "@/context/UserContext";
+import { useAuthContext } from "@/context/AuthContext";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 
 const SIDEBAR_WIDTH = 280;
 
@@ -31,6 +33,7 @@ export default function Sidebar() {
   const router = useRouter();
   const { hasPrivilege } = usePrivileges();
   const { mode, setMode } = useUserContext();
+  const { refresh, logout } = useAuthContext();
 
   return (
     <Box
@@ -128,6 +131,18 @@ export default function Sidebar() {
           router.push("/app/dashboard");
         }}
       />
+      <Button variant="text" fullWidth onClick={refresh} sx={{ mt: "auto" }}>
+        Test get user
+      </Button>
+      <Button
+        variant="text"
+        fullWidth
+        startIcon={<LogoutOutlinedIcon />}
+        onClick={logout}
+        sx={{ mt: "auto" }}
+      >
+        Logout
+      </Button>
     </Box>
   );
 }

@@ -26,21 +26,22 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  useEffect(() => {
-    setUnauthorizedHandler(() => {
-      localStorage.removeItem("access_csrf");
-      localStorage.removeItem("refresh_csrf");
-      setUser(null);
-      router.push("/auth/login");
-    });
+  // useEffect(() => {
+  //   setUnauthorizedHandler(() => {
+  //     localStorage.removeItem("access_csrf");
+  //     localStorage.removeItem("refresh_csrf");
+  //     setUser(null);
+  //     router.push("/auth/login");
+  //   });
 
-    refresh();
-  }, []);
+  //   refresh();
+  // }, [router]);
 
-  const login = (accessCsrf: string, refreshCsrf: string) => {
+  const login = async (accessCsrf: string, refreshCsrf: string) => {
+    console.log("[Auth] Saving CSRF tokens:", accessCsrf, refreshCsrf);
     localStorage.setItem("access_csrf", accessCsrf);
     localStorage.setItem("refresh_csrf", refreshCsrf);
-    refresh();
+    // await refresh();
   };
 
   const logout = async () => {

@@ -2,7 +2,6 @@ import apiClient from "./apiClient";
 
 export async function getUser() {
   const response = await apiClient.get("/protected/user");
-  console.log(response);
   return response.data;
 }
 
