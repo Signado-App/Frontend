@@ -47,7 +47,7 @@ export function useLoginForm() {
       const data = await loginUser(form);
       showSnackbar("Login successful!", "success");
       console.log(data);
-      // login(data);
+      login(data.access_csrf, data.refresh_csrf);
       router.push("/app/dashboard");
     } catch (err) {
       if (err instanceof InvalidCredentialsError) {

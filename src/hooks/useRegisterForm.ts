@@ -80,8 +80,8 @@ export function useRegisterForm() {
     try {
       setLoading(true);
       await registerUser({
-        name: form.firstName,
-        surname: form.lastName,
+        first_name: form.firstName,
+        last_name: form.lastName,
         email: form.email,
         password: form.password,
       });

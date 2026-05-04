@@ -77,5 +77,11 @@ apiClient.interceptors.response.use(
     return Promise.reject(apiError);
   },
 );
-
+apiClient.interceptors.request.use((config) => {
+  const accessCsrf = localStorage.getItem("access_csrf");
+  if (accessCsrf) {
+    config.headers["X-CSRF-TOKEN"] = accessCsrf;
+  }
+  return config;
+});
 export default apiClient;

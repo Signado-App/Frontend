@@ -1,8 +1,8 @@
 export type Mode = "client" | "organization";
 
 export type RegisterData = {
-  name: string;
-  surname: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
 };
@@ -13,6 +13,13 @@ export type LoginCredentials = {
 };
 
 export type LoginResponse = {
+  access_csrf: string;
+  refresh_csrf: string;
+  status: string;
+  specification: string;
+};
+
+export type ApiResponse = {
   status: string;
   specification: string;
 };
@@ -134,8 +141,8 @@ export type AuthContextValue = {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (user: User) => void;
-  logout: () => Promise<void>;
+  login: (accessCsrf: string, refreshCsrf: string) => void;
+  logout: () => void;
   refresh: () => Promise<void>;
 };
 

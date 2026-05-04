@@ -15,7 +15,7 @@ export function useForgotPasswordForm() {
       await requestPasswordReset(email);
       setSent(true);
     } catch {
-      setSent(true); // vždy zobraz success - bezpečnostní důvod
+      setSent(true); 
     } finally {
       setLoading(false);
     }

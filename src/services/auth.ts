@@ -1,4 +1,5 @@
 import {
+  ApiResponse,
   LoginCredentials,
   LoginResponse,
   RegisterData,
@@ -22,6 +23,8 @@ export async function registerUser(
     const response = await apiClient.post("/public/auth/register", data);
     return response.data;
   } catch (err) {
+    console.log("[Register] Error:", err);
+
     mapCommonApiErrors(err);
     if (isApiError(err)) {
       if (err.status === 409) throw new EmailAlreadyExistsError();
@@ -29,7 +32,6 @@ export async function registerUser(
         throw new ValidationError(err.data.fields);
       }
     }
-
     throw err;
   }
 }
@@ -50,6 +52,11 @@ export async function loginUser(
   }
 }
 
+export async function logoutUser(): Promise<ApiResponse> {
+  const response = await apiClient.post("/public/auth/logout");
+  return response.data;
+}
+
 export async function getLoggedInUser(): Promise<User> {
   try {
     const response = await apiClient.get("/auth/me");
@@ -64,10 +71,16 @@ export async function verifyUser(token: string): Promise<void> {
   await apiClient.post(`/public/auth/registration/${token}`);
 }
 
-export async function requestPasswordReset(email: string): Promise<void> {
-  await apiClient.get(`/public/auth/password_reset/${email}`);
+export async function requestPasswordReset(email: string) {
+  const response = await apiClient.post("/public/auth/password_reset", {
+    email,
+  });
+  return response.data;
 }
 
-export async function resetPassword(token: string, password: string): Promise<void> {
+export async function resetPassword(
+  token: string,
+  password: string,
+): Promise<void> {
   await apiClient.post(`/public/auth/password_reset/${token}`, { password });
 }
