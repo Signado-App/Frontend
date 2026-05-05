@@ -13,7 +13,10 @@ import {
 export function useLoginForm() {
   const router = useRouter();
   const { login } = useAuthContext();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({
+    email: "m.dobros2@seznam.cz",
+    password: "12345678",
+  });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);

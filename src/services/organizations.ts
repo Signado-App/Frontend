@@ -8,13 +8,13 @@ export type Organization = {
 };
 
 export async function getUserOrganizations() {
-  const response = await apiClient.get("/protecter/user/organization");
+  const response = await apiClient.get("/protected/user/organization");
   return response.data;
 }
 
 export async function createOrganization(data: { name: string }) {
   const response = await apiClient.post(
-    "/protecter/user/organization/new",
+    "/protected/user/organization/new",
     data,
   );
   return response.data;
