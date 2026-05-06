@@ -13,8 +13,10 @@ export type LoginCredentials = {
 };
 
 export type LoginResponse = {
-  access_csrf: string;
-  refresh_csrf: string;
+  data: {
+    access_csrf: string;
+    refresh_csrf: string;
+  };
   status: string;
   specification: string;
 };
