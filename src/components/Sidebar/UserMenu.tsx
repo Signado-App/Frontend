@@ -28,7 +28,10 @@ export default function UserMenu() {
       await logout();
       showSnackbar("Logged out successfully", "success");
     } catch {
-      showSnackbar("Logout had issues, but you're signed out locally", "warning");
+      showSnackbar(
+        "Logout had issues, but you're signed out locally",
+        "warning",
+      );
     } finally {
       router.push("/auth/login");
     }
@@ -37,7 +40,7 @@ export default function UserMenu() {
   if (!user) return null;
 
   const initials =
-    `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase();
+    `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase();
 
   return (
     <>
@@ -58,7 +61,7 @@ export default function UserMenu() {
         </Avatar>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography variant="body2" fontWeight={600} noWrap>
-            {user.firstName} {user.lastName}
+            {user.first_name} {user.last_name}
           </Typography>
           <Typography variant="caption" color="text.secondary" noWrap>
             {user.email}

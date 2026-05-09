@@ -20,21 +20,19 @@ import { usePrivileges } from "@/context/PrivilegesContext";
 import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import { getOrganizationInfo } from "@/services/organizations";
 
 const SIDEBAR_WIDTH = 280;
 
 export default function Sidebar() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [organizations, setOrganizations] = useState([
-    { id: 1, name: "SupplierPro Solutions" },
-  ]);
-  const [selectedOrg, setSelectedOrg] = useState(0);
+  const [selectedOrg, setSelectedOrg] = useState<number>(0);
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const { hasPrivilege } = usePrivileges();
   const { mode, setMode } = useUserContext();
-  const { refresh, logout } = useAuthContext();
-
+  const { refresh, logout, user, organizations, refreshOrganizations } =
+    useAuthContext();
   return (
     <Box
       component="aside"
@@ -58,7 +56,7 @@ export default function Sidebar() {
       <CompanyInfo />
 
       <Select
-        value={selectedOrg}
+        value={selectedOrg ?? 0}
         size="small"
         onChange={(e) => {
           const value = e.target.value as number;
@@ -67,12 +65,22 @@ export default function Sidebar() {
             value === 0 ? "client" : "organization",
             value === 0 ? null : value,
           );
+          if (value && value !== 0) {
+            getOrganizationInfo(value).then((response) => {
+              const privileges = response.data.privileges.map(
+                (p: any) => p.name,
+              );
+              console.log(privileges);
+            });
+          }
           router.push("/app/dashboard");
         }}
       >
-        <MenuItem value={0}>Client Account</MenuItem>
-        {organizations.map((org) => (
-          <MenuItem key={org.id} value={org.id}>
+        <MenuItem value={0}>
+          {user?.first_name ?? ""} {user?.last_name ?? ""} (Client)
+        </MenuItem>
+        {(organizations ?? []).map((org) => (
+          <MenuItem key={org.organization_id} value={org.organization_id}>
             {org.name}
           </MenuItem>
         ))}
@@ -122,13 +130,10 @@ export default function Sidebar() {
       <CreateOrganizationModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSuccess={(org) => {
+        onSuccess={() => {
           showSnackbar("Organization created successfully", "success");
-          setOrganizations((prev) => [...prev, { id: org.id, name: org.name }]);
-          setSelectedOrg(org.id);
-          setMode("organization", org.id);
           setModalOpen(false);
-          router.push("/app/dashboard");
+          refreshOrganizations();
         }}
       />
       <Button variant="text" fullWidth onClick={refresh} sx={{ mt: "auto" }}>

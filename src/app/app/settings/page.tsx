@@ -15,6 +15,7 @@ export default function SettingsPage() {
     loading: profileLoading,
     handleChange: handleProfileChange,
     handleSubmit: handleProfileSubmit,
+    email
   } = useProfileForm();
   const {
     form: passwordForm,
@@ -31,6 +32,8 @@ export default function SettingsPage() {
     handleChange: handleOrgChange,
     handleSubmit: handleOrgSubmit,
   } = useOrgForm();
+
+  
 
   const { mode } = useUserContext();
 
@@ -104,7 +107,7 @@ export default function SettingsPage() {
                 id="email"
                 name="email"
                 label="Email"
-                value="signado@signado.com"
+                value={email}
                 disabled
                 helperText="Contact support to change your email"
               />

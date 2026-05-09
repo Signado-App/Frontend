@@ -1,12 +1,27 @@
-import React from "react";
+import { useAuthContext } from "@/context/AuthContext";
+import React, { useEffect, useState } from "react";
 
 export function useProfileForm() {
+  const { user } = useAuthContext();
+
+  const [email, setEmail] = useState(user?.email ?? "");
+
   const [form, setForm] = React.useState({
-    firstName: "Martin",
-    lastName: "Novák",
-    phone: "+420 777 123 456",
+    firstName: "",
+    lastName: "",
+    phone: "",
   });
-  const [loading, setLoading] = React.useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setForm({
+        firstName: user.first_name ?? "",
+        lastName: user.last_name ?? "",
+        phone: user.phone ?? "",
+      });
+    }
+  }, [user]);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -21,5 +36,5 @@ export function useProfileForm() {
     }
   };
 
-  return { form, loading, handleChange, handleSubmit };
+  return { form, loading, handleChange, handleSubmit, email };
 }

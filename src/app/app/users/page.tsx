@@ -29,7 +29,7 @@ function UsersPage() {
       header: "User Name",
       cell: (row) => (
         <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.firstName} {row.lastName}
+          {row.first_name} {row.last_name}
         </Typography>
       ),
     },

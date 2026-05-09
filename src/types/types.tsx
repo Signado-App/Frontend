@@ -7,6 +7,14 @@ export type RegisterData = {
   password: string;
 };
 
+export type Organization = {
+  organization_id: number;
+  joined_at: string;
+  privileges: string[];
+  groups: string[];
+  name?: string;
+};
+
 export type LoginCredentials = {
   email: string;
   password: string;
@@ -91,8 +99,8 @@ export type Client = {
 export type User = {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   phone: string;
   status: "Active" | "Invited" | "Disabled";
 };
@@ -146,6 +154,8 @@ export type AuthContextValue = {
   login: (accessCsrf: string, refreshCsrf: string) => void;
   logout: () => void;
   refresh: () => Promise<void>;
+  organizations: Organization[];
+  refreshOrganizations: () => Promise<void>;
 };
 
 export type ApiErrorShape = {
