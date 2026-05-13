@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { setUnauthorizedHandler } from "@/services/apiClient";
-import { AuthContextValue, Organization, User } from "@/types/types";
+import { AuthContextValue, OrganizationListItem, User } from "@/types/types";
 import { getUser } from "@/services/user";
 import { useRouter } from "next/navigation";
 import { logoutUser } from "@/services/auth";
@@ -15,7 +15,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizations, setOrganizations] = useState<OrganizationListItem[]>([]);
 
   const refreshOrganizations = async () => {
     try {
