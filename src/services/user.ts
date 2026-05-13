@@ -24,13 +24,13 @@ export async function deleteUser() {
 }
 
 export async function changePassword(data: {
-  currentPassword: string;
+  oldPassword: string;
   newPassword: string;
 }) {
   const response = await apiClient.post(
     "/protected/user/security/change-password",
     {
-      current_password: data.currentPassword,
+      old_password: data.oldPassword,
       new_password: data.newPassword,
     },
   );

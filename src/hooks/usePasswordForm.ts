@@ -1,6 +1,9 @@
 import React from "react";
+import { changePassword } from "@/services/user";
+import { useSnackbar } from "@/context/SnackbarContext";
 
 export function usePasswordForm() {
+  const { showSnackbar } = useSnackbar();
   const [form, setForm] = React.useState({
     currentPassword: "",
     newPassword: "",
@@ -19,7 +22,17 @@ export function usePasswordForm() {
     if (!isNewPasswordValid || !passwordsMatch) return;
     try {
       setLoading(true);
-      // await changePassword(form);
+      await changePassword({
+        oldPassword: form.currentPassword,
+        newPassword: form.newPassword,
+      });
+      showSnackbar("Password changed successfully", "success");
+      setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch {
+      showSnackbar(
+        "Failed to change password. Check your current password.",
+        "error",
+      );
     } finally {
       setLoading(false);
     }

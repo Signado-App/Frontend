@@ -8,6 +8,9 @@ import { usePasswordForm } from "@/hooks/usePasswordForm";
 import FloatingContainer from "@/components/FloatingContainer/FloatingContainer";
 import { useUserContext } from "@/context/UserContext";
 import { useOrgForm } from "@/hooks/useOrgForm";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useAuthContext } from "@/context/AuthContext";
+import { deleteUser } from "@/services/user";
 
 export default function SettingsPage() {
   const {
@@ -15,7 +18,7 @@ export default function SettingsPage() {
     loading: profileLoading,
     handleChange: handleProfileChange,
     handleSubmit: handleProfileSubmit,
-    email
+    email,
   } = useProfileForm();
   const {
     form: passwordForm,
@@ -33,9 +36,9 @@ export default function SettingsPage() {
     handleSubmit: handleOrgSubmit,
   } = useOrgForm();
 
-  
-
   const { mode } = useUserContext();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const { logout } = useAuthContext();
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -242,9 +245,26 @@ export default function SettingsPage() {
                   contracts you have signed.
                 </Typography>
               </Box>
-              <Button variant="outlined" color="error">
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => setDeleteOpen(true)}
+              >
                 Delete Account
               </Button>
+
+              <ConfirmDialog
+                open={deleteOpen}
+                title="Delete Account"
+                description="Your account will be permanently deleted. Your email will remain on contracts you have signed. This action cannot be undone."
+                confirmLabel="Delete Account"
+                onConfirm={async () => {
+                  await deleteUser();
+                  logout();
+                  setDeleteOpen(false);
+                }}
+                onClose={() => setDeleteOpen(false)}
+              />
             </Box>
           </FloatingContainer>
         </Box>

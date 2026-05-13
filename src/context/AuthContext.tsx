@@ -15,7 +15,9 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const [organizations, setOrganizations] = useState<OrganizationListItem[]>([]);
+  const [organizations, setOrganizations] = useState<OrganizationListItem[]>(
+    [],
+  );
 
   const refreshOrganizations = async () => {
     try {
@@ -49,7 +51,22 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       router.push("/auth/login");
     });
 
-    refresh();
+    const publicRoutes = [
+      "/auth/login",
+      "/auth/register",
+      "/auth/forgot-password",
+      "/auth/verify",
+      "/auth/reset-password",
+    ];
+    const isPublicRoute = publicRoutes.some((route) =>
+      window.location.pathname.startsWith(route),
+    );
+
+    if (!isPublicRoute) {
+      refresh();
+    } else {
+      setLoading(false);
+    }
   }, [router]);
 
   const login = async (accessCsrf: string, refreshCsrf: string) => {
