@@ -7,12 +7,18 @@ export type RegisterData = {
   password: string;
 };
 
-export type Organization = {
+export type OrganizationListItem = {
+  organization_id: number;
+  name: string;
+  role_status: string;
+  joined_at: string;
+};
+
+export type OrganizationInfo = {
   organization_id: number;
   joined_at: string;
-  privileges: string[];
-  groups: string[];
-  name?: string;
+  privileges: { name: string }[];
+  groups: { id: number; name: string }[];
 };
 
 export type LoginCredentials = {
@@ -154,7 +160,7 @@ export type AuthContextValue = {
   login: (accessCsrf: string, refreshCsrf: string) => void;
   logout: () => void;
   refresh: () => Promise<void>;
-  organizations: Organization[];
+  organizations: OrganizationListItem[];
   refreshOrganizations: () => Promise<void>;
 };
 

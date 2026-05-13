@@ -21,6 +21,7 @@ import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import { getOrganizationInfo } from "@/services/organizations";
+import { Privilege } from "@/types/types";
 
 const SIDEBAR_WIDTH = 280;
 
@@ -29,7 +30,7 @@ export default function Sidebar() {
   const [selectedOrg, setSelectedOrg] = useState<number>(0);
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
-  const { hasPrivilege } = usePrivileges();
+  const { hasPrivilege, loadPrivileges } = usePrivileges();
   const { mode, setMode } = useUserContext();
   const { refresh, logout, user, organizations, refreshOrganizations } =
     useAuthContext();
@@ -68,10 +69,15 @@ export default function Sidebar() {
           if (value && value !== 0) {
             getOrganizationInfo(value).then((response) => {
               const privileges = response.data.privileges.map(
-                (p: any) => p.name,
+                (p: any) => p.name as Privilege,
               );
-              console.log(privileges);
+              loadPrivileges(privileges);
+              console.log("Response na org info: ", response);
+              setMode("organization", value, response.data);
             });
+          } else {
+            loadPrivileges([]);
+            setMode("client", null, null);
           }
           router.push("/app/dashboard");
         }}
