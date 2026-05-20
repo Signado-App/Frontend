@@ -1,30 +1,24 @@
-export type Organization = {
-  id: number;
-  name: string;
-  status: string;
-  created_at: string;
-};
+import { OrganizationInfo, OrganizationListItem } from "@/types/types";
+import apiClient from "./apiClient";
 
-export async function createOrganization(data: {
-  name: string;
-}): Promise<Organization> {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  return {
-    id: 2,
-    name: data.name,
-    status: "active",
-    created_at: new Date().toISOString(),
-  };
+
+
+export async function getUserOrganizations(): Promise<{ data: OrganizationListItem[] }> {
+  const response = await apiClient.get("/protected/user/organization");
+  return response.data;
 }
 
-export async function getOrganizations(): Promise<Organization[]> {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return [
-    {
-      id: 1,
-      name: "SupplierPro Solutions",
-      status: "active",
-      created_at: "2024-01-01",
-    },
-  ];
+export async function createOrganization(data: { name: string }) {
+  const response = await apiClient.post(
+    "/protected/user/organization/new",
+    data,
+  );
+  return response.data;
+}
+
+export async function getOrganizationInfo(orgId: number): Promise<{ data: OrganizationInfo }> {
+  const response = await apiClient.get(
+    `/protected/user/organization/${orgId}/info`,
+  );
+  return response.data;
 }

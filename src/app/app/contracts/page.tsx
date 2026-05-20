@@ -24,7 +24,10 @@ function ContractsPage() {
   const [data, setData] = useState<Contract[]>([]);
 
   useEffect(() => {
-    getContracts().then(setData);
+    getContracts().then((response) => {
+      console.log("[Contracts] response:", response);
+      setData(response.data);
+    });
   }, []);
   const columns: ColumnDef<Contract>[] = [
     {

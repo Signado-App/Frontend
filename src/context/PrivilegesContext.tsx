@@ -6,11 +6,13 @@ import { Privilege } from "@/types/types";
 type PrivilegesContextType = {
   privileges: Privilege[];
   hasPrivilege: (privilege: Privilege) => boolean;
+  loadPrivileges: (privileges: Privilege[]) => void;
 };
 
 const PrivilegesContext = createContext<PrivilegesContextType>({
   privileges: [],
   hasPrivilege: () => false,
+  loadPrivileges: () => {},
 });
 
 export function PrivilegesProvider({
@@ -18,18 +20,15 @@ export function PrivilegesProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // mock
-  const [privileges] = useState<Privilege[]>([
-    "view_contracts",
-    "manage_contracts",
-    "manage_groups",
-    "manage_clients",
-  ]);
+  const [privileges, setPrivileges] = useState<Privilege[]>([]);
 
   const hasPrivilege = (privilege: Privilege) => privileges.includes(privilege);
+  const loadPrivileges = (privileges: Privilege[]) => setPrivileges(privileges);
 
   return (
-    <PrivilegesContext.Provider value={{ privileges, hasPrivilege }}>
+    <PrivilegesContext.Provider
+      value={{ privileges, hasPrivilege, loadPrivileges }}
+    >
       {children}
     </PrivilegesContext.Provider>
   );

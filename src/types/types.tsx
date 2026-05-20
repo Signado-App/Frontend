@@ -1,5 +1,50 @@
 export type Mode = "client" | "organization";
 
+export type RegisterData = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+};
+
+export type OrganizationListItem = {
+  organization_id: number;
+  name: string;
+  role_status: string;
+  joined_at: string;
+};
+
+export type OrganizationInfo = {
+  organization_id: number;
+  joined_at: string;
+  privileges: { name: string }[];
+  groups: { id: number; name: string }[];
+};
+
+export type LoginCredentials = {
+  email: string;
+  password: string;
+};
+
+export type LoginResponse = {
+  data: {
+    access_csrf: string;
+    refresh_csrf: string;
+  };
+  status: string;
+  specification: string;
+};
+
+export type ApiResponse = {
+  status: string;
+  specification: string;
+};
+
+export type RegisterResponse = {
+  status: string;
+  specification: string;
+};
+
 export type PageItem = {
   href: string;
   icon: React.ReactNode;
@@ -60,8 +105,8 @@ export type Client = {
 export type User = {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   phone: string;
   status: "Active" | "Invited" | "Disabled";
 };
@@ -107,3 +152,21 @@ interface DBContract {
   organization_id: number;
   creator_member_id: number;
 }
+
+export type AuthContextValue = {
+  user: User | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  login: (accessCsrf: string, refreshCsrf: string) => void;
+  logout: () => void;
+  refresh: () => Promise<void>;
+  organizations: OrganizationListItem[];
+  refreshOrganizations: () => Promise<void>;
+};
+
+export type ApiErrorShape = {
+  type: "NETWORK_ERROR" | "UNAUTHORIZED" | "SERVER_ERROR" | "API_ERROR";
+  status: number | null;
+  message: string;
+  data: unknown;
+};
