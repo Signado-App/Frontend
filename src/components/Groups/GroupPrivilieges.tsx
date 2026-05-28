@@ -8,35 +8,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useState } from "react";
 import { GroupPrivilege, Privilege } from "@/types/types";
 
-const mockPrivileges: GroupPrivilege[] = [
-  {
-    id: "1",
-    privilegeId: "1",
-    name: "view_contracts",
-    description: "View all contracts",
-    grantedAt: "Jan 1, 2024",
-    grantedById: "1",
-    expiresAt: null,
-  },
-  {
-    id: "2",
-    privilegeId: "2",
-    name: "manage_contracts",
-    description: "Create and edit contracts",
-    grantedAt: "Jan 1, 2024",
-    grantedById: "1",
-    expiresAt: "Jan 15, 2025",
-  },
-  {
-    id: "3",
-    privilegeId: "3",
-    name: "manage_users",
-    description: "Manage organization users",
-    grantedAt: "Jan 1, 2024",
-    grantedById: "1",
-    expiresAt: null,
-  },
-];
+const mockPrivileges: GroupPrivilege[] = [];
 
 export default function GroupPrivileges({ groupId }: { groupId: string }) {
   const [privileges, setPrivileges] =

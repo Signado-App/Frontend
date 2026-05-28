@@ -19,7 +19,7 @@ import { useUserContext } from "@/context/UserContext";
 import { getOrgContracts } from "@/services/orgContracts";
 
 function ContractsPage() {
-  const [selectedContract, setSelectedContract] = useState<Contract | null>(
+  const [selectedContract, setSelectedContract] = useState<OrgContract | null>(
     null,
   );
   const [currentTab, setCurrentTab] = useState("All");

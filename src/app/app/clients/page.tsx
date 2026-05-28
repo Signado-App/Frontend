@@ -45,13 +45,13 @@ function ClientsPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors = {
+        const colors: Record<string, { bg: string; text: string }> = {
           Active: { bg: "#e0f2fe", text: "#0ea5e9" },
           Signed: { bg: "#dcfce7", text: "#22c55e" },
           Expired: { bg: "#f3f4f6", text: "#64748b" },
           Draft: { bg: "#fef9c3", text: "#eab308" },
         };
-        const style = colors[row.status];
+        const style = colors[row.status] ?? { bg: "#f3f4f6", text: "#64748b" };
 
         return (
           <Chip
@@ -70,20 +70,13 @@ function ClientsPage() {
       },
     },
     {
-      id: "contractsCount",
-      header: "Contracts Count",
+      id: "created_at",
+      header: "Created At",
       cell: (row) => (
-        <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.contractsCount}
-        </Typography>
-      ),
-    },
-    {
-      id: "totalValue",
-      header: "Total Value",
-      cell: (row) => (
-        <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.totalValue}
+        <Typography variant="body2" color="text.secondary">
+          {row.created_at
+            ? new Date(row.created_at).toLocaleDateString("cs-CZ")
+            : "-"}
         </Typography>
       ),
     },

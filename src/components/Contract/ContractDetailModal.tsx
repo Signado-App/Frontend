@@ -17,7 +17,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-import { Contract } from "@/types/types";
+import { Contract, OrgContract } from "@/types/types";
 
 const activityHistory = [
   { title: "Contract renewed", date: "Dec 20, 2024", author: "Martin Tetour" },
@@ -32,7 +32,7 @@ const activityHistory = [
 type Props = {
   open: boolean;
   onClose: () => void;
-  contract: Contract | null;
+  contract: OrgContract | null;
 };
 
 export default function ContractDetailModal({
@@ -100,7 +100,7 @@ export default function ContractDetailModal({
               Contract Information
             </Typography>
             {[
-              { label: "Contract Name:", value: contract.name },
+              { label: "Contract Name:", value: contract.title },
               { label: "Contract Number:", value: contract.id },
               { label: "Client:", value: "TechCorp Solutions" },
             ].map(({ label, value }) => (
@@ -146,7 +146,7 @@ export default function ContractDetailModal({
               { label: "Start Date:", value: "Jan 15, 2024" },
               { label: "End Date:", value: "Jan 15, 2025" },
               { label: "Contract Value:", value: "$150,000" },
-              { label: "Last Activity:", value: contract.lastActivity },
+              { label: "Last Activity:", value: contract.last_activity },
             ].map(({ label, value }) => (
               <Box key={label} sx={{ display: "flex", gap: 2, mb: 1.5 }}>
                 <Typography
