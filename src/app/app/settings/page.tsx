@@ -114,7 +114,7 @@ export default function SettingsPage() {
                       "success",
                     );
                     setMode("client", null, null);
-                    refreshOrganizations();
+                    await refreshOrganizations();
                   } catch {
                     showSnackbar("Failed to delete organization.", "error");
                   } finally {

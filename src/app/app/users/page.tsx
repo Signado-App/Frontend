@@ -13,17 +13,40 @@ import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import { getUsers } from "@/services/users";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { User } from "@/types/types";
+import { OrgMember, User } from "@/types/types";
+import { useUserContext } from "@/context/UserContext";
+import { getOrgUsers, removeOrgUser } from "@/services/orgUsers";
+import { useAuthContext } from "@/context/AuthContext";
+import { useSnackbar } from "@/context/SnackbarContext";
+import InviteUserModal from "@/components/Users/InviteUserModal";
 
 function UsersPage() {
   const [currentTab, setCurrentTab] = useState("Active");
-  const [data, setData] = useState<User[]>([]);
 
+  const { selectedOrgId } = useUserContext();
+  const { user } = useAuthContext();
+  const [data, setData] = useState<OrgMember[]>([]);
+  const { showSnackbar } = useSnackbar();
+  const [inviteOpen, setInviteOpen] = useState(false);
+
+  const handleRemove = async (memberId: number) => {
+    if (!selectedOrgId) return;
+    try {
+      await removeOrgUser(selectedOrgId, memberId);
+      setData((prev) => prev.filter((u) => u.member_id !== memberId));
+      showSnackbar("User removed successfully", "success");
+    } catch {
+      showSnackbar("Failed to remove user.", "error");
+    }
+  };
   useEffect(() => {
-    getUsers().then(setData);
-  }, []);
+    if (!selectedOrgId) return;
+    getOrgUsers(selectedOrgId).then((response) => {
+      setData(response.data);
+    });
+  }, [selectedOrgId]);
 
-  const columns: ColumnDef<User>[] = [
+  const columns: ColumnDef<OrgMember>[] = [
     {
       id: "name",
       header: "User Name",
@@ -55,12 +78,12 @@ function UsersPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors = {
-          Active: { bg: "#dcfce7", text: "#22c55e" },
-          Disabled: { bg: "#f3f4f6", text: "#64748b" },
-          Invited: { bg: "#fef9c3", text: "#eab308" },
+        const colors: Record<string, { bg: string; text: string }> = {
+          ACTIVE: { bg: "#dcfce7", text: "#22c55e" },
+          INVITED: { bg: "#fef9c3", text: "#eab308" },
+          DISABLED: { bg: "#f3f4f6", text: "#64748b" },
         };
-        const style = colors[row.status];
+        const style = colors[row.status] ?? { bg: "#f3f4f6", text: "#64748b" };
 
         return (
           <Chip
@@ -83,18 +106,17 @@ function UsersPage() {
       id: "actions",
       header: "Actions",
       align: "left",
-      cell: (row) => (
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<DeleteOutlineIcon />}
-          onClick={() => {
-            console.log("Remove user", row.id);
-          }}
-        >
-          Remove
-        </Button>
-      ),
+      cell: (row) =>
+        row.user_id === Number(user?.id) ? null : (
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteOutlineIcon />}
+            onClick={() => handleRemove(row.member_id)}
+          >
+            Remove
+          </Button>
+        ),
     },
   ];
   return (
@@ -104,7 +126,11 @@ function UsersPage() {
           title="Users"
           description="Manage clients of your organization."
         />
-        <Button variant="contained" color="primary" startIcon={<AddIcon />}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setInviteOpen(true)}
+        >
           Invite User
         </Button>
       </Box>
@@ -123,8 +149,23 @@ function UsersPage() {
         </Box>
       </Box>
       <Box>
-        <AppTable<User> data={data} columns={columns} />
+        <AppTable<OrgMember>
+          data={data}
+          columns={columns}
+          getRowId={(row) => row.member_id}
+        />
       </Box>
+      <InviteUserModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        onSuccess={() => {
+          if (selectedOrgId) {
+            getOrgUsers(selectedOrgId).then((response) =>
+              setData(response.data),
+            );
+          }
+        }}
+      />
     </Box>
   );
 }

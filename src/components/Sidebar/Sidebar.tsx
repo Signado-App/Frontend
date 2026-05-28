@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -35,6 +35,11 @@ export default function Sidebar() {
   const { mode, setMode } = useUserContext();
   const { refresh, logout, user, organizations, refreshOrganizations } =
     useAuthContext();
+  const validSelectedOrg = organizations.some(
+    (o) => o.organization_id === selectedOrg,
+  )
+    ? selectedOrg
+    : 0;
   return (
     <Box
       component="aside"
@@ -58,7 +63,7 @@ export default function Sidebar() {
       <CompanyInfo />
 
       <Select
-        value={selectedOrg ?? 0}
+        value={validSelectedOrg ?? 0}
         size="small"
         onChange={(e) => {
           const value = e.target.value as number;
@@ -86,11 +91,13 @@ export default function Sidebar() {
         <MenuItem value={0}>
           {user?.first_name ?? ""} {user?.last_name ?? ""} (Client)
         </MenuItem>
-        {(organizations ?? []).map((org) => (
-          <MenuItem key={org.organization_id} value={org.organization_id}>
-            {org.name}
-          </MenuItem>
-        ))}
+        {(organizations ?? [])
+          .filter((org) => org.role_status !== "INVITED")
+          .map((org) => (
+            <MenuItem key={org.organization_id} value={org.organization_id}>
+              {org.name}
+            </MenuItem>
+          ))}
       </Select>
 
       <Button
