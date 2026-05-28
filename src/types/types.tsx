@@ -180,3 +180,12 @@ export type OrgMember = {
   status: string;
   joined_at: string | null;
 };
+
+export type OrgClient = {
+  id: number;
+  user_id: number;
+  client_name: string;
+  status: string;
+  created_at: string | null;
+  client_metadata: Record<string, unknown> | null;
+};

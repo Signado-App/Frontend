@@ -13,25 +13,31 @@ import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { useRouter } from "next/navigation";
-import { Client } from "@/types/types";
+import { Client, OrgClient } from "@/types/types";
 import { getClients } from "@/services/clients";
+import { useUserContext } from "@/context/UserContext";
+import { getOrgClients } from "@/services/orgClients";
 
 function ClientsPage() {
   const [currentTab, setCurrentTab] = useState("Active");
   const router = useRouter();
-  const [data, setData] = useState<Client[]>([]);
+  const { selectedOrgId } = useUserContext();
+  const [data, setData] = useState<OrgClient[]>([]);
 
   useEffect(() => {
-    getClients().then(setData);
-  }, []);
+    if (!selectedOrgId) return;
+    getOrgClients(selectedOrgId).then((response) => {
+      setData(response.data);
+    });
+  }, [selectedOrgId]);
 
-  const columns: ColumnDef<Client>[] = [
+  const columns: ColumnDef<OrgClient>[] = [
     {
-      id: "name",
+      id: "client_name",
       header: "Client Name",
       cell: (row) => (
         <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.name}
+          {row.client_name}
         </Typography>
       ),
     },
@@ -130,7 +136,11 @@ function ClientsPage() {
         </Box>
       </Box>
       <Box>
-        <AppTable<Client> data={data} columns={columns} />
+        <AppTable<OrgClient>
+          data={data}
+          columns={columns}
+          getRowId={(row) => row.id}
+        />
       </Box>
     </Box>
   );
