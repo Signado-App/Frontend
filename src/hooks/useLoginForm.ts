@@ -14,8 +14,8 @@ export function useLoginForm() {
   const router = useRouter();
   const { login } = useAuthContext();
   const [form, setForm] = useState({
-    email: "m.dobros2@seznam.cz",
-    password: "12345678",
+    email: "test@test.com",
+    password: "123123123",
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

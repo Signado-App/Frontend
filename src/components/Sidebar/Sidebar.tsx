@@ -22,6 +22,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import { getOrganizationInfo } from "@/services/organizations";
 import { Privilege } from "@/types/types";
+import { Privileges } from "@/constants/privileges";
 
 const SIDEBAR_WIDTH = 280;
 
@@ -69,10 +70,10 @@ export default function Sidebar() {
           if (value && value !== 0) {
             getOrganizationInfo(value).then((response) => {
               const privileges = response.data.privileges.map(
-                (p: any) => p.name as Privilege,
+                (p: any) => parseInt(p.id) as Privilege,
               );
               loadPrivileges(privileges);
-              console.log("Response na org info: ", response);
+              console.log("Privileges: ", privileges);
               setMode("organization", value, response.data);
             });
           } else {
@@ -105,13 +106,11 @@ export default function Sidebar() {
       </Button>
 
       <Divider />
-      {hasPrivilege("manage_contracts") && (
+      {hasPrivilege(Privileges.CREATE_CONTRACTS) && (
         <Button
           variant="contained"
           fullWidth
-          sx={{
-            py: 1.5,
-          }}
+          sx={{ py: 1.5 }}
           startIcon={<AddIcon />}
           onClick={() => router.push("/app/contracts/new")}
         >

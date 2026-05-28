@@ -6,12 +6,10 @@ import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import React from "react";
 import PagesListItem from "./PagesListItem";
-import LocalAtmIcon from "@mui/icons-material/LocalAtm";
-import BarChartIcon from "@mui/icons-material/BarChart";
-import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { Mode, PageItem, Privilege } from "@/types/types";
 import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
 
 const pages: PageItem[] = [
   {
@@ -27,6 +25,7 @@ const pages: PageItem[] = [
     primary: "Clients",
     secondary: "Client management",
     modes: ["organization"],
+    privilege: Privileges.SEE_ALL_CLIENTS,
   },
   {
     href: "/app/users",
@@ -34,6 +33,7 @@ const pages: PageItem[] = [
     primary: "Users",
     secondary: "Organization users",
     modes: ["organization"],
+    privilege: Privileges.USERS_ACCESSIBLE,
   },
   {
     href: "/app/groups",
@@ -41,6 +41,7 @@ const pages: PageItem[] = [
     primary: "Groups",
     secondary: "Groups within organization",
     modes: ["organization"],
+    privilege: Privileges.GROUPS_ACCESSIBLE,
   },
   {
     href: "/app/contracts",
@@ -49,33 +50,20 @@ const pages: PageItem[] = [
     secondary: "Contracts & agreements",
     modes: ["client", "organization"],
   },
-  // {
-  //   href: "/app/invoices",
-  //   icon: <LocalAtmIcon fontSize="small" />,
-  //   primary: "Invoices",
-  //   secondary: "Payments & billing",
-  //   views: ["second"],
-  // },
-  // {
-  //   href: "/app/reports",
-  //   icon: <BarChartIcon fontSize="small" />,
-  //   primary: "Reports",
-  //   secondary: "Analytics & trends",
-  //   views: ["second"],
-  // },
-    // {
-    //   href: "/app/notifications",
-    //   icon: <NotificationsNoneIcon fontSize="small" />,
-    //   primary: "Notifications",
-    //   secondary: "Alerts & messages",
-    //   modes: ["client", "organization"],
-    // },
   {
     href: "/app/settings",
     icon: <SettingsIcon fontSize="small" />,
     primary: "Settings",
-    secondary: "Account & company",
-    modes: ["client", "organization"],
+    secondary: "Account settings",
+    modes: ["client"],
+  },
+  {
+    href: "/app/settings",
+    icon: <SettingsIcon fontSize="small" />,
+    primary: "Settings",
+    secondary: "Organization & account",
+    modes: ["organization"],
+    privilege: Privileges.ADMIN_UPDATE,
   },
 ];
 

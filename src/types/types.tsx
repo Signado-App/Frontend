@@ -1,3 +1,5 @@
+import { Privileges } from "@/constants/privileges";
+
 export type Mode = "client" | "organization";
 
 export type RegisterData = {
@@ -16,9 +18,11 @@ export type OrganizationListItem = {
 
 export type OrganizationInfo = {
   organization_id: number;
+  organization_name: string;
   joined_at: string;
-  privileges: { name: string }[];
-  groups: { id: number; name: string }[];
+  privileges: { id: string; name: string; description: string }[];
+  groups: any[];
+  status: string;
 };
 
 export type LoginCredentials = {
@@ -78,12 +82,7 @@ export type Invoice = {
   status: "Paid" | "Pending" | "Overdue";
 };
 
-export type Privilege =
-  | "view_contracts"
-  | "manage_users"
-  | "manage_groups"
-  | "manage_clients"
-  | "manage_contracts";
+export type Privilege = (typeof Privileges)[keyof typeof Privileges];
 
 export type GroupPrivilege = {
   id: string;
