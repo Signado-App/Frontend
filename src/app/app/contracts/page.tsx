@@ -12,30 +12,39 @@ import Headline from "@/components/Headline";
 import Searchbar from "@/components/Searchbar/Searchbar";
 import StatusTabs from "@/components/StatusTabs";
 import { useEffect, useState } from "react";
-import { Contract } from "@/types/types";
+import { Contract, OrgContract } from "@/types/types";
 import ContractDetailModal from "@/components/Contract/ContractDetailModal";
 import { getContracts } from "@/services/contracts";
+import { useUserContext } from "@/context/UserContext";
+import { getOrgContracts } from "@/services/orgContracts";
 
 function ContractsPage() {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(
     null,
   );
   const [currentTab, setCurrentTab] = useState("All");
-  const [data, setData] = useState<Contract[]>([]);
+  const { selectedOrgId } = useUserContext();
+  const [data, setData] = useState<OrgContract[]>([]);
 
   useEffect(() => {
-    getContracts().then((response) => {
-      console.log("[Contracts] response:", response);
-      setData(response.data);
-    });
-  }, []);
-  const columns: ColumnDef<Contract>[] = [
+    if (selectedOrgId) {
+      getOrgContracts(selectedOrgId).then((response) => {
+        setData(response.data);
+      });
+    } else {
+      getContracts().then((response) => {
+        setData(response.data);
+      });
+    }
+  }, [selectedOrgId]);
+
+  const columns: ColumnDef<OrgContract>[] = [
     {
-      id: "name",
+      id: "title",
       header: "Contract Name",
       cell: (row) => (
         <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.name}
+          {row.title}
         </Typography>
       ),
     },
@@ -43,14 +52,16 @@ function ContractsPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors = {
-          Active: { bg: "#e0f2fe", text: "#0ea5e9" },
-          Signed: { bg: "#dcfce7", text: "#22c55e" },
-          Expired: { bg: "#f3f4f6", text: "#64748b" },
-          Draft: { bg: "#fef9c3", text: "#eab308" },
+        const colors: Record<string, { bg: string; text: string }> = {
+          active: { bg: "#e0f2fe", text: "#0ea5e9" },
+          signed: { bg: "#dcfce7", text: "#22c55e" },
+          expired: { bg: "#f3f4f6", text: "#64748b" },
+          draft: { bg: "#fef9c3", text: "#eab308" },
         };
-        const style = colors[row.status];
-
+        const style = colors[row.status.toLowerCase()] ?? {
+          bg: "#f3f4f6",
+          text: "#64748b",
+        };
         return (
           <Chip
             label={row.status}
@@ -68,8 +79,15 @@ function ContractsPage() {
       },
     },
     {
-      id: "lastActivity",
+      id: "last_activity",
       header: "Last Activity",
+      cell: (row) => (
+        <Typography variant="body2" color="text.secondary">
+          {row.last_activity
+            ? new Date(row.last_activity).toLocaleDateString("cs-CZ")
+            : "-"}
+        </Typography>
+      ),
     },
     {
       id: "actions",
@@ -108,7 +126,7 @@ function ContractsPage() {
         sx={{ width: 320 }}
       />
       <Box>
-        <AppTable<Contract> data={data} columns={columns} />
+        <AppTable<OrgContract> data={data} columns={columns} />
       </Box>
       <ContractDetailModal
         open={!!selectedContract}

@@ -203,3 +203,13 @@ export type OrgClientDetail = {
     last_name: string | null;
   };
 };
+
+export type OrgContract = {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string | null;
+  expires_at: string | null;
+  description: string | null;
+  last_activity: string | null;
+};

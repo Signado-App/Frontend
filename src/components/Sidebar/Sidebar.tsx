@@ -40,6 +40,23 @@ export default function Sidebar() {
   )
     ? selectedOrg
     : 0;
+
+  useEffect(() => {
+    const stored = localStorage.getItem("selectedOrgId");
+    if (stored) setSelectedOrg(Number(stored));
+  }, []);
+
+  useEffect(() => {
+    if (selectedOrg && selectedOrg !== 0 && organizations.length > 0) {
+      getOrganizationInfo(selectedOrg).then((response) => {
+        const privileges = response.data.privileges.map(
+          (p: any) => parseInt(p.id) as Privilege,
+        );
+        loadPrivileges(privileges);
+        setMode("organization", selectedOrg, response.data);
+      });
+    }
+  }, [organizations, selectedOrg]);
   return (
     <Box
       component="aside"
