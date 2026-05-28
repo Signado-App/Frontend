@@ -189,3 +189,17 @@ export type OrgClient = {
   created_at: string | null;
   client_metadata: Record<string, unknown> | null;
 };
+
+export type OrgClientDetail = {
+  id: number;
+  user_id: number;
+  client_name: string;
+  status: string;
+  client_metadata: Record<string, unknown> | null;
+  created_at: string | null;
+  user_details: {
+    email: string | null;
+    first_name: string | null;
+    last_name: string | null;
+  };
+};
