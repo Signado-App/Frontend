@@ -31,6 +31,11 @@ export default function NewContractPage() {
     setFiles,
     handleFileChange,
     removeFile,
+    addParty,
+    removeParty,
+    parties,
+    partyEmail,
+    setPartyEmail,
   } = useCreateContractForm();
 
   return (
@@ -124,7 +129,43 @@ export default function NewContractPage() {
               </List>
             )}
           </Box>
-
+          <Box>
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+              Signing Parties
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+              <TextField
+                id="partyEmail"
+                label="Email"
+                value={partyEmail}
+                size="small"
+                onChange={(e) => setPartyEmail(e.target.value)}
+                sx={{ flex: 1 }}
+              />
+              <Button variant="outlined" onClick={addParty}>
+                Add
+              </Button>
+            </Box>
+            {parties.length > 0 && (
+              <List dense>
+                {parties.map((party, index) => (
+                  <ListItem
+                    key={index}
+                    secondaryAction={
+                      <IconButton onClick={() => removeParty(index)}>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText
+                      primary={party.email}
+                      secondary={party.role}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
           <Button
             variant="contained"
             sx={{ alignSelf: "flex-start" }}

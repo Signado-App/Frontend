@@ -1,7 +1,10 @@
 // src/hooks/useCreateContractForm.ts
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/context/SnackbarContext";
+import { useUserContext } from "@/context/UserContext";
+import { OrgClient } from "@/types/types";
+import { getOrgClients } from "@/services/orgClients";
 
 export function useCreateContractForm() {
   const router = useRouter();
@@ -14,6 +17,26 @@ export function useCreateContractForm() {
   const [loading, setLoading] = React.useState(false);
   const { showSnackbar } = useSnackbar();
   const [files, setFiles] = useState<File[]>([]);
+  const [parties, setParties] = useState<{ email: string; role: string }[]>([]);
+  const [partyEmail, setPartyEmail] = useState("");
+  const { selectedOrgId } = useUserContext();
+  const [orgClients, setOrgClients] = useState<OrgClient[]>([]);
+
+  useEffect(() => {
+    if (!selectedOrgId) return;
+    getOrgClients(selectedOrgId).then((response) => {
+      setOrgClients(response.data);
+    });
+  }, [selectedOrgId]);
+  const addParty = () => {
+    if (!partyEmail) return;
+    setParties((prev) => [...prev, { email: partyEmail, role: "SIGNER" }]);
+    setPartyEmail("");
+  };
+
+  const removeParty = (index: number) => {
+    setParties((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -62,6 +85,12 @@ export function useCreateContractForm() {
     files,
     setFiles,
     handleFileChange,
-    removeFile
+    removeFile,
+    addParty,
+    removeParty,
+    parties,
+    partyEmail,
+    setPartyEmail,
+    orgClients,
   };
 }
