@@ -13,3 +13,18 @@ export async function getOrgClient(orgId: number, clientId: number) {
   );
   return response.data;
 }
+
+export async function addOrgClient(
+  orgId: number,
+  data: {
+    client_name: string;
+    email: string;
+    client_metadata?: Record<string, unknown>;
+  },
+) {
+  const response = await apiClient.post(
+    `/protected/organization/${orgId}/clients/add`,
+    data,
+  );
+  return response.data;
+}

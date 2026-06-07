@@ -7,6 +7,8 @@ import {
   List,
   ListItem,
   ListItemText,
+  MenuItem,
+  Select,
   TextField,
   Typography,
 } from "@mui/material";
@@ -34,6 +36,8 @@ export default function NewContractPage() {
     addParty,
     removeParty,
     parties,
+    setParties,
+    orgClients,
     partyEmail,
     setPartyEmail,
   } = useCreateContractForm();
@@ -134,17 +138,36 @@ export default function NewContractPage() {
               Signing Parties
             </Typography>
             <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
-              <TextField
-                id="partyEmail"
-                label="Email"
-                value={partyEmail}
+              <Select
+                value=""
+                displayEmpty
                 size="small"
-                onChange={(e) => setPartyEmail(e.target.value)}
                 sx={{ flex: 1 }}
-              />
-              <Button variant="outlined" onClick={addParty}>
-                Add
-              </Button>
+                onChange={(e) => {
+                  const client = (orgClients ?? []).find(
+                    (c) => c.user_id === Number(e.target.value),
+                  );
+                  if (client) {
+                    setParties((prev) => [
+                      ...prev,
+                      {
+                        user_id: client.user_id,
+                        email: client.client_name,
+                        role: "SIGNER",
+                      },
+                    ]);
+                  }
+                }}
+              >
+                <MenuItem value="" disabled>
+                  Select client
+                </MenuItem>
+                {(orgClients ?? []).map((client) => (
+                  <MenuItem key={client.id} value={client.user_id}>
+                    {client.client_name}
+                  </MenuItem>
+                ))}
+              </Select>
             </Box>
             {parties.length > 0 && (
               <List dense>
@@ -165,6 +188,18 @@ export default function NewContractPage() {
                 ))}
               </List>
             )}
+          </Box>
+          <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+            <TextField
+              label="Or enter email manually"
+              value={partyEmail}
+              size="small"
+              onChange={(e) => setPartyEmail(e.target.value)}
+              sx={{ flex: 1 }}
+            />
+            <Button variant="outlined" onClick={addParty}>
+              Add
+            </Button>
           </Box>
           <Button
             variant="contained"

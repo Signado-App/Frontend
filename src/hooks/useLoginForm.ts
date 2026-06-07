@@ -14,7 +14,7 @@ export function useLoginForm() {
   const router = useRouter();
   const { login } = useAuthContext();
   const [form, setForm] = useState({
-    email: "test@test.com",
+    email: "test@signado.cz",
     password: "123123123",
   });
   const [error, setError] = useState<string | null>(null);

@@ -17,17 +17,19 @@ import { Client, OrgClient } from "@/types/types";
 import { getClients } from "@/services/clients";
 import { useUserContext } from "@/context/UserContext";
 import { getOrgClients } from "@/services/orgClients";
+import AddClientModal from "@/components/Organization/AddClientModal";
 
 function ClientsPage() {
   const [currentTab, setCurrentTab] = useState("Active");
   const router = useRouter();
   const { selectedOrgId } = useUserContext();
   const [data, setData] = useState<OrgClient[]>([]);
+  const [addClientOpen, setAddClientOpen] = useState(false);
 
   useEffect(() => {
     if (!selectedOrgId) return;
     getOrgClients(selectedOrgId).then((response) => {
-      setData(response.data);
+      setData(response.clients);
     });
   }, [selectedOrgId]);
 
@@ -110,7 +112,11 @@ function ClientsPage() {
           title="Clients"
           description="Manage your client relationships"
         />
-        <Button variant="contained" color="primary" startIcon={<AddIcon />}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setAddClientOpen(true)}
+        >
           Add New Client
         </Button>
       </Box>
@@ -135,6 +141,14 @@ function ClientsPage() {
           getRowId={(row) => row.id}
         />
       </Box>
+      <AddClientModal
+        open={addClientOpen}
+        onClose={() => setAddClientOpen(false)}
+        onSuccess={() => {
+          if (selectedOrgId)
+            getOrgClients(selectedOrgId).then((r) => setData(r.clients));
+        }}
+      />
     </Box>
   );
 }

@@ -5,12 +5,15 @@ import Headline from "@/components/Headline";
 import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
 import FloatingContainer from "@/components/FloatingContainer/FloatingContainer";
+import { useSnackbar } from "@/context/SnackbarContext";
+import { joinOrganization } from "@/services/organizations";
 
 function DashboardPage() {
-  const { organizations } = useAuthContext();
+  const { organizations, refreshOrganizations } = useAuthContext();
   const pendingInvites = organizations.filter(
     (o) => o.role_status === "INVITED",
   );
+  const { showSnackbar } = useSnackbar();
 
   return (
     <Box>
@@ -41,7 +44,23 @@ function DashboardPage() {
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", gap: 1 }}>
-                  <Button variant="contained" size="small" disabled>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={async () => {
+                      try {
+                        console.log("Joining organization with id: ", org);
+                        await joinOrganization(org.organization_id);
+                        showSnackbar(
+                          "Joined organization successfully",
+                          "success",
+                        );
+                        await refreshOrganizations();
+                      } catch {
+                        showSnackbar("Failed to join organization.", "error");
+                      }
+                    }}
+                  >
                     Accept
                   </Button>
                   <Button

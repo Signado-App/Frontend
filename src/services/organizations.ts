@@ -54,3 +54,10 @@ export async function deleteOrganization(orgId: number) {
   );
   return response.data;
 }
+
+export async function joinOrganization(orgId: number) {
+  const response = await apiClient.put(
+    `/protected/user/organization/${orgId}/join`,
+  );
+  return response.data;
+}
