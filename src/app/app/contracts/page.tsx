@@ -25,6 +25,10 @@ function ContractsPage() {
   const [currentTab, setCurrentTab] = useState("All");
   const { selectedOrgId } = useUserContext();
   const [data, setData] = useState<OrgContract[]>([]);
+  const filteredData =
+    currentTab === "All"
+      ? data
+      : data.filter((c) => c.status.toLowerCase() === currentTab.toLowerCase());
 
   useEffect(() => {
     if (selectedOrgId) {
@@ -126,7 +130,7 @@ function ContractsPage() {
         sx={{ width: 320 }}
       />
       <Box>
-        <AppTable<OrgContract> data={data} columns={columns} />
+        <AppTable<OrgContract> data={filteredData} columns={columns} />
       </Box>
       <ContractDetailModal
         open={!!selectedContract}

@@ -19,7 +19,7 @@ import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import { Contract, OrgContract } from "@/types/types";
 
-const activityHistory = [];
+const activityHistory: { title: string; date: string; author: string }[] = [];
 
 type Props = {
   open: boolean;
@@ -205,10 +205,9 @@ export default function ContractDetailModal({
               <DescriptionOutlinedIcon
                 sx={{ color: "#64748b", fontSize: 20 }}
               />
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body2">{file.split(" • ")[0]}</Typography>
+              <Box sx={{ border: "1px solid #e5e7eb", borderRadius: 2, p: 2 }}>
                 <Typography variant="body2" color="text.secondary">
-                  {file.split(" • ").slice(1).join(" • ")}
+                  No files attached
                 </Typography>
               </Box>
               <IconButton size="small">
