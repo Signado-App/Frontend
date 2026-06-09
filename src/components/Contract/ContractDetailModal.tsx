@@ -19,15 +19,7 @@ import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import { Contract, OrgContract } from "@/types/types";
 
-const activityHistory = [
-  { title: "Contract renewed", date: "Dec 20, 2024", author: "Martin Tetour" },
-  {
-    title: "Contract signed",
-    date: "Jan 15, 2024",
-    author: "TechCorp Solutions",
-  },
-  { title: "Contract created", date: "Jan 10, 2024", author: "Martin Tetour" },
-];
+const activityHistory = [];
 
 type Props = {
   open: boolean;
@@ -41,6 +33,16 @@ export default function ContractDetailModal({
   contract,
 }: Props) {
   if (!contract) return null;
+  const colors: Record<string, { bg: string; text: string }> = {
+    active: { bg: "#e0f2fe", text: "#0ea5e9" },
+    signed: { bg: "#dcfce7", text: "#22c55e" },
+    expired: { bg: "#f3f4f6", text: "#64748b" },
+    draft: { bg: "#fef9c3", text: "#eab308" },
+  };
+  const style = colors[contract.status.toLowerCase()] ?? {
+    bg: "#f3f4f6",
+    text: "#64748b",
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -102,7 +104,7 @@ export default function ContractDetailModal({
             {[
               { label: "Contract Name:", value: contract.title },
               { label: "Contract Number:", value: contract.id },
-              { label: "Client:", value: "TechCorp Solutions" },
+              { label: "Description:", value: contract.description ?? "-" },
             ].map(({ label, value }) => (
               <Box key={label} sx={{ display: "flex", gap: 2, mb: 1.5 }}>
                 <Typography
@@ -129,8 +131,8 @@ export default function ContractDetailModal({
                 label={contract.status}
                 size="small"
                 sx={{
-                  bgcolor: "#e0f2fe",
-                  color: "#0ea5e9",
+                  bgcolor: style.bg,
+                  color: style.text,
                   fontWeight: 600,
                   borderRadius: "20px",
                 }}
@@ -143,10 +145,24 @@ export default function ContractDetailModal({
               Dates & Value
             </Typography>
             {[
-              { label: "Start Date:", value: "Jan 15, 2024" },
-              { label: "End Date:", value: "Jan 15, 2025" },
-              { label: "Contract Value:", value: "$150,000" },
-              { label: "Last Activity:", value: contract.last_activity },
+              {
+                label: "Created:",
+                value: contract.created_at
+                  ? new Date(contract.created_at).toLocaleString("cs-CZ")
+                  : "-",
+              },
+              {
+                label: "Expires:",
+                value: contract.expires_at
+                  ? new Date(contract.expires_at).toLocaleString("cs-CZ")
+                  : "-",
+              },
+              {
+                label: "Last Activity:",
+                value: contract.last_activity
+                  ? new Date(contract.last_activity).toLocaleString("cs-CZ")
+                  : "-",
+              },
             ].map(({ label, value }) => (
               <Box key={label} sx={{ display: "flex", gap: 2, mb: 1.5 }}>
                 <Typography
@@ -174,10 +190,7 @@ export default function ContractDetailModal({
             overflow: "hidden",
           }}
         >
-          {[
-            "main-contract.pdf • PDF • 2.4 MB",
-            "scope-document.pdf • PDF • 1.1 MB",
-          ].map((file, i) => (
+          {[].map((file, i) => (
             <Box
               key={i}
               sx={{

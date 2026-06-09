@@ -29,11 +29,11 @@ function ContractsPage() {
   useEffect(() => {
     if (selectedOrgId) {
       getOrgContracts(selectedOrgId).then((response) => {
-        setData(response.data);
+        setData(response.contracts);
       });
     } else {
       getContracts().then((response) => {
-        setData(response.data);
+        setData(response.contracts);
       });
     }
   }, [selectedOrgId]);
@@ -84,7 +84,7 @@ function ContractsPage() {
       cell: (row) => (
         <Typography variant="body2" color="text.secondary">
           {row.last_activity
-            ? new Date(row.last_activity).toLocaleDateString("cs-CZ")
+            ? new Date(row.last_activity).toLocaleString("cs-CZ")
             : "-"}
         </Typography>
       ),
