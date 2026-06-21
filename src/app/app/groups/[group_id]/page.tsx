@@ -25,6 +25,13 @@ export default function GroupPage({
     });
   }, [selectedOrgId, group_id]);
 
+  const handleAddMember = () => {
+    // TODO: otevřít modal pro přidání člena
+  };
+
+  const handleRemoveMember = async (userId: number) => {
+    // TODO: zavolat API pro odebrání člena ze skupiny
+  };
   if (!group) return null;
 
   return (
@@ -32,7 +39,12 @@ export default function GroupPage({
       <BackButton href="/app/groups" label="Back to Groups" />
       <Box sx={{ display: "flex", flexDirection: "column", gap: 4, mt: 4 }}>
         <Headline title={group.name} description={group.description} />
-        <GroupMembers groupId={group_id} members={group.members} />
+        <GroupMembers
+          groupId={group_id}
+          members={group.members}
+          onAdd={handleAddMember}
+          onRemove={handleRemoveMember}
+        />
         <GroupPrivileges groupId={group_id} privileges={group.privileges} />
       </Box>
     </Box>

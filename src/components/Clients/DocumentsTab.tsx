@@ -26,22 +26,22 @@ export default function DocumentsTab() {
         }}
       >
         <StatCard
-          name="Total Files"
+          label="Total Files"
           value="4"
           icon={<FolderOpenOutlinedIcon sx={{ color: "#60a5fa" }} />}
         />
         <StatCard
-          name="Contracts"
+          label="Contracts"
           value="2"
           icon={<DescriptionOutlinedIcon sx={{ color: "#4ade80" }} />}
         />
         <StatCard
-          name="Technical"
+          label="Technical"
           value="1"
           icon={<DescriptionOutlinedIcon sx={{ color: "#a855f7" }} />}
         />
         <StatCard
-          name="Financial"
+          label="Financial"
           value="$80.5K"
           icon={<ReceiptOutlinedIcon sx={{ color: "#f97316" }} />}
         />

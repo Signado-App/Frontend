@@ -158,22 +158,22 @@ export default function InvoicesTab() {
         }}
       >
         <StatCard
-          name="Total Invoices"
+          label="Total Invoices"
           value="4"
           icon={<ReceiptOutlinedIcon sx={{ color: "#3b82f6" }} />}
         />
         <StatCard
-          name="Total Amount"
+          label="Total Amount"
           value="$28.7K"
           icon={<AttachMoneyOutlinedIcon sx={{ color: "#22c55e" }} />}
         />
         <StatCard
-          name="Paid"
+          label="Paid"
           value="$23K"
           icon={<AttachMoneyOutlinedIcon sx={{ color: "#22c55e" }} />}
         />
         <StatCard
-          name="Outstanding"
+          label="Outstanding"
           value="$5.7K"
           icon={<WarningAmberOutlinedIcon sx={{ color: "#ef4444" }} />}
         />

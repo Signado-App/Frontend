@@ -1,20 +1,24 @@
 "use client";
 
-import { Box, Button, Typography, Chip } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import AppTable, { ColumnDef } from "@/components/Table/AppTable";
 import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { useState } from "react";
-import { GroupPrivilege, Privilege } from "@/types/types";
 
-const mockPrivileges: GroupPrivilege[] = [];
+type GroupPrivilegeItem = {
+  id: number;
+  name: string;
+  description?: string;
+};
 
-export default function GroupPrivileges({ groupId }: { groupId: string }) {
-  const [privileges, setPrivileges] =
-    useState<GroupPrivilege[]>(mockPrivileges);
+type Props = {
+  groupId: string;
+  privileges: GroupPrivilegeItem[];
+};
 
-  const columns: ColumnDef<GroupPrivilege>[] = [
+export default function GroupPrivileges({ groupId, privileges }: Props) {
+  const columns: ColumnDef<GroupPrivilegeItem>[] = [
     {
       id: "name",
       header: "Privilege",
@@ -25,11 +29,11 @@ export default function GroupPrivileges({ groupId }: { groupId: string }) {
       ),
     },
     {
-      id: "expiresAt",
-      header: "Expires At",
+      id: "description",
+      header: "Description",
       cell: (row) => (
         <Typography variant="body2" color="text.secondary">
-          {row.expiresAt ?? "Never"}
+          {row.description ?? "-"}
         </Typography>
       ),
     },
@@ -41,9 +45,9 @@ export default function GroupPrivileges({ groupId }: { groupId: string }) {
           variant="outlined"
           color="error"
           startIcon={<DeleteOutlineIcon />}
-          onClick={() =>
-            setPrivileges((prev) => prev.filter((p) => p.id !== row.id))
-          }
+          onClick={() => {
+            /* TODO: revoke */
+          }}
         >
           Revoke
         </Button>
@@ -58,7 +62,11 @@ export default function GroupPrivileges({ groupId }: { groupId: string }) {
           Add Privilege
         </Button>
       </Headline>
-      <AppTable<GroupPrivilege> data={privileges} columns={columns} />
+      <AppTable<GroupPrivilegeItem>
+        data={privileges ?? []}
+        columns={columns}
+        getRowId={(row) => row.id}
+      />
     </Box>
   );
 }
