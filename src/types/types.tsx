@@ -1,3 +1,5 @@
+import { Privileges } from "@/constants/privileges";
+
 export type Mode = "client" | "organization";
 
 export type RegisterData = {
@@ -16,9 +18,11 @@ export type OrganizationListItem = {
 
 export type OrganizationInfo = {
   organization_id: number;
+  organization_name: string;
   joined_at: string;
-  privileges: { name: string }[];
-  groups: { id: number; name: string }[];
+  privileges: { id: string; name: string; description: string }[];
+  groups: any[];
+  status: string;
 };
 
 export type LoginCredentials = {
@@ -78,12 +82,7 @@ export type Invoice = {
   status: "Paid" | "Pending" | "Overdue";
 };
 
-export type Privilege =
-  | "view_contracts"
-  | "manage_users"
-  | "manage_groups"
-  | "manage_clients"
-  | "manage_contracts";
+export type Privilege = (typeof Privileges)[keyof typeof Privileges];
 
 export type GroupPrivilege = {
   id: string;
@@ -169,4 +168,91 @@ export type ApiErrorShape = {
   status: number | null;
   message: string;
   data: unknown;
+};
+
+export type OrgMember = {
+  member_id: number;
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  status: string;
+  joined_at: string | null;
+};
+
+export type OrgClient = {
+  id: number;
+  user_id: number;
+  client_name: string;
+  status: string;
+  created_at: string | null;
+  client_metadata: Record<string, unknown> | null;
+};
+
+export type OrgClientDetail = {
+  id: number;
+  user_id: number;
+  client_name: string;
+  status: string;
+  client_metadata: Record<string, unknown> | null;
+  created_at: string | null;
+  user_details: {
+    email: string | null;
+    first_name: string | null;
+    last_name: string | null;
+  };
+};
+
+export type OrgContract = {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string | null;
+  expires_at: string | null;
+  description: string | null;
+  last_activity: string | null;
+};
+
+// types.ts
+export type OrgContractDetail = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  min_verification: string;
+  sign_by: string | null;
+  copy_recipients: string[];
+  category: string[];
+  reminders: any;
+  use_order_send: boolean;
+  group_id: number | null;
+  created_at: string | null;
+  expires_at: string | null;
+  last_activity: string | null;
+  parties: {
+    user_id: number;
+    email: string | null;
+    role: string;
+    status: string;
+  }[];
+  files: {
+    file_id: string;
+    name: string;
+    file_type: string;
+    size_bytes: number;
+    download_url: string;
+  }[];
+  events: {
+    event_type: string;
+    event_metadata: any;
+    timestamp: string | null;
+  }[];
+};
+
+export type OrgGroup = {
+  id: number;
+  name: string;
+  member_count: number;
+  privileges: { id: number; name: string; description: string }[];
 };

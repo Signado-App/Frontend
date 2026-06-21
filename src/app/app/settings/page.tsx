@@ -11,6 +11,8 @@ import { useOrgForm } from "@/hooks/useOrgForm";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useAuthContext } from "@/context/AuthContext";
 import { deleteUser } from "@/services/user";
+import { useSnackbar } from "@/context/SnackbarContext";
+import { deleteOrganization } from "@/services/organizations";
 
 export default function SettingsPage() {
   const {
@@ -37,6 +39,10 @@ export default function SettingsPage() {
   } = useOrgForm();
 
   const { mode } = useUserContext();
+  const { selectedOrgId, setMode } = useUserContext();
+  const { refreshOrganizations } = useAuthContext();
+  const { showSnackbar } = useSnackbar();
+  const [deleteOrgOpen, setDeleteOrgOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { logout } = useAuthContext();
 
@@ -58,7 +64,7 @@ export default function SettingsPage() {
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <TextField
                 id="orgName"
-                name="orgName"
+                name="name"
                 label="Organization Name"
                 value={orgForm.name}
                 onChange={handleOrgChange}
@@ -86,10 +92,37 @@ export default function SettingsPage() {
                     This action cannot be undone
                   </Typography>
                 </Box>
-                <Button variant="outlined" color="error">
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => setDeleteOrgOpen(true)}
+                >
                   Delete Organization
                 </Button>
               </Box>
+
+              <ConfirmDialog
+                open={deleteOrgOpen}
+                title="Delete Organization"
+                description="This organization will be permanently deleted. This action cannot be undone."
+                confirmLabel="Delete Organization"
+                onConfirm={async () => {
+                  try {
+                    await deleteOrganization(selectedOrgId!);
+                    showSnackbar(
+                      "Organization deleted successfully",
+                      "success",
+                    );
+                    setMode("client", null, null);
+                    await refreshOrganizations();
+                  } catch {
+                    showSnackbar("Failed to delete organization.", "error");
+                  } finally {
+                    setDeleteOrgOpen(false);
+                  }
+                }}
+                onClose={() => setDeleteOrgOpen(false)}
+              />
             </Box>
           </FloatingContainer>
         </Box>
@@ -245,6 +278,7 @@ export default function SettingsPage() {
                   contracts you have signed.
                 </Typography>
               </Box>
+
               <Button
                 variant="outlined"
                 color="error"

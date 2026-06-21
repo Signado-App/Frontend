@@ -1,8 +1,11 @@
 // src/hooks/useCreateContractForm.ts
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/context/SnackbarContext";
-
+import { useUserContext } from "@/context/UserContext";
+import { OrgClient } from "@/types/types";
+import { getOrgClients } from "@/services/orgClients";
+import { createOrgContract } from "@/services/orgContracts";
 export function useCreateContractForm() {
   const router = useRouter();
   const [form, setForm] = React.useState({
@@ -14,6 +17,35 @@ export function useCreateContractForm() {
   const [loading, setLoading] = React.useState(false);
   const { showSnackbar } = useSnackbar();
   const [files, setFiles] = useState<File[]>([]);
+  const [parties, setParties] = useState<
+    {
+      user_id: any;
+      email: string;
+      role: string;
+    }[]
+  >([]);
+  const [partyEmail, setPartyEmail] = useState("");
+  const { selectedOrgId } = useUserContext();
+  const [orgClients, setOrgClients] = useState<OrgClient[]>([]);
+
+  useEffect(() => {
+    if (!selectedOrgId) return;
+    getOrgClients(selectedOrgId).then((response) => {
+      setOrgClients(response.clients);
+    });
+  }, [selectedOrgId]);
+  const addParty = () => {
+    if (!partyEmail) return;
+    setParties((prev) => [
+      ...prev,
+      { user_id: null, email: partyEmail, role: "SIGNER" },
+    ]);
+    setPartyEmail("");
+  };
+
+  const removeParty = (index: number) => {
+    setParties((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -34,19 +66,32 @@ export function useCreateContractForm() {
   };
 
   const handleSubmit = async () => {
-    setError(null);
-
-    if (!isTitleValid) {
-      showSnackbar("Title is required", "error");
-      return;
-    }
-
+    if (!isTitleValid || !selectedOrgId) return;
     try {
       setLoading(true);
-      // await createContract(form);
+      await createOrgContract(selectedOrgId, {
+        title: form.title,
+        description: form.description,
+        expires_at: form.expires_at
+          ? new Date(form.expires_at).toISOString()
+          : "",
+        parties: parties.map((p) => p.user_id),
+        files: [],
+        min_verification: "LOGIN",
+        sign_by: new Date(form.expires_at).toISOString(),
+        reminders: {
+          frequency: 0,
+          frequency_type: "DAY",
+        },
+        use_order_send: true,
+        category: ["rental"],
+        copy_recipients: [],
+        message: "",
+      });
+      showSnackbar("Contract created successfully", "success");
       router.push("/app/contracts");
     } catch {
-      showSnackbar("Failed to create contract. Please try again.", "error");
+      showSnackbar("Failed to create contract.", "error");
     } finally {
       setLoading(false);
     }
@@ -62,6 +107,13 @@ export function useCreateContractForm() {
     files,
     setFiles,
     handleFileChange,
-    removeFile
+    removeFile,
+    addParty,
+    removeParty,
+    parties,
+    setParties,
+    partyEmail,
+    setPartyEmail,
+    orgClients,
   };
 }

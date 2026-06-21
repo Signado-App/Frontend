@@ -1,7 +1,7 @@
 import Headline from "@/components/Headline";
 import { Box, Button, Chip, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import StatCard from "../StatCard";
+import StatCard from "../Dashboard/StatCard";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
 import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
@@ -134,22 +134,22 @@ export default function ContractsTab() {
         }}
       >
         <StatCard
-          name="Total Contracts"
+          label="Total Contracts"
           value="4"
           icon={<DescriptionOutlinedIcon sx={{ color: "#60a5fa" }} />}
         />
         <StatCard
-          name="Signed"
+          label="Signed"
           value="2"
           icon={<DescriptionOutlinedIcon sx={{ color: "#4ade80" }} />}
         />
         <StatCard
-          name="Pending"
+          label="Pending"
           value="1"
           icon={<AccessTimeOutlinedIcon sx={{ color: "#f59e0b" }} />}
         />
         <StatCard
-          name="Total Value"
+          label="Total Value"
           value="$80.5K"
           icon={<AttachMoneyOutlinedIcon sx={{ color: "#a78bfa" }} />}
         />

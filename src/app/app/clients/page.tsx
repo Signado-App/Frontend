@@ -13,25 +13,33 @@ import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { useRouter } from "next/navigation";
-import { Client } from "@/types/types";
+import { Client, OrgClient } from "@/types/types";
 import { getClients } from "@/services/clients";
+import { useUserContext } from "@/context/UserContext";
+import { getOrgClients } from "@/services/orgClients";
+import AddClientModal from "@/components/Organization/AddClientModal";
 
 function ClientsPage() {
   const [currentTab, setCurrentTab] = useState("Active");
   const router = useRouter();
-  const [data, setData] = useState<Client[]>([]);
+  const { selectedOrgId } = useUserContext();
+  const [data, setData] = useState<OrgClient[]>([]);
+  const [addClientOpen, setAddClientOpen] = useState(false);
 
   useEffect(() => {
-    getClients().then(setData);
-  }, []);
+    if (!selectedOrgId) return;
+    getOrgClients(selectedOrgId).then((response) => {
+      setData(response.clients);
+    });
+  }, [selectedOrgId]);
 
-  const columns: ColumnDef<Client>[] = [
+  const columns: ColumnDef<OrgClient>[] = [
     {
-      id: "name",
+      id: "client_name",
       header: "Client Name",
       cell: (row) => (
         <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.name}
+          {row.client_name}
         </Typography>
       ),
     },
@@ -39,13 +47,13 @@ function ClientsPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors = {
+        const colors: Record<string, { bg: string; text: string }> = {
           Active: { bg: "#e0f2fe", text: "#0ea5e9" },
           Signed: { bg: "#dcfce7", text: "#22c55e" },
           Expired: { bg: "#f3f4f6", text: "#64748b" },
           Draft: { bg: "#fef9c3", text: "#eab308" },
         };
-        const style = colors[row.status];
+        const style = colors[row.status] ?? { bg: "#f3f4f6", text: "#64748b" };
 
         return (
           <Chip
@@ -64,20 +72,13 @@ function ClientsPage() {
       },
     },
     {
-      id: "contractsCount",
-      header: "Contracts Count",
+      id: "created_at",
+      header: "Created At",
       cell: (row) => (
-        <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.contractsCount}
-        </Typography>
-      ),
-    },
-    {
-      id: "totalValue",
-      header: "Total Value",
-      cell: (row) => (
-        <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.totalValue}
+        <Typography variant="body2" color="text.secondary">
+          {row.created_at
+            ? new Date(row.created_at).toLocaleDateString("cs-CZ")
+            : "-"}
         </Typography>
       ),
     },
@@ -111,7 +112,11 @@ function ClientsPage() {
           title="Clients"
           description="Manage your client relationships"
         />
-        <Button variant="contained" color="primary" startIcon={<AddIcon />}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setAddClientOpen(true)}
+        >
           Add New Client
         </Button>
       </Box>
@@ -130,8 +135,20 @@ function ClientsPage() {
         </Box>
       </Box>
       <Box>
-        <AppTable<Client> data={data} columns={columns} />
+        <AppTable<OrgClient>
+          data={data}
+          columns={columns}
+          getRowId={(row) => row.id}
+        />
       </Box>
+      <AddClientModal
+        open={addClientOpen}
+        onClose={() => setAddClientOpen(false)}
+        onSuccess={() => {
+          if (selectedOrgId)
+            getOrgClients(selectedOrgId).then((r) => setData(r.clients));
+        }}
+      />
     </Box>
   );
 }

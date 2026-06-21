@@ -45,24 +45,17 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      localStorage.removeItem("access_csrf");
-      localStorage.removeItem("refresh_csrf");
-      setUser(null);
-      router.push("/auth/login");
+      const isAppRoute = window.location.pathname.startsWith("/app");
+
+      if (isAppRoute) {
+        localStorage.removeItem("access_csrf");
+        localStorage.removeItem("refresh_csrf");
+        setUser(null);
+        router.push("/auth/login");
+      }
     });
 
-    const publicRoutes = [
-      "/auth/login",
-      "/auth/register",
-      "/auth/forgot-password",
-      "/auth/verify",
-      "/auth/reset-password",
-    ];
-    const isPublicRoute = publicRoutes.some((route) =>
-      window.location.pathname.startsWith(route),
-    );
-
-    if (!isPublicRoute) {
+    if (window.location.pathname.startsWith("/app")) {
       refresh();
     } else {
       setLoading(false);

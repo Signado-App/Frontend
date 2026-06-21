@@ -1,6 +1,6 @@
 "use client";
 import { OrganizationInfo } from "@/types/types";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 type Mode = "client" | "organization";
 
@@ -21,10 +21,15 @@ export const UserContextProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [mode, setModeState] = useState<Mode>("client");
-  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
   const [selectedOrg, setSelectedOrgState] = useState<OrganizationInfo | null>(
     null,
   );
+  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("selectedOrgId");
+    if (stored) setSelectedOrgId(Number(stored));
+  }, []);
 
   const setMode = (
     mode: Mode,
@@ -34,6 +39,12 @@ export const UserContextProvider: React.FC<{ children: React.ReactNode }> = ({
     setModeState(mode);
     setSelectedOrgId(orgId);
     setSelectedOrgState(org ?? null);
+
+    if (orgId) {
+      localStorage.setItem("selectedOrgId", String(orgId));
+    } else {
+      localStorage.removeItem("selectedOrgId");
+    }
   };
 
   return (

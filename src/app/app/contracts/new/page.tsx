@@ -7,6 +7,8 @@ import {
   List,
   ListItem,
   ListItemText,
+  MenuItem,
+  Select,
   TextField,
   Typography,
 } from "@mui/material";
@@ -31,6 +33,13 @@ export default function NewContractPage() {
     setFiles,
     handleFileChange,
     removeFile,
+    addParty,
+    removeParty,
+    parties,
+    setParties,
+    orgClients,
+    partyEmail,
+    setPartyEmail,
   } = useCreateContractForm();
 
   return (
@@ -124,7 +133,74 @@ export default function NewContractPage() {
               </List>
             )}
           </Box>
-
+          <Box>
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+              Signing Parties
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+              <Select
+                value=""
+                displayEmpty
+                size="small"
+                sx={{ flex: 1 }}
+                onChange={(e) => {
+                  const client = (orgClients ?? []).find(
+                    (c) => c.user_id === Number(e.target.value),
+                  );
+                  if (client) {
+                    setParties((prev) => [
+                      ...prev,
+                      {
+                        user_id: client.user_id,
+                        email: client.client_name,
+                        role: "SIGNER",
+                      },
+                    ]);
+                  }
+                }}
+              >
+                <MenuItem value="" disabled>
+                  Select client
+                </MenuItem>
+                {(orgClients ?? []).map((client) => (
+                  <MenuItem key={client.id} value={client.user_id}>
+                    {client.client_name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+            {parties.length > 0 && (
+              <List dense>
+                {parties.map((party, index) => (
+                  <ListItem
+                    key={index}
+                    secondaryAction={
+                      <IconButton onClick={() => removeParty(index)}>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText
+                      primary={party.email}
+                      secondary={party.role}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
+          <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+            <TextField
+              label="Or enter email manually"
+              value={partyEmail}
+              size="small"
+              onChange={(e) => setPartyEmail(e.target.value)}
+              sx={{ flex: 1 }}
+            />
+            <Button variant="outlined" onClick={addParty}>
+              Add
+            </Button>
+          </Box>
           <Button
             variant="contained"
             sx={{ alignSelf: "flex-start" }}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -22,6 +22,7 @@ import { useAuthContext } from "@/context/AuthContext";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import { getOrganizationInfo } from "@/services/organizations";
 import { Privilege } from "@/types/types";
+import { Privileges } from "@/constants/privileges";
 
 const SIDEBAR_WIDTH = 280;
 
@@ -34,6 +35,28 @@ export default function Sidebar() {
   const { mode, setMode } = useUserContext();
   const { refresh, logout, user, organizations, refreshOrganizations } =
     useAuthContext();
+  const validSelectedOrg = organizations.some(
+    (o) => o.organization_id === selectedOrg,
+  )
+    ? selectedOrg
+    : 0;
+
+  useEffect(() => {
+    const stored = localStorage.getItem("selectedOrgId");
+    if (stored) setSelectedOrg(Number(stored));
+  }, []);
+
+  useEffect(() => {
+    if (selectedOrg && selectedOrg !== 0 && organizations.length > 0) {
+      getOrganizationInfo(selectedOrg).then((response) => {
+        const privileges = response.data.privileges.map(
+          (p: any) => parseInt(p.id) as Privilege,
+        );
+        loadPrivileges(privileges);
+        setMode("organization", selectedOrg, response.data);
+      });
+    }
+  }, [organizations, selectedOrg]);
   return (
     <Box
       component="aside"
@@ -57,7 +80,7 @@ export default function Sidebar() {
       <CompanyInfo />
 
       <Select
-        value={selectedOrg ?? 0}
+        value={validSelectedOrg ?? 0}
         size="small"
         onChange={(e) => {
           const value = e.target.value as number;
@@ -69,10 +92,10 @@ export default function Sidebar() {
           if (value && value !== 0) {
             getOrganizationInfo(value).then((response) => {
               const privileges = response.data.privileges.map(
-                (p: any) => p.name as Privilege,
+                (p: any) => parseInt(p.id) as Privilege,
               );
               loadPrivileges(privileges);
-              console.log("Response na org info: ", response);
+              console.log("Privileges: ", privileges);
               setMode("organization", value, response.data);
             });
           } else {
@@ -85,11 +108,13 @@ export default function Sidebar() {
         <MenuItem value={0}>
           {user?.first_name ?? ""} {user?.last_name ?? ""} (Client)
         </MenuItem>
-        {(organizations ?? []).map((org) => (
-          <MenuItem key={org.organization_id} value={org.organization_id}>
-            {org.name}
-          </MenuItem>
-        ))}
+        {(organizations ?? [])
+          .filter((org) => org.role_status !== "INVITED")
+          .map((org) => (
+            <MenuItem key={org.organization_id} value={org.organization_id}>
+              {org.name}
+            </MenuItem>
+          ))}
       </Select>
 
       <Button
@@ -105,13 +130,11 @@ export default function Sidebar() {
       </Button>
 
       <Divider />
-      {hasPrivilege("manage_contracts") && (
+      {hasPrivilege(Privileges.CREATE_CONTRACTS) && (
         <Button
           variant="contained"
           fullWidth
-          sx={{
-            py: 1.5,
-          }}
+          sx={{ py: 1.5 }}
           startIcon={<AddIcon />}
           onClick={() => router.push("/app/contracts/new")}
         >

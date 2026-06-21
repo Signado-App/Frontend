@@ -29,11 +29,11 @@ type AppTableProps<T> = {
   getRowId?: (row: T) => string | number;
 };
 
-export default function AppTable<T extends { id?: string | number }>({
+export default function AppTable<T>({
   data,
   columns,
   onRowClick,
-  getRowId = (row) => row.id!,
+  getRowId = (row) => (row as any).id,
 }: AppTableProps<T>) {
   if (!data || data.length === 0) {
     return (

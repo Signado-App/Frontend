@@ -1,48 +1,24 @@
 "use client";
 
-import { Box, Button, Typography, Chip } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import AppTable, { ColumnDef } from "@/components/Table/AppTable";
 import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { useState } from "react";
-import { GroupPrivilege, Privilege } from "@/types/types";
 
-const mockPrivileges: GroupPrivilege[] = [
-  {
-    id: "1",
-    privilegeId: "1",
-    name: "view_contracts",
-    description: "View all contracts",
-    grantedAt: "Jan 1, 2024",
-    grantedById: "1",
-    expiresAt: null,
-  },
-  {
-    id: "2",
-    privilegeId: "2",
-    name: "manage_contracts",
-    description: "Create and edit contracts",
-    grantedAt: "Jan 1, 2024",
-    grantedById: "1",
-    expiresAt: "Jan 15, 2025",
-  },
-  {
-    id: "3",
-    privilegeId: "3",
-    name: "manage_users",
-    description: "Manage organization users",
-    grantedAt: "Jan 1, 2024",
-    grantedById: "1",
-    expiresAt: null,
-  },
-];
+type GroupPrivilegeItem = {
+  id: number;
+  name: string;
+  description?: string;
+};
 
-export default function GroupPrivileges({ groupId }: { groupId: string }) {
-  const [privileges, setPrivileges] =
-    useState<GroupPrivilege[]>(mockPrivileges);
+type Props = {
+  groupId: string;
+  privileges: GroupPrivilegeItem[];
+};
 
-  const columns: ColumnDef<GroupPrivilege>[] = [
+export default function GroupPrivileges({ groupId, privileges }: Props) {
+  const columns: ColumnDef<GroupPrivilegeItem>[] = [
     {
       id: "name",
       header: "Privilege",
@@ -53,11 +29,11 @@ export default function GroupPrivileges({ groupId }: { groupId: string }) {
       ),
     },
     {
-      id: "expiresAt",
-      header: "Expires At",
+      id: "description",
+      header: "Description",
       cell: (row) => (
         <Typography variant="body2" color="text.secondary">
-          {row.expiresAt ?? "Never"}
+          {row.description ?? "-"}
         </Typography>
       ),
     },
@@ -69,9 +45,9 @@ export default function GroupPrivileges({ groupId }: { groupId: string }) {
           variant="outlined"
           color="error"
           startIcon={<DeleteOutlineIcon />}
-          onClick={() =>
-            setPrivileges((prev) => prev.filter((p) => p.id !== row.id))
-          }
+          onClick={() => {
+            /* TODO: revoke */
+          }}
         >
           Revoke
         </Button>
@@ -86,7 +62,11 @@ export default function GroupPrivileges({ groupId }: { groupId: string }) {
           Add Privilege
         </Button>
       </Headline>
-      <AppTable<GroupPrivilege> data={privileges} columns={columns} />
+      <AppTable<GroupPrivilegeItem>
+        data={privileges ?? []}
+        columns={columns}
+        getRowId={(row) => row.id}
+      />
     </Box>
   );
 }
