@@ -213,3 +213,46 @@ export type OrgContract = {
   description: string | null;
   last_activity: string | null;
 };
+
+// types.ts
+export type OrgContractDetail = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  min_verification: string;
+  sign_by: string | null;
+  copy_recipients: string[];
+  category: string[];
+  reminders: any;
+  use_order_send: boolean;
+  group_id: number | null;
+  created_at: string | null;
+  expires_at: string | null;
+  last_activity: string | null;
+  parties: {
+    user_id: number;
+    email: string | null;
+    role: string;
+    status: string;
+  }[];
+  files: {
+    file_id: string;
+    name: string;
+    file_type: string;
+    size_bytes: number;
+    download_url: string;
+  }[];
+  events: {
+    event_type: string;
+    event_metadata: any;
+    timestamp: string | null;
+  }[];
+};
+
+export type OrgGroup = {
+  id: number;
+  name: string;
+  member_count: number;
+  privileges: { id: number; name: string; description: string }[];
+};

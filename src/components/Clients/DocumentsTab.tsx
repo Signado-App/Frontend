@@ -1,7 +1,7 @@
 import Headline from "@/components/Headline";
 import { Box, Button, Chip, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import StatCard from "../StatCard";
+import StatCard from "../Dashboard/StatCard";
 import FolderOpenOutlinedIcon from "@mui/icons-material/FolderOpenOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";

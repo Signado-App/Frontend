@@ -17,9 +17,10 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-import { Contract, OrgContract } from "@/types/types";
-
-const activityHistory: { title: string; date: string; author: string }[] = [];
+import { Contract, OrgContract, OrgContractDetail } from "@/types/types";
+import { useUserContext } from "@/context/UserContext";
+import { useEffect, useState } from "react";
+import { getOrgContract, getOrgContracts } from "@/services/orgContracts";
 
 type Props = {
   open: boolean;
@@ -32,7 +33,18 @@ export default function ContractDetailModal({
   onClose,
   contract,
 }: Props) {
+  const { selectedOrgId } = useUserContext();
+  const [detail, setDetail] = useState<OrgContractDetail | null>(null);
+
+  useEffect(() => {
+    if (!open || !contract || !selectedOrgId) return;
+    getOrgContract(selectedOrgId, contract.id).then((response) => {
+      setDetail(response.contract);
+    });
+  }, [open, contract]);
+
   if (!contract) return null;
+
   const colors: Record<string, { bg: string; text: string }> = {
     active: { bg: "#e0f2fe", text: "#0ea5e9" },
     signed: { bg: "#dcfce7", text: "#22c55e" },
@@ -179,9 +191,8 @@ export default function ContractDetailModal({
             ))}
           </Box>
         </Box>
-
         <Typography variant="subtitle1" fontWeight={700} mt={3} mb={1.5}>
-          Attached Files
+          Signing Parties
         </Typography>
         <Box
           sx={{
@@ -190,35 +201,89 @@ export default function ContractDetailModal({
             overflow: "hidden",
           }}
         >
-          {[].map((file, i) => (
-            <Box
-              key={i}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                p: 2,
-                bgcolor: "white",
-                borderBottom: i === 0 ? "1px solid #e5e7eb" : "none",
-              }}
-            >
-              <DescriptionOutlinedIcon
-                sx={{ color: "#64748b", fontSize: 20 }}
-              />
-              <Box sx={{ border: "1px solid #e5e7eb", borderRadius: 2, p: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  No files attached
-                </Typography>
+          {detail?.parties?.length ? (
+            detail.parties.map((party, i) => (
+              <Box
+                key={i}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  p: 2,
+                  borderBottom:
+                    i < detail.parties.length - 1
+                      ? "1px solid #e5e7eb"
+                      : "none",
+                }}
+              >
+                <Typography variant="body2">{party.email ?? "-"}</Typography>
+                <Chip label={party.status} size="small" />
               </Box>
-              <IconButton size="small">
-                <DownloadOutlinedIcon sx={{ fontSize: 20 }} />
-              </IconButton>
+            ))
+          ) : (
+            <Box sx={{ p: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                No parties
+              </Typography>
             </Box>
-          ))}
+          )}
+        </Box>
+        <Typography variant="subtitle1" fontWeight={700} mt={3} mb={1.5}>
+          Attached Files
+        </Typography>
+        {/* Files */}
+        <Box
+          sx={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 2,
+            overflow: "hidden",
+          }}
+        >
+          {detail?.files?.length ? (
+            detail.files.map((file, i) => (
+              <Box
+                key={i}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  p: 2,
+                  borderBottom:
+                    i < detail.files.length - 1 ? "1px solid #e5e7eb" : "none",
+                }}
+              >
+                <DescriptionOutlinedIcon
+                  sx={{ color: "#64748b", fontSize: 20 }}
+                />
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body2">{file.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {file.file_type} •{" "}
+                    {(file.size_bytes / 1024 / 1024).toFixed(2)} MB
+                  </Typography>
+                </Box>
+                <IconButton
+                  size="small"
+                  component="a"
+                  href={file.download_url}
+                  target="_blank"
+                >
+                  <DownloadOutlinedIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+              </Box>
+            ))
+          ) : (
+            <Box sx={{ p: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                No files attached
+              </Typography>
+            </Box>
+          )}
         </Box>
         <Typography variant="subtitle1" fontWeight={700} mt={3} mb={1.5}>
           Activity History
         </Typography>
+        {/* Events */}
         <Box
           sx={{
             border: "1px solid #e5e7eb",
@@ -226,31 +291,41 @@ export default function ContractDetailModal({
             overflow: "hidden",
           }}
         >
-          {activityHistory.map((item, i) => (
-            <Box
-              key={i}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                p: 2,
-                borderBottom:
-                  i < activityHistory.length - 1 ? "1px solid #e5e7eb" : "none",
-              }}
-            >
-              <CalendarTodayOutlinedIcon
-                sx={{ color: "#94a3b8", fontSize: 20 }}
-              />
-              <Box>
-                <Typography variant="body2" fontWeight={600}>
-                  {item.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {item.date} • {item.author}
-                </Typography>
+          {detail?.events?.length ? (
+            detail.events.map((event, i) => (
+              <Box
+                key={i}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  p: 2,
+                  borderBottom:
+                    i < detail.events.length - 1 ? "1px solid #e5e7eb" : "none",
+                }}
+              >
+                <CalendarTodayOutlinedIcon
+                  sx={{ color: "#94a3b8", fontSize: 20 }}
+                />
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>
+                    {event.event_type}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {event.timestamp
+                      ? new Date(event.timestamp).toLocaleString("cs-CZ")
+                      : "-"}
+                  </Typography>
+                </Box>
               </Box>
+            ))
+          ) : (
+            <Box sx={{ p: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                No activity yet
+              </Typography>
             </Box>
-          ))}
+          )}
         </Box>
       </DialogContent>
     </Dialog>

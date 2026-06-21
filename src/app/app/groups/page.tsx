@@ -9,47 +9,25 @@ import { useEffect, useState } from "react";
 import Searchbar from "@/components/Searchbar/Searchbar";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { useRouter } from "next/navigation";
-
-type Group = {
-  id: string;
-  name: string;
-  description: string;
-  membersCount: number;
-};
-
-const mockGroups: Group[] = [
-  {
-    id: "1",
-    name: "Admins",
-    description: "Organization administrators",
-    membersCount: 3,
-  },
-  {
-    id: "2",
-    name: "Sales",
-    description: "Sales team members",
-    membersCount: 7,
-  },
-  {
-    id: "3",
-    name: "Support",
-    description: "Customer support team",
-    membersCount: 5,
-  },
-  {
-    id: "4",
-    name: "Finance",
-    description: "Finance and billing team",
-    membersCount: 2,
-  },
-];
+import { useUserContext } from "@/context/UserContext";
+import { OrgGroup } from "@/types/types";
+import { getOrgGroups } from "@/services/orgGroups";
+import CreateGroupModal from "@/components/Groups/CreateGroupModal";
 
 function GroupsPage() {
-  const [data, setData] = useState<Group[]>(mockGroups);
+  const { selectedOrgId } = useUserContext();
+  const [data, setData] = useState<OrgGroup[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    if (!selectedOrgId) return;
+    getOrgGroups(selectedOrgId).then((response) => {
+      setData(response.groups);
+    });
+  }, [selectedOrgId]);
 
-  const columns: ColumnDef<Group>[] = [
+  const columns: ColumnDef<OrgGroup>[] = [
     {
       id: "name",
       header: "Group Name",
@@ -60,20 +38,11 @@ function GroupsPage() {
       ),
     },
     {
-      id: "description",
-      header: "Description",
-      cell: (row) => (
-        <Typography variant="body2" color="text.secondary">
-          {row.description}
-        </Typography>
-      ),
-    },
-    {
-      id: "membersCount",
+      id: "member_count",
       header: "Members",
       cell: (row) => (
         <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.membersCount}
+          {row.member_count}
         </Typography>
       ),
     },
@@ -99,14 +68,30 @@ function GroupsPage() {
           title="Groups"
           description="Manage groups within your organization."
         />
-        <Button variant="contained" startIcon={<AddIcon />}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setCreateOpen(true)}
+        >
           Create Group
         </Button>
       </Box>
       <Searchbar placeholder="Search by group name" sx={{ width: 320 }} />
       <Box>
-        <AppTable<Group> data={data} columns={columns} />
+        <AppTable<OrgGroup>
+          data={data}
+          columns={columns}
+          getRowId={(row) => row.id}
+        />
       </Box>
+      <CreateGroupModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onSuccess={() => {
+          if (selectedOrgId)
+            getOrgGroups(selectedOrgId).then((r) => setData(r.groups));
+        }}
+      />
     </Box>
   );
 }

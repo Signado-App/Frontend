@@ -5,26 +5,34 @@ import AppTable, { ColumnDef } from "@/components/Table/AppTable";
 import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { useState } from "react";
-import { Member } from "@/types/types";
 
+type GroupMember = {
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+};
 
+type Props = {
+  groupId: string;
+  members: GroupMember[];
+  onAdd: () => void;
+  onRemove: (userId: number) => void;
+};
 
-const mockMembers: Member[] = [
-  { id: "1", firstName: "Martin", lastName: "Novák", email: "martin.novak@company.com" },
-  { id: "2", firstName: "Jana", lastName: "Svobodová", email: "jana.svobodova@company.com" },
-];
-
-export default function GroupMembers({ groupId }: { groupId: string }) {
-  const [members, setMembers] = useState<Member[]>(mockMembers);
-
-  const columns: ColumnDef<Member>[] = [
+export default function GroupMembers({
+  groupId,
+  members,
+  onAdd,
+  onRemove,
+}: Props) {
+  const columns: ColumnDef<GroupMember>[] = [
     {
       id: "name",
       header: "Name",
       cell: (row) => (
         <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.firstName} {row.lastName}
+          {row.first_name} {row.last_name}
         </Typography>
       ),
     },
@@ -45,7 +53,7 @@ export default function GroupMembers({ groupId }: { groupId: string }) {
           variant="outlined"
           color="error"
           startIcon={<DeleteOutlineIcon />}
-          onClick={() => setMembers((prev) => prev.filter((m) => m.id !== row.id))}
+          onClick={() => onRemove(row.user_id)}
         >
           Remove
         </Button>
@@ -56,11 +64,15 @@ export default function GroupMembers({ groupId }: { groupId: string }) {
   return (
     <Box>
       <Headline title="Members" size="small">
-        <Button variant="contained" startIcon={<AddIcon />}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={onAdd}>
           Add Member
         </Button>
       </Headline>
-      <AppTable<Member> data={members} columns={columns} />
+      <AppTable<GroupMember>
+        data={members ?? []}
+        columns={columns}
+        getRowId={(row) => row.user_id}
+      />
     </Box>
   );
 }
