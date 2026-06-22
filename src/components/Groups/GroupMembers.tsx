@@ -5,19 +5,13 @@ import AppTable, { ColumnDef } from "@/components/Table/AppTable";
 import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-
-type GroupMember = {
-  user_id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-};
+import { GroupMemberItem } from "@/types/types";
 
 type Props = {
   groupId: string;
-  members: GroupMember[];
+  members: GroupMemberItem[];
   onAdd: () => void;
-  onRemove: (userId: number) => void;
+  onRemove: (memberId: number) => void;
 };
 
 export default function GroupMembers({
@@ -26,7 +20,7 @@ export default function GroupMembers({
   onAdd,
   onRemove,
 }: Props) {
-  const columns: ColumnDef<GroupMember>[] = [
+  const columns: ColumnDef<GroupMemberItem>[] = [
     {
       id: "name",
       header: "Name",
@@ -53,7 +47,7 @@ export default function GroupMembers({
           variant="outlined"
           color="error"
           startIcon={<DeleteOutlineIcon />}
-          onClick={() => onRemove(row.user_id)}
+          onClick={() => onRemove(row.organization_member_id)}
         >
           Remove
         </Button>
@@ -68,10 +62,10 @@ export default function GroupMembers({
           Add Member
         </Button>
       </Headline>
-      <AppTable<GroupMember>
+      <AppTable<GroupMemberItem>
         data={members ?? []}
         columns={columns}
-        getRowId={(row) => row.user_id}
+        getRowId={(row) => row.organization_member_id}
       />
     </Box>
   );

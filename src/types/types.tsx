@@ -256,3 +256,11 @@ export type OrgGroup = {
   member_count: number;
   privileges: { id: number; name: string; description: string }[];
 };
+
+export type GroupMemberItem = {
+  organization_member_id: number;
+  added_at: string | null;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+};
