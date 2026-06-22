@@ -28,9 +28,9 @@ function ClientsPage() {
 
   useEffect(() => {
     if (!selectedOrgId) return;
-    getOrgClients(selectedOrgId).then((response) => {
-      setData(response.clients);
-    });
+    getOrgClients(selectedOrgId)
+      .then((response) => setData(response.clients))
+      .catch(() => setData([]));
   }, [selectedOrgId]);
 
   const columns: ColumnDef<OrgClient>[] = [
@@ -96,7 +96,6 @@ function ClientsPage() {
           variant="outlined"
           startIcon={<VisibilityOutlinedIcon />}
           onClick={() => {
-            console.log("View client", row.id);
             router.push(`/app/clients/${row.id}`);
           }}
         >
@@ -146,7 +145,9 @@ function ClientsPage() {
         onClose={() => setAddClientOpen(false)}
         onSuccess={() => {
           if (selectedOrgId)
-            getOrgClients(selectedOrgId).then((r) => setData(r.clients));
+            getOrgClients(selectedOrgId)
+              .then((r) => setData(r.clients))
+              .catch(() => {});
         }}
       />
     </Box>

@@ -22,9 +22,9 @@ function GroupsPage() {
 
   useEffect(() => {
     if (!selectedOrgId) return;
-    getOrgGroups(selectedOrgId).then((response) => {
-      setData(response.groups);
-    });
+    getOrgGroups(selectedOrgId)
+      .then((response) => setData(response.groups))
+      .catch(() => setData([]));
   }, [selectedOrgId]);
 
   const columns: ColumnDef<OrgGroup>[] = [
@@ -89,7 +89,9 @@ function GroupsPage() {
         onClose={() => setCreateOpen(false)}
         onSuccess={() => {
           if (selectedOrgId)
-            getOrgGroups(selectedOrgId).then((r) => setData(r.groups));
+            getOrgGroups(selectedOrgId)
+              .then((r) => setData(r.groups))
+              .catch(() => {});
         }}
       />
     </Box>

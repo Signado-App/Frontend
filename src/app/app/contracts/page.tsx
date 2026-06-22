@@ -32,13 +32,13 @@ function ContractsPage() {
 
   useEffect(() => {
     if (selectedOrgId) {
-      getOrgContracts(selectedOrgId).then((response) => {
-        setData(response.contracts);
-      });
+      getOrgContracts(selectedOrgId)
+        .then((response) => setData(response.contracts))
+        .catch(() => setData([]));
     } else {
-      getContracts().then((response) => {
-        setData(response.contracts);
-      });
+      getContracts()
+        .then((response) => setData(response.contracts))
+        .catch(() => setData([]));
     }
   }, [selectedOrgId]);
 

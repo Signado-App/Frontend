@@ -41,9 +41,9 @@ function UsersPage() {
   };
   useEffect(() => {
     if (!selectedOrgId) return;
-    getOrgUsers(selectedOrgId).then((response) => {
-      setData(response.data);
-    });
+    getOrgUsers(selectedOrgId)
+      .then((response) => setData(response.data))
+      .catch(() => setData([]));
   }, [selectedOrgId]);
 
   const columns: ColumnDef<OrgMember>[] = [
@@ -160,9 +160,9 @@ function UsersPage() {
         onClose={() => setInviteOpen(false)}
         onSuccess={() => {
           if (selectedOrgId) {
-            getOrgUsers(selectedOrgId).then((response) =>
-              setData(response.data),
-            );
+            getOrgUsers(selectedOrgId)
+              .then((response) => setData(response.data))
+              .catch(() => {});
           }
         }}
       />
