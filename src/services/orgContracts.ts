@@ -22,3 +22,15 @@ export async function createOrgContract(orgId: number, data: any) {
   );
   return response.data;
 }
+
+export async function completeContract(
+  orgId: number,
+  contractId: string,
+  action: "VERIFY" | "CANCEL",
+) {
+  const response = await apiClient.put(
+    `/protected/organization/${orgId}/contracts/${contractId}/complete`,
+    { action },
+  );
+  return response.data;
+}
