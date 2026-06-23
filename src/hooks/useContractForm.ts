@@ -7,17 +7,17 @@ import { OrgClient } from "@/types/types";
 import { getOrgClients } from "@/services/orgClients";
 import { completeContract, createOrgContract } from "@/services/orgContracts";
 
+import { sha256 } from "js-sha256";
+
 async function computeFileHash(file: File): Promise<string> {
-  if (typeof window !== "undefined" && window.crypto?.subtle) {
-    const buffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return btoa(String.fromCharCode(...hashArray));
+  const buffer = await file.arrayBuffer();
+  const hashHex = sha256(buffer);
+
+  const bytes = new Uint8Array(hashHex.length / 2);
+  for (let i = 0; i < hashHex.length; i += 2) {
+    bytes[i / 2] = parseInt(hashHex.substring(i, i + 2), 16);
   }
-  console.warn(
-    "[CreateContract] crypto.subtle unavailable, using dummy hash (dev only)",
-  );
-  return btoa("dev-placeholder-hash");
+  return btoa(String.fromCharCode(...bytes));
 }
 
 export type SubmitStage =
