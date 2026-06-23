@@ -41,18 +41,33 @@ export default function Sidebar() {
     ? selectedOrg
     : 0;
 
+  const mergePrivileges = (data: any): Privilege[] => {
+    const direct = (data.privileges ?? []).map(
+      (p: any) => parseInt(p.id) as Privilege,
+    );
+    const fromGroups = (data.groups ?? []).flatMap((g: any) =>
+      (g.privileges ?? []).map((p: any) => parseInt(p.id) as Privilege),
+    );
+    return [...new Set([...direct, ...fromGroups])];
+  };
+
   useEffect(() => {
     const stored = localStorage.getItem("selectedOrgId");
     if (stored) setSelectedOrg(Number(stored));
   }, []);
 
   useEffect(() => {
+    if (validSelectedOrg === 0 && mode === "organization") {
+      setMode("client", null, null);
+    }
+  }, [validSelectedOrg]);
+
+  useEffect(() => {
     if (selectedOrg && selectedOrg !== 0 && organizations.length > 0) {
       getOrganizationInfo(selectedOrg)
         .then((response) => {
-          const privileges = response.data.privileges.map(
-            (p: any) => parseInt(p.id) as Privilege,
-          );
+          const privileges = mergePrivileges(response.data);
+
           loadPrivileges(privileges);
           setMode("organization", selectedOrg, response.data);
         })
@@ -61,6 +76,7 @@ export default function Sidebar() {
         });
     }
   }, [organizations, selectedOrg]);
+
   return (
     <Box
       component="aside"
@@ -96,9 +112,7 @@ export default function Sidebar() {
           if (value && value !== 0) {
             getOrganizationInfo(value)
               .then((response) => {
-                const privileges = response.data.privileges.map(
-                  (p: any) => parseInt(p.id) as Privilege,
-                );
+                const privileges = mergePrivileges(response.data);
                 loadPrivileges(privileges);
                 setMode("organization", value, response.data);
               })

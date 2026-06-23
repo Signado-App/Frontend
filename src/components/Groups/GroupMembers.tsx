@@ -6,6 +6,8 @@ import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { GroupMemberItem } from "@/types/types";
+import { Privileges } from "@/constants/privileges";
+import { usePrivileges } from "@/context/PrivilegesContext";
 
 type Props = {
   groupId: string;
@@ -20,6 +22,8 @@ export default function GroupMembers({
   onAdd,
   onRemove,
 }: Props) {
+  const { hasPrivilege } = usePrivileges();
+
   const columns: ColumnDef<GroupMemberItem>[] = [
     {
       id: "name",
@@ -42,25 +46,28 @@ export default function GroupMembers({
     {
       id: "actions",
       header: "Actions",
-      cell: (row) => (
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<DeleteOutlineIcon />}
-          onClick={() => onRemove(row.organization_member_id)}
-        >
-          Remove
-        </Button>
-      ),
+      cell: (row) =>
+        hasPrivilege(Privileges.DELETE_USERS_FROM_GROUPS) ? (
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteOutlineIcon />}
+            onClick={() => onRemove(row.organization_member_id)}
+          >
+            Remove
+          </Button>
+        ) : null,
     },
   ];
 
   return (
     <Box>
       <Headline title="Members" size="small">
-        <Button variant="contained" startIcon={<AddIcon />} onClick={onAdd}>
-          Add Member
-        </Button>
+        {hasPrivilege(Privileges.ADD_USERS_TO_GROUPS) && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={onAdd}>
+            Add Member
+          </Button>
+        )}
       </Headline>
       <AppTable<GroupMemberItem>
         data={members ?? []}

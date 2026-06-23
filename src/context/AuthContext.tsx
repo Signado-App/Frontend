@@ -64,6 +64,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const login = async (accessCsrf: string, refreshCsrf: string) => {
     console.log("[Auth] Saving CSRF tokens:", accessCsrf, refreshCsrf);
+    localStorage.removeItem("selectedOrgId");
     localStorage.setItem("access_csrf", accessCsrf);
     localStorage.setItem("refresh_csrf", refreshCsrf);
     await refresh();
@@ -76,6 +77,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       localStorage.removeItem("access_csrf");
       localStorage.removeItem("refresh_csrf");
+      localStorage.removeItem("selectedOrgId");
       setUser(null);
       router.push("/auth/login");
     }

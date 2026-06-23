@@ -19,6 +19,10 @@ import { getOrgUsers, removeOrgUser } from "@/services/orgUsers";
 import { useAuthContext } from "@/context/AuthContext";
 import { useSnackbar } from "@/context/SnackbarContext";
 import InviteUserModal from "@/components/Users/InviteUserModal";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import EditUserPrivilegesModal from "@/components/Users/EditUserPrivilegesModal";
 
 function UsersPage() {
   const [currentTab, setCurrentTab] = useState("Active");
@@ -28,6 +32,9 @@ function UsersPage() {
   const [data, setData] = useState<OrgMember[]>([]);
   const { showSnackbar } = useSnackbar();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const { hasPrivilege } = usePrivileges();
+  const [editPrivilegesOpen, setEditPrivilegesOpen] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
 
   const handleRemove = async (memberId: number) => {
     if (!selectedOrgId) return;
@@ -46,6 +53,10 @@ function UsersPage() {
       .catch(() => setData([]));
   }, [selectedOrgId]);
 
+  const handleEditPrivileges = (memberId: number) => {
+    setEditingMemberId(memberId);
+    setEditPrivilegesOpen(true);
+  };
   const columns: ColumnDef<OrgMember>[] = [
     {
       id: "name",
@@ -106,17 +117,30 @@ function UsersPage() {
       id: "actions",
       header: "Actions",
       align: "left",
-      cell: (row) =>
-        row.user_id === Number(user?.id) ? null : (
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<DeleteOutlineIcon />}
-            onClick={() => handleRemove(row.member_id)}
-          >
-            Remove
-          </Button>
-        ),
+      cell: (row) => (
+        <Box sx={{ display: "flex", gap: 1 }}>
+          {hasPrivilege(Privileges.UPDATE_USER_PRIVILEGES) && (
+            <Button
+              variant="outlined"
+              startIcon={<EditOutlinedIcon />}
+              onClick={() => handleEditPrivileges(row.member_id)}
+            >
+              Privileges
+            </Button>
+          )}
+          {row.user_id !== Number(user?.id) &&
+            hasPrivilege(Privileges.DELETE_USERS) && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={() => handleRemove(row.member_id)}
+              >
+                Remove
+              </Button>
+            )}
+        </Box>
+      ),
     },
   ];
   return (
@@ -126,13 +150,15 @@ function UsersPage() {
           title="Users"
           description="Manage clients of your organization."
         />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setInviteOpen(true)}
-        >
-          Invite User
-        </Button>
+        {hasPrivilege(Privileges.ADD_USERS) && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setInviteOpen(true)}
+          >
+            Invite User
+          </Button>
+        )}
       </Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
         <StatusTabs
@@ -164,6 +190,18 @@ function UsersPage() {
               .then((response) => setData(response.data))
               .catch(() => {});
           }
+        }}
+      />
+      <EditUserPrivilegesModal
+        open={editPrivilegesOpen}
+        memberId={editingMemberId ?? 0}
+        currentPrivilegeIds={[]}
+        onClose={() => setEditPrivilegesOpen(false)}
+        onSuccess={() => {
+          if (selectedOrgId)
+            getOrgUsers(selectedOrgId)
+              .then((r) => setData(r.data))
+              .catch(() => {});
         }}
       />
     </Box>

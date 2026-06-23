@@ -60,3 +60,10 @@ export async function removeGroupMember(
   );
   return response.data;
 }
+
+export async function getAvailableGroupPrivileges(orgId: number) {
+  const response = await apiClient.get(
+    `/protected/organization/${orgId}/group/available-privileges`,
+  );
+  return response.data;
+}

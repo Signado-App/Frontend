@@ -5,6 +5,8 @@ import AppTable, { ColumnDef } from "@/components/Table/AppTable";
 import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
 
 type GroupPrivilegeItem = {
   id: number;
@@ -23,6 +25,8 @@ export default function GroupPrivileges({
   privileges,
   onEdit,
 }: Props) {
+  const { hasPrivilege } = usePrivileges();
+
   const columns: ColumnDef<GroupPrivilegeItem>[] = [
     {
       id: "name",
@@ -47,13 +51,15 @@ export default function GroupPrivileges({
   return (
     <Box>
       <Headline title="Privileges" size="small">
-        <Button
-          variant="contained"
-          startIcon={<EditOutlinedIcon />}
-          onClick={onEdit}
-        >
-          Edit Privileges
-        </Button>
+        {hasPrivilege(Privileges.UPDATE_GROUP_PRIVILEGES) && (
+          <Button
+            variant="contained"
+            startIcon={<EditOutlinedIcon />}
+            onClick={onEdit}
+          >
+            Edit Privileges
+          </Button>
+        )}
       </Headline>
       <AppTable<GroupPrivilegeItem>
         data={privileges ?? []}

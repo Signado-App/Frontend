@@ -18,6 +18,8 @@ import { getClients } from "@/services/clients";
 import { useUserContext } from "@/context/UserContext";
 import { getOrgClients } from "@/services/orgClients";
 import AddClientModal from "@/components/Organization/AddClientModal";
+import { Privileges } from "@/constants/privileges";
+import { usePrivileges } from "@/context/PrivilegesContext";
 
 function ClientsPage() {
   const [currentTab, setCurrentTab] = useState("Active");
@@ -25,6 +27,7 @@ function ClientsPage() {
   const { selectedOrgId } = useUserContext();
   const [data, setData] = useState<OrgClient[]>([]);
   const [addClientOpen, setAddClientOpen] = useState(false);
+  const { hasPrivilege } = usePrivileges();
 
   useEffect(() => {
     if (!selectedOrgId) return;
@@ -111,13 +114,15 @@ function ClientsPage() {
           title="Clients"
           description="Manage your client relationships"
         />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setAddClientOpen(true)}
-        >
-          Add New Client
-        </Button>
+        {hasPrivilege(Privileges.CREATE_CLIENTS) && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setAddClientOpen(true)}
+          >
+            Add New Client
+          </Button>
+        )}
       </Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
         <StatusTabs

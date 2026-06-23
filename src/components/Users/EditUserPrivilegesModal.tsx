@@ -15,47 +15,47 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { useState, useEffect } from "react";
 import {
-  getAvailableGroupPrivileges,
-  updateGroupPrivileges,
-} from "@/services/orgGroups";
+  updateUserMemberships,
+  getAvailableUserPrivileges,
+} from "@/services/orgUsers";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { useUserContext } from "@/context/UserContext";
-import { Privileges, PrivilegeLabels } from "@/constants/privileges";
 
 type Props = {
   open: boolean;
-  groupId: number;
+  memberId: number;
   currentPrivilegeIds: number[];
   onClose: () => void;
   onSuccess: () => void;
 };
 
-export default function EditGroupPrivilegesModal({
+export default function EditUserPrivilegesModal({
   open,
-  groupId,
+  memberId,
   currentPrivilegeIds,
   onClose,
   onSuccess,
 }: Props) {
   const [selected, setSelected] = useState<number[]>([]);
-  const [loading, setLoading] = useState(false);
-  const { selectedOrgId } = useUserContext();
-  const { showSnackbar } = useSnackbar();
   const [availablePrivileges, setAvailablePrivileges] = useState<
     { id: string; name: string; description: string }[]
   >([]);
+  const [loading, setLoading] = useState(false);
+  const { selectedOrgId } = useUserContext();
+  const { showSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    if (open) setSelected(currentPrivilegeIds);
+  }, [open, currentPrivilegeIds]);
 
   useEffect(() => {
     if (!open || !selectedOrgId) return;
-    getAvailableGroupPrivileges(selectedOrgId)
+    getAvailableUserPrivileges(selectedOrgId)
       .then((response) =>
         setAvailablePrivileges(response.data.available_privileges),
       )
       .catch(() => setAvailablePrivileges([]));
   }, [open, selectedOrgId]);
-  useEffect(() => {
-    if (open) setSelected(currentPrivilegeIds);
-  }, [open, currentPrivilegeIds]);
 
   const togglePrivilege = (id: number) => {
     setSelected((prev) =>
@@ -67,8 +67,8 @@ export default function EditGroupPrivilegesModal({
     if (!selectedOrgId) return;
     try {
       setLoading(true);
-      await updateGroupPrivileges(selectedOrgId, groupId, selected.map(String));
-      showSnackbar("Privileges updated successfully", "success");
+      await updateUserMemberships(selectedOrgId, memberId, selected);
+      showSnackbar("User privileges updated successfully", "success");
       onSuccess();
       onClose();
     } catch {
@@ -89,7 +89,7 @@ export default function EditGroupPrivilegesModal({
           }}
         >
           <Typography variant="h6" fontWeight={700}>
-            Edit Privileges
+            Edit User Privileges
           </Typography>
           <IconButton onClick={onClose}>
             <CloseIcon />
