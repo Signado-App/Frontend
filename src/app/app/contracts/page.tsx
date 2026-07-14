@@ -25,11 +25,19 @@ function ContractsPage() {
   const [currentTab, setCurrentTab] = useState("All");
   const { selectedOrgId } = useUserContext();
   const [data, setData] = useState<OrgContract[]>([]);
+  const statusMap: Record<string, string> = {
+    All: "",
+    Pending: "PENDING_SIGNATURES",
+    Signed: "SIGNED",
+    Draft: "DRAFT",
+    "Waiting for files": "WAITING_FOR_FILES",
+    Expired: "EXPIRED",
+    Cancelled: "CANCELLED",
+  };
   const filteredData =
     currentTab === "All"
       ? data
-      : data.filter((c) => c.status.toLowerCase() === currentTab.toLowerCase());
-
+      : data.filter((c) => c.status === statusMap[currentTab]);
   useEffect(() => {
     if (selectedOrgId) {
       getOrgContracts(selectedOrgId)
@@ -98,7 +106,7 @@ function ContractsPage() {
         <StatusTabs
           currentTab={currentTab}
           onTabChange={setCurrentTab}
-          Tabs={["All", "Active", "Signed", "Expired", "Draft"]}
+          Tabs={["All", "Pending", "Signed", "Draft", "Expired", "Cancelled"]}
         />
       </Box>
 

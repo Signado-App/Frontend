@@ -35,6 +35,15 @@ function UsersPage() {
   const { hasPrivilege } = usePrivileges();
   const [editPrivilegesOpen, setEditPrivilegesOpen] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const statusMap: Record<string, string> = {
+    All: "",
+    Active: "ACTIVE",
+    Invited: "INVITED",
+  };
+  const filteredData =
+    currentTab === "All"
+      ? data
+      : data.filter((c) => c.status === statusMap[currentTab]);
 
   const handleRemove = async (memberId: number) => {
     if (!selectedOrgId) return;
@@ -144,8 +153,9 @@ function UsersPage() {
         <StatusTabs
           currentTab={currentTab}
           onTabChange={setCurrentTab}
-          Tabs={["Active", "Inactive"]}
+          Tabs={["All", "Active", "Invited"]}
         />
+        ;
         <Box sx={{ display: "flex", gap: 2 }}>
           <Searchbar placeholder="Search by client name" sx={{ width: 320 }} />
           <Select value="main" size="small" sx={{}}>
@@ -156,7 +166,7 @@ function UsersPage() {
       </Box>
       <Box>
         <AppTable<OrgMember>
-          data={data}
+          data={filteredData}
           columns={columns}
           getRowId={(row) => row.member_id}
         />

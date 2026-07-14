@@ -28,6 +28,16 @@ function ClientsPage() {
   const [data, setData] = useState<OrgClient[]>([]);
   const [addClientOpen, setAddClientOpen] = useState(false);
   const { hasPrivilege } = usePrivileges();
+  const statusMap: Record<string, string> = {
+    All: "",
+    Active: "ACTIVE",
+    Disabled: "DISABLED",
+  };
+
+  const filteredData =
+    currentTab === "All"
+      ? data
+      : data.filter((c) => c.status === statusMap[currentTab]);
 
   useEffect(() => {
     if (!selectedOrgId) return;
@@ -107,7 +117,7 @@ function ClientsPage() {
         <StatusTabs
           currentTab={currentTab}
           onTabChange={setCurrentTab}
-          Tabs={["Active", "Inactive"]}
+          Tabs={["All", "Active", "Disabled"]}
         />
         <Box sx={{ display: "flex", gap: 2 }}>
           <Searchbar placeholder="Search by client name" sx={{ width: 320 }} />
@@ -119,7 +129,7 @@ function ClientsPage() {
       </Box>
       <Box>
         <AppTable<OrgClient>
-          data={data}
+          data={filteredData}
           columns={columns}
           getRowId={(row) => row.id}
         />
