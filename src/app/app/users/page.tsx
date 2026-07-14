@@ -9,7 +9,6 @@ import Searchbar from "@/components/Searchbar/Searchbar";
 import { Select, MenuItem } from "@mui/material";
 import AppTable from "@/components/Table/AppTable";
 import { ColumnDef } from "@/components/Table/AppTable";
-import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import { getUsers } from "@/services/users";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -23,6 +22,7 @@ import { usePrivileges } from "@/context/PrivilegesContext";
 import { Privileges } from "@/constants/privileges";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import EditUserPrivilegesModal from "@/components/Users/EditUserPrivilegesModal";
+import StatusChip from "@/components/StatusChip";
 
 function UsersPage() {
   const [currentTab, setCurrentTab] = useState("Active");
@@ -89,27 +89,7 @@ function UsersPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors: Record<string, { bg: string; text: string }> = {
-          ACTIVE: { bg: "#dcfce7", text: "#22c55e" },
-          INVITED: { bg: "#fef9c3", text: "#eab308" },
-          DISABLED: { bg: "#f3f4f6", text: "#64748b" },
-        };
-        const style = colors[row.status] ?? { bg: "#f3f4f6", text: "#64748b" };
-
-        return (
-          <Chip
-            label={row.status}
-            size="small"
-            sx={{
-              bgcolor: style.bg,
-              color: style.text,
-              fontWeight: 600,
-              borderRadius: "6px",
-              height: "24px",
-              fontSize: "0.75rem",
-            }}
-          />
-        );
+        return <StatusChip status={row.status} />;
       },
     },
 

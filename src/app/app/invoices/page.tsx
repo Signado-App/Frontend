@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Chip, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import Headline from "@/components/Headline";
 import AppTable, { ColumnDef } from "@/components/Table/AppTable";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
@@ -8,6 +8,7 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { Invoice } from "@/types/types";
 import { useState } from "react";
 import InvoiceDetailModal from "@/components/Invoice/InvoiceDetailModal";
+import StatusChip from "@/components/StatusChip";
 
 function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -62,27 +63,7 @@ function InvoicesPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors = {
-          Paid: { bg: "#dcfce7", text: "#22c55e" },
-          Pending: { bg: "#fef3c7", text: "#f97316" },
-          Overdue: { bg: "#fee2e2", text: "#ef4444" },
-        };
-        const style = colors[row.status];
-
-        return (
-          <Chip
-            label={row.status}
-            size="small"
-            sx={{
-              bgcolor: style.bg,
-              color: style.text,
-              fontWeight: 600,
-              borderRadius: "6px",
-              height: "24px",
-              fontSize: "0.75rem",
-            }}
-          />
-        );
+        return <StatusChip status={row.status} />;
       },
     },
     {

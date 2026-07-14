@@ -7,8 +7,6 @@ import {
   Box,
   Typography,
   Button,
-  Chip,
-  Divider,
   IconButton,
   TextField,
 } from "@mui/material";
@@ -16,15 +14,13 @@ import CloseIcon from "@mui/icons-material/Close";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-import { Contract, OrgContract, OrgContractDetail } from "@/types/types";
+import { OrgContract, OrgContractDetail } from "@/types/types";
 import { useUserContext } from "@/context/UserContext";
 import { useEffect, useRef, useState } from "react";
 import {
   completeContract,
   getOrgContract,
-  getOrgContracts,
   updateOrgContract,
 } from "@/services/orgContracts";
 import { useSnackbar } from "@/context/SnackbarContext";
@@ -36,6 +32,10 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
+import ConfirmDialog from "../ConfirmDialog";
+import StatusChip from "../StatusChip";
 
 type Props = {
   open: boolean;
@@ -57,6 +57,9 @@ export default function ContractDetailModal({
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const displayContract = detail ?? contract;
+  const { hasPrivilege } = usePrivileges();
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -72,6 +75,23 @@ export default function ContractDetailModal({
     setEditMode(false);
     setNewFiles([]);
     onClose();
+  };
+
+  const handleCancelContract = async () => {
+    if (!selectedOrgId || !contract) return;
+    try {
+      setCancelling(true);
+      await completeContract(selectedOrgId, contract.id, "CANCEL");
+      showSnackbar("Contract cancelled successfully", "success");
+      setCancelOpen(false);
+      getOrgContract(selectedOrgId, contract.id).then((r) =>
+        setDetail(r.contract),
+      );
+    } catch {
+      showSnackbar("Failed to cancel contract.", "error");
+    } finally {
+      setCancelling(false);
+    }
   };
 
   useEffect(() => {
@@ -178,14 +198,31 @@ export default function ContractDetailModal({
               >
                 Download
               </Button> */}
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<EditOutlinedIcon />}
-                onClick={() => setEditMode(!editMode)}
-              >
-                {editMode ? "Cancel Edit" : "Edit Contract"}
-              </Button>
+              {hasPrivilege(Privileges.UPDATE_CONTRACTS) &&
+                !["SIGNED", "CANCELLED", "EXPIRED"].includes(
+                  displayContract?.status ?? "",
+                ) && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<EditOutlinedIcon />}
+                    onClick={() => setEditMode(!editMode)}
+                  >
+                    {editMode ? "Cancel Edit" : "Edit Contract"}
+                  </Button>
+                )}
+              {!["SIGNED", "CANCELLED", "EXPIRED"].includes(
+                displayContract?.status ?? "",
+              ) && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  onClick={() => setCancelOpen(true)}
+                >
+                  Cancel Contract
+                </Button>
+              )}
               {/* <Button
                 variant="outlined"
                 size="small"
@@ -243,16 +280,7 @@ export default function ContractDetailModal({
               >
                 Status:
               </Typography>
-              <Chip
-                label={displayContract.status}
-                size="small"
-                sx={{
-                  bgcolor: style.bg,
-                  color: style.text,
-                  fontWeight: 600,
-                  borderRadius: "20px",
-                }}
-              />
+              <StatusChip status={displayContract.status} />
             </Box>
           </Box>
 
@@ -393,7 +421,7 @@ export default function ContractDetailModal({
                 }}
               >
                 <Typography variant="body2">{party.email ?? "-"}</Typography>
-                <Chip label={party.status} size="small" />
+                <StatusChip status={party.status} />
               </Box>
             ))
           ) : (
@@ -504,6 +532,14 @@ export default function ContractDetailModal({
           )}
         </Box>
       </DialogContent>
+      <ConfirmDialog
+        open={cancelOpen}
+        title="Cancel Contract"
+        description="This contract will be cancelled and parties will no longer be able to sign it. This action cannot be undone."
+        confirmLabel={cancelling ? "Cancelling..." : "Cancel Contract"}
+        onConfirm={handleCancelContract}
+        onClose={() => setCancelOpen(false)}
+      />
     </Dialog>
   );
 }

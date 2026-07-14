@@ -1,5 +1,5 @@
 import Headline from "@/components/Headline";
-import { Box, Button, Chip, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import StatCard from "../Dashboard/StatCard";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
@@ -8,6 +8,7 @@ import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import AppTable, { ColumnDef } from "../Table/AppTable";
 import { Invoice } from "../../types/types";
+import StatusChip from "../StatusChip";
 
 const columns: ColumnDef<Invoice>[] = [
   {
@@ -66,20 +67,7 @@ const columns: ColumnDef<Invoice>[] = [
       };
       const style = colors[row.status];
 
-      return (
-        <Chip
-          label={row.status}
-          size="small"
-          sx={{
-            bgcolor: style.bg,
-            color: style.text,
-            fontWeight: 600,
-            borderRadius: "6px",
-            height: "24px",
-            fontSize: "0.75rem",
-          }}
-        />
-      );
+      return <StatusChip status={row.status} />;
     },
   },
   {

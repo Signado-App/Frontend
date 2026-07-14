@@ -9,7 +9,6 @@ import Searchbar from "@/components/Searchbar/Searchbar";
 import { Select, MenuItem } from "@mui/material";
 import AppTable from "@/components/Table/AppTable";
 import { ColumnDef } from "@/components/Table/AppTable";
-import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { useRouter } from "next/navigation";
@@ -20,6 +19,7 @@ import { getOrgClients } from "@/services/orgClients";
 import AddClientModal from "@/components/Organization/AddClientModal";
 import { Privileges } from "@/constants/privileges";
 import { usePrivileges } from "@/context/PrivilegesContext";
+import StatusChip from "@/components/StatusChip";
 
 function ClientsPage() {
   const [currentTab, setCurrentTab] = useState("Active");
@@ -50,28 +50,7 @@ function ClientsPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors: Record<string, { bg: string; text: string }> = {
-          Active: { bg: "#e0f2fe", text: "#0ea5e9" },
-          Signed: { bg: "#dcfce7", text: "#22c55e" },
-          Expired: { bg: "#f3f4f6", text: "#64748b" },
-          Draft: { bg: "#fef9c3", text: "#eab308" },
-        };
-        const style = colors[row.status] ?? { bg: "#f3f4f6", text: "#64748b" };
-
-        return (
-          <Chip
-            label={row.status}
-            size="small"
-            sx={{
-              bgcolor: style.bg,
-              color: style.text,
-              fontWeight: 600,
-              borderRadius: "6px",
-              height: "24px",
-              fontSize: "0.75rem",
-            }}
-          />
-        );
+        return <StatusChip status={row.status} />;
       },
     },
     {
