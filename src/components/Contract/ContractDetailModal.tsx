@@ -10,6 +10,7 @@ import {
   Chip,
   Divider,
   IconButton,
+  TextField,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
@@ -19,8 +20,18 @@ import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import { Contract, OrgContract, OrgContractDetail } from "@/types/types";
 import { useUserContext } from "@/context/UserContext";
-import { useEffect, useState } from "react";
-import { getOrgContract, getOrgContracts } from "@/services/orgContracts";
+import { useEffect, useRef, useState } from "react";
+import {
+  completeContract,
+  getOrgContract,
+  getOrgContracts,
+  updateOrgContract,
+} from "@/services/orgContracts";
+import { useSnackbar } from "@/context/SnackbarContext";
+import { sha256 } from "js-sha256";
+import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import { List, ListItem, ListItemText } from "@mui/material";
 
 type Props = {
   open: boolean;
@@ -35,15 +46,89 @@ export default function ContractDetailModal({
 }: Props) {
   const { selectedOrgId } = useUserContext();
   const [detail, setDetail] = useState<OrgContractDetail | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({ description: "", expires_at: "" });
+  const [saving, setSaving] = useState(false);
+  const { showSnackbar } = useSnackbar();
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setNewFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
+  };
+
+  const removeNewFile = (index: number) => {
+    setNewFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   useEffect(() => {
     if (!open || !contract || !selectedOrgId) return;
     getOrgContract(selectedOrgId, contract.id).then((response) => {
       setDetail(response.contract);
+      setEditForm({
+        description: response.contract?.description ?? "",
+        expires_at: response.contract?.expires_at
+          ? response.contract.expires_at.split("T")[0]
+          : "",
+      });
     });
   }, [open, contract]);
 
   if (!contract) return null;
+
+  const handleSave = async () => {
+    if (!selectedOrgId || !contract) return;
+    try {
+      setSaving(true);
+
+      const filesData = await Promise.all(
+        newFiles.map(async (file) => {
+          const buffer = await file.arrayBuffer();
+          const hashHex = sha256(buffer);
+          const bytes = new Uint8Array(hashHex.length / 2);
+          for (let i = 0; i < hashHex.length; i += 2) {
+            bytes[i / 2] = parseInt(hashHex.substring(i, i + 2), 16);
+          }
+          const hash = btoa(String.fromCharCode(...bytes));
+          return { name: file.name, size: file.size, type: file.type, hash };
+        }),
+      );
+
+      const response = await updateOrgContract(selectedOrgId, contract.id, {
+        description: editForm.description,
+        expires_at: editForm.expires_at
+          ? new Date(editForm.expires_at).toISOString()
+          : undefined,
+        new_files: filesData.length > 0 ? filesData : undefined,
+      });
+
+      if (response.upload_urls && response.upload_urls.length > 0) {
+        await Promise.all(
+          response.upload_urls.map((uploadInfo: any, index: number) =>
+            fetch(uploadInfo.upload_url, {
+              method: "PUT",
+              body: newFiles[index],
+              headers: { "Content-Type": newFiles[index].type },
+            }),
+          ),
+        );
+        await completeContract(selectedOrgId, contract.id, "VERIFY");
+      }
+
+      showSnackbar("Contract updated successfully", "success");
+      setEditMode(false);
+      setNewFiles([]);
+      getOrgContract(selectedOrgId, contract.id).then((r) =>
+        setDetail(r.contract),
+      );
+    } catch {
+      showSnackbar("Failed to update contract.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const colors: Record<string, { bg: string; text: string }> = {
     active: { bg: "#e0f2fe", text: "#0ea5e9" },
@@ -82,8 +167,9 @@ export default function ContractDetailModal({
                 variant="outlined"
                 size="small"
                 startIcon={<EditOutlinedIcon />}
+                onClick={() => setEditMode(!editMode)}
               >
-                Add Amendment
+                {editMode ? "Cancel Edit" : "Edit Contract"}
               </Button>
               <Button
                 variant="outlined"
@@ -191,6 +277,73 @@ export default function ContractDetailModal({
             ))}
           </Box>
         </Box>
+        {editMode && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
+            <Typography variant="subtitle1" fontWeight={700}>
+              Edit Contract
+            </Typography>
+            <TextField
+              label="Description"
+              multiline
+              rows={3}
+              fullWidth
+              value={editForm.description}
+              onChange={(e) =>
+                setEditForm((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+            />
+            <TextField
+              label="Expires At"
+              type="date"
+              fullWidth
+              value={editForm.expires_at}
+              onChange={(e) =>
+                setEditForm((prev) => ({ ...prev, expires_at: e.target.value }))
+              }
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<AttachFileOutlinedIcon />}
+              sx={{ alignSelf: "flex-start" }}
+            >
+              Add Files
+              <input type="file" hidden multiple onChange={handleFileChange} />
+            </Button>
+
+            {newFiles.length > 0 && (
+              <List dense>
+                {newFiles.map((file, index) => (
+                  <ListItem
+                    key={index}
+                    secondaryAction={
+                      <IconButton onClick={() => removeNewFile(index)}>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText
+                      primary={file.name}
+                      secondary={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              disabled={saving}
+              sx={{ alignSelf: "flex-start" }}
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </Box>
+        )}
         <Typography variant="subtitle1" fontWeight={700} mt={3} mb={1.5}>
           Signing Parties
         </Typography>

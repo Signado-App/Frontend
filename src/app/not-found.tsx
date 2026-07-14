@@ -10,7 +10,6 @@ export default function NotFound({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
     console.error(error)
   }, [error])
  

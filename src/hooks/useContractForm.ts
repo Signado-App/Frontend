@@ -188,7 +188,6 @@ export function useCreateContractForm() {
     } catch (e) {
       setSubmitStage("idle");
 
-      // Vrať uživatele na krok, kde to selhalo
       if (submitStage === "creating") {
         setSubmitError(
           "Failed to create the contract. Check the details and parties.",
