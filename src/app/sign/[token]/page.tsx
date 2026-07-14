@@ -60,14 +60,13 @@ export default function SignPage({
       setSigning(true);
       setError(null);
 
-      // získej SVG data z canvasu
-      const svgData = sigCanvasRef.current.toDataURL("image/svg+xml");
+      const signatureData = sigCanvasRef.current.toDataURL();
 
       await signContract(contract.id, {
         device: navigator.userAgent,
         document_hash: contract.id,
         location: "",
-        signature_svg: { svg: svgData },
+        signature_svg: { data: signatureData },
       });
 
       setSigned(true);
@@ -131,6 +130,27 @@ export default function SignPage({
           {contract.description && (
             <Typography variant="body2" color="text.secondary" mt={1}>
               {contract.description}
+            </Typography>
+          )}
+          {contract.sign_by && (
+            <Typography variant="body2" mt={2}>
+              Sign by:{" "}
+              <strong>
+                {new Date(contract.sign_by).toLocaleDateString("cs-CZ")}
+              </strong>
+            </Typography>
+          )}
+          {contract.expires_at && (
+            <Typography variant="body2">
+              Expires:{" "}
+              <strong>
+                {new Date(contract.expires_at).toLocaleDateString("cs-CZ")}
+              </strong>
+            </Typography>
+          )}
+          {contract.status && (
+            <Typography variant="body2">
+              Status: <strong>{contract.status}</strong>
             </Typography>
           )}
         </Paper>

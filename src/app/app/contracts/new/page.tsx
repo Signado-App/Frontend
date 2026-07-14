@@ -25,6 +25,10 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Headline from "@/components/Headline";
 import { useRouter } from "next/navigation";
 import { useCreateContractForm } from "@/hooks/useContractForm";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 const steps = ["Details", "Parties", "Files", "Review"];
 
@@ -116,16 +120,21 @@ export default function NewContractPage() {
               value={form.description}
               onChange={handleChange}
             />
-            <TextField
-              name="expires_at"
-              label="Expires At"
-              type="date"
-              fullWidth
-              required
-              value={form.expires_at}
-              onChange={handleChange}
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Expires At"
+                value={form.expires_at ? dayjs(form.expires_at) : null}
+                onChange={(newValue) => {
+                  handleChange({
+                    target: {
+                      name: "expires_at",
+                      value: newValue ? newValue.format("YYYY-MM-DD") : "",
+                    },
+                  } as React.ChangeEvent<HTMLInputElement>);
+                }}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
+              />
+            </LocalizationProvider>
             <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
               <Button
                 variant="contained"
