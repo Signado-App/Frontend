@@ -52,6 +52,11 @@ export async function loginUser(
   }
 }
 
+export async function loginWithSigningToken(token: string) {
+  const response = await apiClient.post(`/public/auth/login/contract/${token}`);
+  return response.data;
+}
+
 export async function logoutUser(): Promise<ApiResponse> {
   const response = await apiClient.post("/public/auth/logout");
   return response.data;

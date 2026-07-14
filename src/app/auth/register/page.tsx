@@ -2,6 +2,7 @@
 import Headline from "@/components/Headline";
 import { useRegisterForm } from "@/hooks/useRegisterForm";
 import { Box, Button, Link, TextField, Typography } from "@mui/material";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 
 export default function RegisterPage() {
   const {
@@ -19,8 +20,28 @@ export default function RegisterPage() {
     isFormValid,
     touched,
     handleBlur,
+    registered,
   } = useRegisterForm();
 
+  if (registered) {
+    return (
+      <Box sx={{ textAlign: "center", py: 4 }}>
+        <CheckCircleOutlineIcon
+          sx={{ fontSize: 64, color: "success.main", mb: 2 }}
+        />
+        <Typography variant="h5" fontWeight={700} mb={1}>
+          Registration Successful!
+        </Typography>
+        <Typography color="text.secondary" mb={3}>
+          We sent a verification email to your inbox. Please verify your account
+          before logging in.
+        </Typography>
+        <Button variant="contained" href="/auth/login">
+          Go to Login
+        </Button>
+      </Box>
+    );
+  }
   return (
     <>
       <Headline

@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  registerUser,
-} from "@/services/auth";
+import { registerUser } from "@/services/auth";
 import { useSnackbar } from "@/context/SnackbarContext";
-import { EmailAlreadyExistsError, NetworkError, ServerError, ValidationError } from "@/services/errors";
+import {
+  EmailAlreadyExistsError,
+  NetworkError,
+  ServerError,
+  ValidationError,
+} from "@/services/errors";
 
 export function useRegisterForm() {
   const [form, setForm] = useState({
@@ -19,6 +22,7 @@ export function useRegisterForm() {
   const passwordsMatch = form.password === form.confirmPassword;
   const { showSnackbar } = useSnackbar();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [registered, setRegistered] = useState(false);
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
   const isFirstNameValid = form.firstName.trim().length > 0;
@@ -85,7 +89,8 @@ export function useRegisterForm() {
         email: form.email,
         password: form.password,
       });
-      showSnackbar("Registration successful! Check your email.", "success");
+      setRegistered(true);
+      // showSnackbar("Registration successful! Check your email.", "success");
     } catch (err) {
       if (err instanceof EmailAlreadyExistsError) {
         setFieldErrors({ email: "This email is already registered" });
@@ -123,5 +128,6 @@ export function useRegisterForm() {
     isFormValid,
     touched,
     handleBlur,
+    registered
   };
 }

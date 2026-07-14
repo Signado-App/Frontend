@@ -6,6 +6,7 @@ import { getUser } from "@/services/user";
 import { useRouter } from "next/navigation";
 import { logoutUser } from "@/services/auth";
 import { getUserOrganizations } from "@/services/organizations";
+import { useSnackbar } from "./SnackbarContext";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -18,6 +19,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [organizations, setOrganizations] = useState<OrganizationListItem[]>(
     [],
   );
+  const { showSnackbar } = useSnackbar();
 
   const refreshOrganizations = async () => {
     try {
@@ -50,7 +52,12 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       if (isAppRoute) {
         localStorage.removeItem("access_csrf");
         localStorage.removeItem("refresh_csrf");
+        localStorage.removeItem("selectedOrgId");
         setUser(null);
+        showSnackbar(
+          "Your session has expired. Please log in again.",
+          "warning",
+        );
         router.push("/auth/login");
       }
     });
