@@ -32,6 +32,10 @@ import { sha256 } from "js-sha256";
 import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { List, ListItem, ListItemText } from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 type Props = {
   open: boolean;
@@ -52,6 +56,7 @@ export default function ContractDetailModal({
   const { showSnackbar } = useSnackbar();
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const displayContract = detail ?? contract;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -63,9 +68,15 @@ export default function ContractDetailModal({
     setNewFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleClose = () => {
+    setEditMode(false);
+    setNewFiles([]);
+    onClose();
+  };
+
   useEffect(() => {
-    if (!open || !contract || !selectedOrgId) return;
-    getOrgContract(selectedOrgId, contract.id).then((response) => {
+    if (!open || !displayContract || !selectedOrgId) return;
+    getOrgContract(selectedOrgId, displayContract.id).then((response) => {
       setDetail(response.contract);
       setEditForm({
         description: response.contract?.description ?? "",
@@ -76,10 +87,10 @@ export default function ContractDetailModal({
     });
   }, [open, contract]);
 
-  if (!contract) return null;
+  if (!displayContract) return null;
 
   const handleSave = async () => {
-    if (!selectedOrgId || !contract) return;
+    if (!selectedOrgId || !displayContract) return;
     try {
       setSaving(true);
 
@@ -96,13 +107,17 @@ export default function ContractDetailModal({
         }),
       );
 
-      const response = await updateOrgContract(selectedOrgId, contract.id, {
-        description: editForm.description,
-        expires_at: editForm.expires_at
-          ? new Date(editForm.expires_at).toISOString()
-          : undefined,
-        new_files: filesData.length > 0 ? filesData : undefined,
-      });
+      const response = await updateOrgContract(
+        selectedOrgId,
+        displayContract.id,
+        {
+          description: editForm.description,
+          expires_at: editForm.expires_at
+            ? new Date(editForm.expires_at).toISOString()
+            : undefined,
+          new_files: filesData.length > 0 ? filesData : undefined,
+        },
+      );
 
       if (response.upload_urls && response.upload_urls.length > 0) {
         await Promise.all(
@@ -114,13 +129,13 @@ export default function ContractDetailModal({
             }),
           ),
         );
-        await completeContract(selectedOrgId, contract.id, "VERIFY");
+        await completeContract(selectedOrgId, displayContract.id, "VERIFY");
       }
 
       showSnackbar("Contract updated successfully", "success");
       setEditMode(false);
       setNewFiles([]);
-      getOrgContract(selectedOrgId, contract.id).then((r) =>
+      getOrgContract(selectedOrgId, displayContract.id).then((r) =>
         setDetail(r.contract),
       );
     } catch {
@@ -136,13 +151,13 @@ export default function ContractDetailModal({
     expired: { bg: "#f3f4f6", text: "#64748b" },
     draft: { bg: "#fef9c3", text: "#eab308" },
   };
-  const style = colors[contract.status.toLowerCase()] ?? {
+  const style = colors[displayContract.status.toLowerCase()] ?? {
     bg: "#f3f4f6",
     text: "#64748b",
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box
           sx={{
@@ -153,16 +168,16 @@ export default function ContractDetailModal({
         >
           <Box>
             <Typography variant="h6" fontWeight={700}>
-              Contract Details - {contract.id}
+              Contract Details - {displayContract.id}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-              <Button
+              {/* <Button
                 variant="outlined"
                 size="small"
                 startIcon={<DownloadOutlinedIcon />}
               >
                 Download
-              </Button>
+              </Button> */}
               <Button
                 variant="outlined"
                 size="small"
@@ -171,16 +186,16 @@ export default function ContractDetailModal({
               >
                 {editMode ? "Cancel Edit" : "Edit Contract"}
               </Button>
-              <Button
+              {/* <Button
                 variant="outlined"
                 size="small"
                 startIcon={<ReceiptOutlinedIcon />}
               >
                 Create Invoice
-              </Button>
+              </Button> */}
             </Box>
           </Box>
-          <IconButton onClick={onClose}>
+          <IconButton onClick={handleClose}>
             <CloseIcon />
           </IconButton>
         </Box>
@@ -200,9 +215,12 @@ export default function ContractDetailModal({
               Contract Information
             </Typography>
             {[
-              { label: "Contract Name:", value: contract.title },
-              { label: "Contract Number:", value: contract.id },
-              { label: "Description:", value: contract.description ?? "-" },
+              { label: "Contract Name:", value: displayContract.title },
+              { label: "Contract Number:", value: displayContract.id },
+              {
+                label: "Description:",
+                value: displayContract.description ?? "-",
+              },
             ].map(({ label, value }) => (
               <Box key={label} sx={{ display: "flex", gap: 2, mb: 1.5 }}>
                 <Typography
@@ -226,7 +244,7 @@ export default function ContractDetailModal({
                 Status:
               </Typography>
               <Chip
-                label={contract.status}
+                label={displayContract.status}
                 size="small"
                 sx={{
                   bgcolor: style.bg,
@@ -245,20 +263,22 @@ export default function ContractDetailModal({
             {[
               {
                 label: "Created:",
-                value: contract.created_at
-                  ? new Date(contract.created_at).toLocaleString("cs-CZ")
+                value: displayContract.created_at
+                  ? new Date(displayContract.created_at).toLocaleString("cs-CZ")
                   : "-",
               },
               {
                 label: "Expires:",
-                value: contract.expires_at
-                  ? new Date(contract.expires_at).toLocaleString("cs-CZ")
+                value: displayContract.expires_at
+                  ? new Date(displayContract.expires_at).toLocaleString("cs-CZ")
                   : "-",
               },
               {
                 label: "Last Activity:",
-                value: contract.last_activity
-                  ? new Date(contract.last_activity).toLocaleString("cs-CZ")
+                value: displayContract.last_activity
+                  ? new Date(displayContract.last_activity).toLocaleString(
+                      "cs-CZ",
+                    )
                   : "-",
               },
             ].map(({ label, value }) => (
@@ -295,16 +315,19 @@ export default function ContractDetailModal({
                 }))
               }
             />
-            <TextField
-              label="Expires At"
-              type="date"
-              fullWidth
-              value={editForm.expires_at}
-              onChange={(e) =>
-                setEditForm((prev) => ({ ...prev, expires_at: e.target.value }))
-              }
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Expires At"
+                value={editForm.expires_at ? dayjs(editForm.expires_at) : null}
+                onChange={(newValue) => {
+                  setEditForm((prev) => ({
+                    ...prev,
+                    expires_at: newValue ? newValue.format("YYYY-MM-DD") : "",
+                  }));
+                }}
+                slotProps={{ textField: { fullWidth: true } }}
+              />
+            </LocalizationProvider>
             <Button
               variant="outlined"
               component="label"
