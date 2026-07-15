@@ -7,7 +7,6 @@ import {
   Box,
   Typography,
   Button,
-  Chip,
   IconButton,
   Table,
   TableHead,
@@ -19,6 +18,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
 import { Invoice } from "@/types/types";
+import StatusChip from "../StatusChip";
 
 type Props = {
   open: boolean;
@@ -125,16 +125,7 @@ export default function InvoiceDetailModal({ open, onClose, invoice }: Props) {
               <Typography variant="body2" color="text.secondary">
                 Status:
               </Typography>
-              <Chip
-                label={invoice.status}
-                size="small"
-                sx={{
-                  bgcolor: style.bg,
-                  color: style.text,
-                  fontWeight: 600,
-                  borderRadius: "20px",
-                }}
-              />
+              <StatusChip status={invoice.status} />
             </Box>
           </Box>
 

@@ -1,18 +1,19 @@
 "use client";
 
-import { Box, Button, Chip, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import Headline from "@/components/Headline";
 import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
 import FloatingContainer from "@/components/FloatingContainer/FloatingContainer";
 import { useSnackbar } from "@/context/SnackbarContext";
-import { getOrganizationDashboard, joinOrganization } from "@/services/organizations";
+import {
+  getOrganizationDashboard,
+  joinOrganization,
+} from "@/services/organizations";
 import { useEffect, useState } from "react";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import StatCard from "@/components/Dashboard/StatCard";
 import EditNoteIcon from "@mui/icons-material/EditNote";
-
-
 
 function DashboardPage() {
   const { organizations, refreshOrganizations } = useAuthContext();
@@ -29,9 +30,13 @@ function DashboardPage() {
 
   useEffect(() => {
     if (!selectedOrgId || mode !== "organization") return;
-    getOrganizationDashboard(selectedOrgId).then((response) => {
-      setStats(response.data);
-    });
+    getOrganizationDashboard(selectedOrgId)
+      .then((response) => {
+        setStats(response.data);
+      })
+      .catch(() => {
+        setStats(null);
+      });
   }, [selectedOrgId, mode]);
 
   const displayStats = mode === "organization" ? stats : null;
@@ -45,8 +50,16 @@ function DashboardPage() {
 
       {mode === "organization" && stats && (
         <Box sx={{ display: "flex", gap: 2 }}>
-          <StatCard icon={<PeopleOutlineIcon />} label="New Clients" value={stats.new_clients} />
-          <StatCard icon={<EditNoteIcon />} label="New Contracts" value={stats.new_contracts} />
+          <StatCard
+            icon={<PeopleOutlineIcon />}
+            label="New Clients"
+            value={stats.new_clients}
+          />
+          <StatCard
+            icon={<EditNoteIcon />}
+            label="New Contracts"
+            value={stats.new_contracts}
+          />
         </Box>
       )}
 
@@ -57,12 +70,19 @@ function DashboardPage() {
             {pendingInvites.map((org) => (
               <Box
                 key={org.organization_id}
-                sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
                 <Box>
-                  <Typography variant="body2" fontWeight={600}>{org.name}</Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {org.name}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Invited {new Date(org.joined_at).toLocaleDateString("cs-CZ")}
+                    Invited{" "}
+                    {new Date(org.joined_at).toLocaleDateString("cs-CZ")}
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", gap: 1 }}>
@@ -72,7 +92,10 @@ function DashboardPage() {
                     onClick={async () => {
                       try {
                         await joinOrganization(org.organization_id);
-                        showSnackbar("Joined organization successfully", "success");
+                        showSnackbar(
+                          "Joined organization successfully",
+                          "success",
+                        );
                         await refreshOrganizations();
                       } catch {
                         showSnackbar("Failed to join organization.", "error");
@@ -81,7 +104,12 @@ function DashboardPage() {
                   >
                     Accept
                   </Button>
-                  <Button variant="outlined" color="error" size="small" disabled>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    disabled
+                  >
                     Decline
                   </Button>
                 </Box>

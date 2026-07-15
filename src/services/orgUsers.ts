@@ -27,7 +27,35 @@ export async function removeOrgUser(orgId: number, memberId: number) {
   return response.data;
 }
 
-export async function inviteOrgUser(orgId: number, data: { email: string; groups: number[] }) {
-  const response = await apiClient.post(`/protected/organization/${orgId}/users/add`, data);
+export async function inviteOrgUser(
+  orgId: number,
+  data: { email: string; groups: number[] },
+) {
+  const response = await apiClient.post(
+    `/protected/organization/${orgId}/users/add`,
+    data,
+  );
+  return response.data;
+}
+
+export async function getAvailableUserPrivileges(orgId: number) {
+  const response = await apiClient.get(
+    `/protected/organization/${orgId}/users/available-privileges`,
+  );
+  return response.data;
+}
+
+export async function updateUserMemberships(
+  orgId: number,
+  memberId: number,
+  privilegeIds: number[],
+) {
+  const response = await apiClient.post(
+    `/protected/organization/${orgId}/users/update/memberships`,
+    {
+      member_id: memberId,
+      privileges: privilegeIds,
+    },
+  );
   return response.data;
 }

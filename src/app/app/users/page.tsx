@@ -9,7 +9,6 @@ import Searchbar from "@/components/Searchbar/Searchbar";
 import { Select, MenuItem } from "@mui/material";
 import AppTable from "@/components/Table/AppTable";
 import { ColumnDef } from "@/components/Table/AppTable";
-import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import { getUsers } from "@/services/users";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -19,6 +18,11 @@ import { getOrgUsers, removeOrgUser } from "@/services/orgUsers";
 import { useAuthContext } from "@/context/AuthContext";
 import { useSnackbar } from "@/context/SnackbarContext";
 import InviteUserModal from "@/components/Users/InviteUserModal";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import EditUserPrivilegesModal from "@/components/Users/EditUserPrivilegesModal";
+import StatusChip from "@/components/StatusChip";
 
 function UsersPage() {
   const [currentTab, setCurrentTab] = useState("Active");
@@ -28,6 +32,18 @@ function UsersPage() {
   const [data, setData] = useState<OrgMember[]>([]);
   const { showSnackbar } = useSnackbar();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const { hasPrivilege } = usePrivileges();
+  const [editPrivilegesOpen, setEditPrivilegesOpen] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const statusMap: Record<string, string> = {
+    All: "",
+    Active: "ACTIVE",
+    Invited: "INVITED",
+  };
+  const filteredData =
+    currentTab === "All"
+      ? data
+      : data.filter((c) => c.status === statusMap[currentTab]);
 
   const handleRemove = async (memberId: number) => {
     if (!selectedOrgId) return;
@@ -41,11 +57,15 @@ function UsersPage() {
   };
   useEffect(() => {
     if (!selectedOrgId) return;
-    getOrgUsers(selectedOrgId).then((response) => {
-      setData(response.data);
-    });
+    getOrgUsers(selectedOrgId)
+      .then((response) => setData(response.data))
+      .catch(() => setData([]));
   }, [selectedOrgId]);
 
+  const handleEditPrivileges = (memberId: number) => {
+    setEditingMemberId(memberId);
+    setEditPrivilegesOpen(true);
+  };
   const columns: ColumnDef<OrgMember>[] = [
     {
       id: "name",
@@ -78,27 +98,7 @@ function UsersPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors: Record<string, { bg: string; text: string }> = {
-          ACTIVE: { bg: "#dcfce7", text: "#22c55e" },
-          INVITED: { bg: "#fef9c3", text: "#eab308" },
-          DISABLED: { bg: "#f3f4f6", text: "#64748b" },
-        };
-        const style = colors[row.status] ?? { bg: "#f3f4f6", text: "#64748b" };
-
-        return (
-          <Chip
-            label={row.status}
-            size="small"
-            sx={{
-              bgcolor: style.bg,
-              color: style.text,
-              fontWeight: 600,
-              borderRadius: "6px",
-              height: "24px",
-              fontSize: "0.75rem",
-            }}
-          />
-        );
+        return <StatusChip status={row.status} />;
       },
     },
 
@@ -106,17 +106,30 @@ function UsersPage() {
       id: "actions",
       header: "Actions",
       align: "left",
-      cell: (row) =>
-        row.user_id === Number(user?.id) ? null : (
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<DeleteOutlineIcon />}
-            onClick={() => handleRemove(row.member_id)}
-          >
-            Remove
-          </Button>
-        ),
+      cell: (row) => (
+        <Box sx={{ display: "flex", gap: 1 }}>
+          {hasPrivilege(Privileges.UPDATE_USER_PRIVILEGES) && (
+            <Button
+              variant="outlined"
+              startIcon={<EditOutlinedIcon />}
+              onClick={() => handleEditPrivileges(row.member_id)}
+            >
+              Privileges
+            </Button>
+          )}
+          {row.user_id !== Number(user?.id) &&
+            hasPrivilege(Privileges.DELETE_USERS) && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={() => handleRemove(row.member_id)}
+              >
+                Remove
+              </Button>
+            )}
+        </Box>
+      ),
     },
   ];
   return (
@@ -126,20 +139,23 @@ function UsersPage() {
           title="Users"
           description="Manage clients of your organization."
         />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setInviteOpen(true)}
-        >
-          Invite User
-        </Button>
+        {hasPrivilege(Privileges.ADD_USERS) && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setInviteOpen(true)}
+          >
+            Invite User
+          </Button>
+        )}
       </Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
         <StatusTabs
           currentTab={currentTab}
           onTabChange={setCurrentTab}
-          Tabs={["Active", "Inactive"]}
+          Tabs={["All", "Active", "Invited"]}
         />
+        ;
         <Box sx={{ display: "flex", gap: 2 }}>
           <Searchbar placeholder="Search by client name" sx={{ width: 320 }} />
           <Select value="main" size="small" sx={{}}>
@@ -150,7 +166,7 @@ function UsersPage() {
       </Box>
       <Box>
         <AppTable<OrgMember>
-          data={data}
+          data={filteredData}
           columns={columns}
           getRowId={(row) => row.member_id}
         />
@@ -160,10 +176,22 @@ function UsersPage() {
         onClose={() => setInviteOpen(false)}
         onSuccess={() => {
           if (selectedOrgId) {
-            getOrgUsers(selectedOrgId).then((response) =>
-              setData(response.data),
-            );
+            getOrgUsers(selectedOrgId)
+              .then((response) => setData(response.data))
+              .catch(() => {});
           }
+        }}
+      />
+      <EditUserPrivilegesModal
+        open={editPrivilegesOpen}
+        memberId={editingMemberId ?? 0}
+        currentPrivilegeIds={[]}
+        onClose={() => setEditPrivilegesOpen(false)}
+        onSuccess={() => {
+          if (selectedOrgId)
+            getOrgUsers(selectedOrgId)
+              .then((r) => setData(r.data))
+              .catch(() => {});
         }}
       />
     </Box>

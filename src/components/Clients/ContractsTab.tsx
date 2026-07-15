@@ -1,5 +1,5 @@
 import Headline from "@/components/Headline";
-import { Box, Button, Chip, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import StatCard from "../Dashboard/StatCard";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
@@ -8,6 +8,7 @@ import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import AppTable, { ColumnDef } from "../Table/AppTable";
 import { Contract } from "../../types/types";
+import StatusChip from "../StatusChip";
 
 const columns: ColumnDef<Contract>[] = [
   {
@@ -37,28 +38,7 @@ const columns: ColumnDef<Contract>[] = [
     id: "status",
     header: "Status",
     cell: (row) => {
-      const colors = {
-        Active: { bg: "#e0f2fe", text: "#0ea5e9" },
-        Signed: { bg: "#dcfce7", text: "#22c55e" },
-        Expired: { bg: "#f3f4f6", text: "#64748b" },
-        Draft: { bg: "#fef9c3", text: "#eab308" },
-      };
-      const style = colors[row.status];
-
-      return (
-        <Chip
-          label={row.status}
-          size="small"
-          sx={{
-            bgcolor: style.bg,
-            color: style.text,
-            fontWeight: 600,
-            borderRadius: "6px",
-            height: "24px",
-            fontSize: "0.75rem",
-          }}
-        />
-      );
+      return <StatusChip status={row.status} />;
     },
   },
   {

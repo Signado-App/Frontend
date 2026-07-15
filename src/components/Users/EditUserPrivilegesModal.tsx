@@ -1,0 +1,132 @@
+"use client";
+
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  Typography,
+  IconButton,
+  Box,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { useState, useEffect } from "react";
+import {
+  updateUserMemberships,
+  getAvailableUserPrivileges,
+} from "@/services/orgUsers";
+import { useSnackbar } from "@/context/SnackbarContext";
+import { useUserContext } from "@/context/UserContext";
+
+type Props = {
+  open: boolean;
+  memberId: number;
+  currentPrivilegeIds: number[];
+  onClose: () => void;
+  onSuccess: () => void;
+};
+
+export default function EditUserPrivilegesModal({
+  open,
+  memberId,
+  currentPrivilegeIds,
+  onClose,
+  onSuccess,
+}: Props) {
+  const [selected, setSelected] = useState<number[]>([]);
+  const [availablePrivileges, setAvailablePrivileges] = useState<
+    { id: string; name: string; description: string }[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const { selectedOrgId } = useUserContext();
+  const { showSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    if (open) setSelected(currentPrivilegeIds);
+  }, [open, currentPrivilegeIds]);
+
+  useEffect(() => {
+    if (!open || !selectedOrgId) return;
+    getAvailableUserPrivileges(selectedOrgId)
+      .then((response) =>
+        setAvailablePrivileges(response.data.available_privileges),
+      )
+      .catch(() => setAvailablePrivileges([]));
+  }, [open, selectedOrgId]);
+
+  const togglePrivilege = (id: number) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedOrgId) return;
+    try {
+      setLoading(true);
+      await updateUserMemberships(selectedOrgId, memberId, selected);
+      showSnackbar("User privileges updated successfully", "success");
+      onSuccess();
+      onClose();
+    } catch {
+      showSnackbar("Failed to update privileges.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="h6" fontWeight={700}>
+            Edit User Privileges
+          </Typography>
+          <IconButton onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      </DialogTitle>
+      <DialogContent>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            maxHeight: 400,
+            overflowY: "auto",
+          }}
+        >
+          {availablePrivileges.map((priv) => (
+            <FormControlLabel
+              key={priv.id}
+              control={
+                <Checkbox
+                  checked={selected.includes(Number(priv.id))}
+                  onChange={() => togglePrivilege(Number(priv.id))}
+                />
+              }
+              label={priv.name}
+            />
+          ))}
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 3 }}>
+        <Button variant="outlined" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+          {loading ? "Saving..." : "Save Privileges"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}

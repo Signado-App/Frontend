@@ -9,7 +9,6 @@ import Searchbar from "@/components/Searchbar/Searchbar";
 import { Select, MenuItem } from "@mui/material";
 import AppTable from "@/components/Table/AppTable";
 import { ColumnDef } from "@/components/Table/AppTable";
-import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { useRouter } from "next/navigation";
@@ -18,6 +17,9 @@ import { getClients } from "@/services/clients";
 import { useUserContext } from "@/context/UserContext";
 import { getOrgClients } from "@/services/orgClients";
 import AddClientModal from "@/components/Organization/AddClientModal";
+import { Privileges } from "@/constants/privileges";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import StatusChip from "@/components/StatusChip";
 
 function ClientsPage() {
   const [currentTab, setCurrentTab] = useState("Active");
@@ -25,12 +27,23 @@ function ClientsPage() {
   const { selectedOrgId } = useUserContext();
   const [data, setData] = useState<OrgClient[]>([]);
   const [addClientOpen, setAddClientOpen] = useState(false);
+  const { hasPrivilege } = usePrivileges();
+  const statusMap: Record<string, string> = {
+    All: "",
+    Active: "ACTIVE",
+    Disabled: "DISABLED",
+  };
+
+  const filteredData =
+    currentTab === "All"
+      ? data
+      : data.filter((c) => c.status === statusMap[currentTab]);
 
   useEffect(() => {
     if (!selectedOrgId) return;
-    getOrgClients(selectedOrgId).then((response) => {
-      setData(response.clients);
-    });
+    getOrgClients(selectedOrgId)
+      .then((response) => setData(response.clients))
+      .catch(() => setData([]));
   }, [selectedOrgId]);
 
   const columns: ColumnDef<OrgClient>[] = [
@@ -47,28 +60,7 @@ function ClientsPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors: Record<string, { bg: string; text: string }> = {
-          Active: { bg: "#e0f2fe", text: "#0ea5e9" },
-          Signed: { bg: "#dcfce7", text: "#22c55e" },
-          Expired: { bg: "#f3f4f6", text: "#64748b" },
-          Draft: { bg: "#fef9c3", text: "#eab308" },
-        };
-        const style = colors[row.status] ?? { bg: "#f3f4f6", text: "#64748b" };
-
-        return (
-          <Chip
-            label={row.status}
-            size="small"
-            sx={{
-              bgcolor: style.bg,
-              color: style.text,
-              fontWeight: 600,
-              borderRadius: "6px",
-              height: "24px",
-              fontSize: "0.75rem",
-            }}
-          />
-        );
+        return <StatusChip status={row.status} />;
       },
     },
     {
@@ -96,7 +88,6 @@ function ClientsPage() {
           variant="outlined"
           startIcon={<VisibilityOutlinedIcon />}
           onClick={() => {
-            console.log("View client", row.id);
             router.push(`/app/clients/${row.id}`);
           }}
         >
@@ -112,19 +103,21 @@ function ClientsPage() {
           title="Clients"
           description="Manage your client relationships"
         />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setAddClientOpen(true)}
-        >
-          Add New Client
-        </Button>
+        {hasPrivilege(Privileges.CREATE_CLIENTS) && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setAddClientOpen(true)}
+          >
+            Add New Client
+          </Button>
+        )}
       </Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
         <StatusTabs
           currentTab={currentTab}
           onTabChange={setCurrentTab}
-          Tabs={["Active", "Inactive"]}
+          Tabs={["All", "Active", "Disabled"]}
         />
         <Box sx={{ display: "flex", gap: 2 }}>
           <Searchbar placeholder="Search by client name" sx={{ width: 320 }} />
@@ -136,7 +129,7 @@ function ClientsPage() {
       </Box>
       <Box>
         <AppTable<OrgClient>
-          data={data}
+          data={filteredData}
           columns={columns}
           getRowId={(row) => row.id}
         />
@@ -146,7 +139,9 @@ function ClientsPage() {
         onClose={() => setAddClientOpen(false)}
         onSuccess={() => {
           if (selectedOrgId)
-            getOrgClients(selectedOrgId).then((r) => setData(r.clients));
+            getOrgClients(selectedOrgId)
+              .then((r) => setData(r.clients))
+              .catch(() => {});
         }}
       />
     </Box>

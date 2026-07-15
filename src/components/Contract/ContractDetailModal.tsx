@@ -7,20 +7,35 @@ import {
   Box,
   Typography,
   Button,
-  Chip,
-  Divider,
   IconButton,
+  TextField,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-import { Contract, OrgContract, OrgContractDetail } from "@/types/types";
+import { OrgContract, OrgContractDetail } from "@/types/types";
 import { useUserContext } from "@/context/UserContext";
-import { useEffect, useState } from "react";
-import { getOrgContract, getOrgContracts } from "@/services/orgContracts";
+import { useEffect, useRef, useState } from "react";
+import {
+  completeContract,
+  getOrgContract,
+  updateOrgContract,
+} from "@/services/orgContracts";
+import { useSnackbar } from "@/context/SnackbarContext";
+import { sha256 } from "js-sha256";
+import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import { List, ListItem, ListItemText } from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
+import ConfirmDialog from "../ConfirmDialog";
+import StatusChip from "../StatusChip";
 
 type Props = {
   open: boolean;
@@ -35,15 +50,120 @@ export default function ContractDetailModal({
 }: Props) {
   const { selectedOrgId } = useUserContext();
   const [detail, setDetail] = useState<OrgContractDetail | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({ description: "", expires_at: "" });
+  const [saving, setSaving] = useState(false);
+  const { showSnackbar } = useSnackbar();
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const displayContract = detail ?? contract;
+  const { hasPrivilege } = usePrivileges();
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setNewFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
+  };
+
+  const removeNewFile = (index: number) => {
+    setNewFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleClose = () => {
+    setEditMode(false);
+    setNewFiles([]);
+    onClose();
+  };
+
+  const handleCancelContract = async () => {
+    if (!selectedOrgId || !contract) return;
+    try {
+      setCancelling(true);
+      await completeContract(selectedOrgId, contract.id, "CANCEL");
+      showSnackbar("Contract cancelled successfully", "success");
+      setCancelOpen(false);
+      getOrgContract(selectedOrgId, contract.id).then((r) =>
+        setDetail(r.contract),
+      );
+    } catch {
+      showSnackbar("Failed to cancel contract.", "error");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
-    if (!open || !contract || !selectedOrgId) return;
-    getOrgContract(selectedOrgId, contract.id).then((response) => {
+    if (!open || !displayContract || !selectedOrgId) return;
+    getOrgContract(selectedOrgId, displayContract.id).then((response) => {
       setDetail(response.contract);
+      setEditForm({
+        description: response.contract?.description ?? "",
+        expires_at: response.contract?.expires_at
+          ? response.contract.expires_at.split("T")[0]
+          : "",
+      });
     });
   }, [open, contract]);
 
-  if (!contract) return null;
+  if (!displayContract) return null;
+
+  const handleSave = async () => {
+    if (!selectedOrgId || !displayContract) return;
+    try {
+      setSaving(true);
+
+      const filesData = await Promise.all(
+        newFiles.map(async (file) => {
+          const buffer = await file.arrayBuffer();
+          const hashHex = sha256(buffer);
+          const bytes = new Uint8Array(hashHex.length / 2);
+          for (let i = 0; i < hashHex.length; i += 2) {
+            bytes[i / 2] = parseInt(hashHex.substring(i, i + 2), 16);
+          }
+          const hash = btoa(String.fromCharCode(...bytes));
+          return { name: file.name, size: file.size, type: file.type, hash };
+        }),
+      );
+
+      const response = await updateOrgContract(
+        selectedOrgId,
+        displayContract.id,
+        {
+          description: editForm.description,
+          expires_at: editForm.expires_at
+            ? new Date(editForm.expires_at).toISOString()
+            : undefined,
+          new_files: filesData.length > 0 ? filesData : undefined,
+        },
+      );
+
+      if (response.upload_urls && response.upload_urls.length > 0) {
+        await Promise.all(
+          response.upload_urls.map((uploadInfo: any, index: number) =>
+            fetch(uploadInfo.upload_url, {
+              method: "PUT",
+              body: newFiles[index],
+              headers: { "Content-Type": newFiles[index].type },
+            }),
+          ),
+        );
+        await completeContract(selectedOrgId, displayContract.id, "VERIFY");
+      }
+
+      showSnackbar("Contract updated successfully", "success");
+      setEditMode(false);
+      setNewFiles([]);
+      getOrgContract(selectedOrgId, displayContract.id).then((r) =>
+        setDetail(r.contract),
+      );
+    } catch {
+      showSnackbar("Failed to update contract.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const colors: Record<string, { bg: string; text: string }> = {
     active: { bg: "#e0f2fe", text: "#0ea5e9" },
@@ -51,13 +171,13 @@ export default function ContractDetailModal({
     expired: { bg: "#f3f4f6", text: "#64748b" },
     draft: { bg: "#fef9c3", text: "#eab308" },
   };
-  const style = colors[contract.status.toLowerCase()] ?? {
+  const style = colors[displayContract.status.toLowerCase()] ?? {
     bg: "#f3f4f6",
     text: "#64748b",
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box
           sx={{
@@ -68,33 +188,51 @@ export default function ContractDetailModal({
         >
           <Box>
             <Typography variant="h6" fontWeight={700}>
-              Contract Details - {contract.id}
+              Contract Details - {displayContract.id}
             </Typography>
             <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-              <Button
+              {/* <Button
                 variant="outlined"
                 size="small"
                 startIcon={<DownloadOutlinedIcon />}
               >
                 Download
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<EditOutlinedIcon />}
-              >
-                Add Amendment
-              </Button>
-              <Button
+              </Button> */}
+              {hasPrivilege(Privileges.UPDATE_CONTRACTS) &&
+                !["SIGNED", "CANCELLED", "EXPIRED"].includes(
+                  displayContract?.status ?? "",
+                ) && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<EditOutlinedIcon />}
+                    onClick={() => setEditMode(!editMode)}
+                  >
+                    {editMode ? "Cancel Edit" : "Edit Contract"}
+                  </Button>
+                )}
+              {!["SIGNED", "CANCELLED", "EXPIRED"].includes(
+                displayContract?.status ?? "",
+              ) && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  onClick={() => setCancelOpen(true)}
+                >
+                  Cancel Contract
+                </Button>
+              )}
+              {/* <Button
                 variant="outlined"
                 size="small"
                 startIcon={<ReceiptOutlinedIcon />}
               >
                 Create Invoice
-              </Button>
+              </Button> */}
             </Box>
           </Box>
-          <IconButton onClick={onClose}>
+          <IconButton onClick={handleClose}>
             <CloseIcon />
           </IconButton>
         </Box>
@@ -114,9 +252,12 @@ export default function ContractDetailModal({
               Contract Information
             </Typography>
             {[
-              { label: "Contract Name:", value: contract.title },
-              { label: "Contract Number:", value: contract.id },
-              { label: "Description:", value: contract.description ?? "-" },
+              { label: "Contract Name:", value: displayContract.title },
+              { label: "Contract Number:", value: displayContract.id },
+              {
+                label: "Description:",
+                value: displayContract.description ?? "-",
+              },
             ].map(({ label, value }) => (
               <Box key={label} sx={{ display: "flex", gap: 2, mb: 1.5 }}>
                 <Typography
@@ -139,16 +280,7 @@ export default function ContractDetailModal({
               >
                 Status:
               </Typography>
-              <Chip
-                label={contract.status}
-                size="small"
-                sx={{
-                  bgcolor: style.bg,
-                  color: style.text,
-                  fontWeight: 600,
-                  borderRadius: "20px",
-                }}
-              />
+              <StatusChip status={displayContract.status} />
             </Box>
           </Box>
 
@@ -159,20 +291,22 @@ export default function ContractDetailModal({
             {[
               {
                 label: "Created:",
-                value: contract.created_at
-                  ? new Date(contract.created_at).toLocaleString("cs-CZ")
+                value: displayContract.created_at
+                  ? new Date(displayContract.created_at).toLocaleString("cs-CZ")
                   : "-",
               },
               {
                 label: "Expires:",
-                value: contract.expires_at
-                  ? new Date(contract.expires_at).toLocaleString("cs-CZ")
+                value: displayContract.expires_at
+                  ? new Date(displayContract.expires_at).toLocaleString("cs-CZ")
                   : "-",
               },
               {
                 label: "Last Activity:",
-                value: contract.last_activity
-                  ? new Date(contract.last_activity).toLocaleString("cs-CZ")
+                value: displayContract.last_activity
+                  ? new Date(displayContract.last_activity).toLocaleString(
+                      "cs-CZ",
+                    )
                   : "-",
               },
             ].map(({ label, value }) => (
@@ -191,6 +325,76 @@ export default function ContractDetailModal({
             ))}
           </Box>
         </Box>
+        {editMode && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
+            <Typography variant="subtitle1" fontWeight={700}>
+              Edit Contract
+            </Typography>
+            <TextField
+              label="Description"
+              multiline
+              rows={3}
+              fullWidth
+              value={editForm.description}
+              onChange={(e) =>
+                setEditForm((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Expires At"
+                value={editForm.expires_at ? dayjs(editForm.expires_at) : null}
+                onChange={(newValue) => {
+                  setEditForm((prev) => ({
+                    ...prev,
+                    expires_at: newValue ? newValue.format("YYYY-MM-DD") : "",
+                  }));
+                }}
+                slotProps={{ textField: { fullWidth: true } }}
+              />
+            </LocalizationProvider>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<AttachFileOutlinedIcon />}
+              sx={{ alignSelf: "flex-start" }}
+            >
+              Add Files
+              <input type="file" hidden multiple onChange={handleFileChange} />
+            </Button>
+
+            {newFiles.length > 0 && (
+              <List dense>
+                {newFiles.map((file, index) => (
+                  <ListItem
+                    key={index}
+                    secondaryAction={
+                      <IconButton onClick={() => removeNewFile(index)}>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText
+                      primary={file.name}
+                      secondary={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              disabled={saving}
+              sx={{ alignSelf: "flex-start" }}
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </Box>
+        )}
         <Typography variant="subtitle1" fontWeight={700} mt={3} mb={1.5}>
           Signing Parties
         </Typography>
@@ -217,7 +421,7 @@ export default function ContractDetailModal({
                 }}
               >
                 <Typography variant="body2">{party.email ?? "-"}</Typography>
-                <Chip label={party.status} size="small" />
+                <StatusChip status={party.status} />
               </Box>
             ))
           ) : (
@@ -328,6 +532,14 @@ export default function ContractDetailModal({
           )}
         </Box>
       </DialogContent>
+      <ConfirmDialog
+        open={cancelOpen}
+        title="Cancel Contract"
+        description="This contract will be cancelled and parties will no longer be able to sign it. This action cannot be undone."
+        confirmLabel={cancelling ? "Cancelling..." : "Cancel Contract"}
+        onConfirm={handleCancelContract}
+        onClose={() => setCancelOpen(false)}
+      />
     </Dialog>
   );
 }

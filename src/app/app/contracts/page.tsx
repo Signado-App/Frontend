@@ -4,7 +4,6 @@ import AppTable from "@/components/Table/AppTable";
 
 import { Box } from "@mui/material";
 import { ColumnDef } from "@/components/Table/AppTable";
-import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import Button from "@mui/material/Button";
@@ -17,6 +16,7 @@ import ContractDetailModal from "@/components/Contract/ContractDetailModal";
 import { getContracts } from "@/services/contracts";
 import { useUserContext } from "@/context/UserContext";
 import { getOrgContracts } from "@/services/orgContracts";
+import StatusChip from "@/components/StatusChip";
 
 function ContractsPage() {
   const [selectedContract, setSelectedContract] = useState<OrgContract | null>(
@@ -25,20 +25,28 @@ function ContractsPage() {
   const [currentTab, setCurrentTab] = useState("All");
   const { selectedOrgId } = useUserContext();
   const [data, setData] = useState<OrgContract[]>([]);
+  const statusMap: Record<string, string> = {
+    All: "",
+    Pending: "PENDING_SIGNATURES",
+    Signed: "SIGNED",
+    Draft: "DRAFT",
+    "Waiting for files": "WAITING_FOR_FILES",
+    Expired: "EXPIRED",
+    Cancelled: "CANCELLED",
+  };
   const filteredData =
     currentTab === "All"
       ? data
-      : data.filter((c) => c.status.toLowerCase() === currentTab.toLowerCase());
-
+      : data.filter((c) => c.status === statusMap[currentTab]);
   useEffect(() => {
     if (selectedOrgId) {
-      getOrgContracts(selectedOrgId).then((response) => {
-        setData(response.contracts);
-      });
+      getOrgContracts(selectedOrgId)
+        .then((response) => setData(response.contracts))
+        .catch(() => setData([]));
     } else {
-      getContracts().then((response) => {
-        setData(response.contracts);
-      });
+      getContracts()
+        .then((response) => setData(response.contracts))
+        .catch(() => setData([]));
     }
   }, [selectedOrgId]);
 
@@ -56,30 +64,7 @@ function ContractsPage() {
       id: "status",
       header: "Status",
       cell: (row) => {
-        const colors: Record<string, { bg: string; text: string }> = {
-          active: { bg: "#e0f2fe", text: "#0ea5e9" },
-          signed: { bg: "#dcfce7", text: "#22c55e" },
-          expired: { bg: "#f3f4f6", text: "#64748b" },
-          draft: { bg: "#fef9c3", text: "#eab308" },
-        };
-        const style = colors[row.status.toLowerCase()] ?? {
-          bg: "#f3f4f6",
-          text: "#64748b",
-        };
-        return (
-          <Chip
-            label={row.status}
-            size="small"
-            sx={{
-              bgcolor: style.bg,
-              color: style.text,
-              fontWeight: 600,
-              borderRadius: "6px",
-              height: "24px",
-              fontSize: "0.75rem",
-            }}
-          />
-        );
+        return <StatusChip status={row.status} />;
       },
     },
     {
@@ -121,7 +106,7 @@ function ContractsPage() {
         <StatusTabs
           currentTab={currentTab}
           onTabChange={setCurrentTab}
-          Tabs={["All", "Active", "Signed", "Expired", "Draft"]}
+          Tabs={["All", "Pending", "Signed", "Draft", "Expired", "Cancelled"]}
         />
       </Box>
 

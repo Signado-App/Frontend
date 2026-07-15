@@ -5,19 +5,15 @@ import AppTable, { ColumnDef } from "@/components/Table/AppTable";
 import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-
-type GroupMember = {
-  user_id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-};
+import { GroupMemberItem } from "@/types/types";
+import { Privileges } from "@/constants/privileges";
+import { usePrivileges } from "@/context/PrivilegesContext";
 
 type Props = {
   groupId: string;
-  members: GroupMember[];
+  members: GroupMemberItem[];
   onAdd: () => void;
-  onRemove: (userId: number) => void;
+  onRemove: (memberId: number) => void;
 };
 
 export default function GroupMembers({
@@ -26,7 +22,9 @@ export default function GroupMembers({
   onAdd,
   onRemove,
 }: Props) {
-  const columns: ColumnDef<GroupMember>[] = [
+  const { hasPrivilege } = usePrivileges();
+
+  const columns: ColumnDef<GroupMemberItem>[] = [
     {
       id: "name",
       header: "Name",
@@ -48,30 +46,33 @@ export default function GroupMembers({
     {
       id: "actions",
       header: "Actions",
-      cell: (row) => (
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<DeleteOutlineIcon />}
-          onClick={() => onRemove(row.user_id)}
-        >
-          Remove
-        </Button>
-      ),
+      cell: (row) =>
+        hasPrivilege(Privileges.DELETE_USERS_FROM_GROUPS) ? (
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteOutlineIcon />}
+            onClick={() => onRemove(row.organization_member_id)}
+          >
+            Remove
+          </Button>
+        ) : null,
     },
   ];
 
   return (
     <Box>
       <Headline title="Members" size="small">
-        <Button variant="contained" startIcon={<AddIcon />} onClick={onAdd}>
-          Add Member
-        </Button>
+        {hasPrivilege(Privileges.ADD_USERS_TO_GROUPS) && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={onAdd}>
+            Add Member
+          </Button>
+        )}
       </Headline>
-      <AppTable<GroupMember>
+      <AppTable<GroupMemberItem>
         data={members ?? []}
         columns={columns}
-        getRowId={(row) => row.user_id}
+        getRowId={(row) => row.organization_member_id}
       />
     </Box>
   );

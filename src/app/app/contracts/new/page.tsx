@@ -1,46 +1,70 @@
 "use client";
-import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
+
 import {
   Box,
   Button,
-  IconButton,
+  Stepper,
+  Step,
+  StepLabel,
+  TextField,
+  Typography,
   List,
   ListItem,
   ListItemText,
-  MenuItem,
+  IconButton,
   Select,
-  TextField,
-  Typography,
+  MenuItem,
+  Divider,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
-import Headline from "@/components/Headline";
+import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import Headline from "@/components/Headline";
 import { useRouter } from "next/navigation";
 import { useCreateContractForm } from "@/hooks/useContractForm";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
-import { useState } from "react";
+const steps = ["Details", "Parties", "Files", "Review"];
 
 export default function NewContractPage() {
   const router = useRouter();
   const {
+    activeStep,
+    handleNext,
+    handleBack,
+    goToStep,
     form,
-    error,
-    loading,
     handleChange,
-    handleSubmit,
-    isTitleValid,
-    files,
-    setFiles,
-    handleFileChange,
-    removeFile,
-    addParty,
-    removeParty,
+    isDetailsValid,
     parties,
     setParties,
-    orgClients,
     partyEmail,
     setPartyEmail,
+    addParty,
+    addPartyFromClient,
+    removeParty,
+    orgClients,
+    isPartiesValid,
+    files,
+    handleFileChange,
+    removeFile,
+    submitStage,
+    submitError,
+    loading,
+    handleSubmit,
+    addMyself,
   } = useCreateContractForm();
+
+  const stageLabel: Record<string, string> = {
+    creating: "Creating contract...",
+    uploading: "Uploading files...",
+    finalizing: "Finalizing...",
+  };
 
   return (
     <Box>
@@ -52,123 +76,127 @@ export default function NewContractPage() {
         Back to Contracts
       </Button>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 4, mt: 4 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          mt: 4,
+          maxWidth: 700,
+        }}
+      >
         <Headline
           title="Create Contract"
           description="Fill in the details below to create a new contract."
         />
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            maxWidth: 600,
-          }}
-        >
-          <TextField
-            id="title"
-            name="title"
-            label="Title"
-            fullWidth
-            required
-            value={form.title}
-            onChange={handleChange}
-            error={form.title.length > 0 && !isTitleValid}
-            helperText={
-              form.title.length > 0 && !isTitleValid ? "Title is required" : ""
-            }
-          />
-          <TextField
-            id="description"
-            name="description"
-            label="Description"
-            multiline
-            rows={4}
-            fullWidth
-            value={form.description}
-            onChange={handleChange}
-          />
-          <TextField
-            id="expires_at"
-            name="expires_at"
-            label="Expires At"
-            type="date"
-            fullWidth
-            required
-            value={form.expires_at}
-            onChange={handleChange}
-            slotProps={{
-              inputLabel: { shrink: true },
-              htmlInput: { style: { paddingTop: "25px" } },
-            }}
-          />
 
-          <Box>
-            <Button
-              variant="outlined"
-              component="label"
-              startIcon={<AttachFileOutlinedIcon />}
-            >
-              Attach Files
-              <input type="file" hidden multiple onChange={handleFileChange} />
-            </Button>
+        <Stepper activeStep={activeStep}>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-            {files.length > 0 && (
-              <List dense sx={{ mt: 1 }}>
-                {files.map((file, index) => (
-                  <ListItem
-                    key={index}
-                    secondaryAction={
-                      <IconButton onClick={() => removeFile(index)}>
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    }
-                  >
-                    <ListItemText
-                      primary={file.name}
-                      secondary={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </Box>
-          <Box>
-            <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
-              Signing Parties
-            </Typography>
-            <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
-              <Select
-                value=""
-                displayEmpty
-                size="small"
-                sx={{ flex: 1 }}
-                onChange={(e) => {
-                  const client = (orgClients ?? []).find(
-                    (c) => c.user_id === Number(e.target.value),
-                  );
-                  if (client) {
-                    setParties((prev) => [
-                      ...prev,
-                      {
-                        user_id: client.user_id,
-                        email: client.client_name,
-                        role: "SIGNER",
-                      },
-                    ]);
-                  }
+        {submitError && <Alert severity="error">{submitError}</Alert>}
+
+        {/* Step 1: Details */}
+        {activeStep === 0 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              name="title"
+              label="Title"
+              fullWidth
+              required
+              value={form.title}
+              onChange={handleChange}
+            />
+            <TextField
+              name="description"
+              label="Description"
+              multiline
+              rows={4}
+              fullWidth
+              value={form.description}
+              onChange={handleChange}
+            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Expires At"
+                value={form.expires_at ? dayjs(form.expires_at) : null}
+                onChange={(newValue) => {
+                  handleChange({
+                    target: {
+                      name: "expires_at",
+                      value: newValue ? newValue.format("YYYY-MM-DD") : "",
+                    },
+                  } as React.ChangeEvent<HTMLInputElement>);
                 }}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
+              />
+            </LocalizationProvider>
+            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                variant="contained"
+                disabled={!isDetailsValid}
+                onClick={handleNext}
               >
-                <MenuItem value="" disabled>
-                  Select client
-                </MenuItem>
-                {(orgClients ?? []).map((client) => (
-                  <MenuItem key={client.id} value={client.user_id}>
-                    {client.client_name}
-                  </MenuItem>
-                ))}
-              </Select>
+                Next
+              </Button>
             </Box>
+          </Box>
+        )}
+
+        {/* Step 2: Parties */}
+        {activeStep === 1 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Add yourself as a signing party:
+              </Typography>
+              <Button variant="outlined" size="small" onClick={addMyself}>
+                Add myself
+              </Button>
+            </Box>
+            <Typography variant="body2" fontWeight={600}>
+              Add from clients
+            </Typography>
+            <Select
+              value=""
+              displayEmpty
+              size="small"
+              onChange={(e) => {
+                const client = orgClients.find(
+                  (c) => c.user_id === Number(e.target.value),
+                );
+                if (client) addPartyFromClient(client);
+              }}
+            >
+              <MenuItem value="" disabled>
+                Select client
+              </MenuItem>
+              {orgClients.map((client) => (
+                <MenuItem key={client.id} value={client.user_id}>
+                  {client.client_name}
+                </MenuItem>
+              ))}
+            </Select>
+
+            <Divider>or</Divider>
+
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <TextField
+                label="Email"
+                size="small"
+                fullWidth
+                value={partyEmail}
+                onChange={(e) => setPartyEmail(e.target.value)}
+              />
+              <Button variant="outlined" onClick={addParty}>
+                Add
+              </Button>
+            </Box>
+
             {parties.length > 0 && (
               <List dense>
                 {parties.map((party, index) => (
@@ -188,28 +216,129 @@ export default function NewContractPage() {
                 ))}
               </List>
             )}
+
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Button onClick={handleBack}>Back</Button>
+              <Button
+                variant="contained"
+                disabled={!isPartiesValid}
+                onClick={handleNext}
+              >
+                Next
+              </Button>
+            </Box>
           </Box>
-          <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
-            <TextField
-              label="Or enter email manually"
-              value={partyEmail}
-              size="small"
-              onChange={(e) => setPartyEmail(e.target.value)}
-              sx={{ flex: 1 }}
-            />
-            <Button variant="outlined" onClick={addParty}>
-              Add
+        )}
+
+        {/* Step 3: Files */}
+        {activeStep === 2 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<AttachFileOutlinedIcon />}
+              sx={{ alignSelf: "flex-start" }}
+            >
+              Attach Files
+              <input type="file" hidden multiple onChange={handleFileChange} />
             </Button>
+
+            {files.length > 0 && (
+              <List dense>
+                {files.map((file, index) => (
+                  <ListItem
+                    key={index}
+                    secondaryAction={
+                      <IconButton onClick={() => removeFile(index)}>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText
+                      primary={file.name}
+                      secondary={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Button onClick={handleBack}>Back</Button>
+              <Button variant="contained" onClick={handleNext}>
+                Next
+              </Button>
+            </Box>
           </Box>
-          <Button
-            variant="contained"
-            sx={{ alignSelf: "flex-start" }}
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? "Creating..." : "Create Contract"}
-          </Button>
-        </Box>
+        )}
+
+        {/* Step 4: Review */}
+        {activeStep === 3 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Typography variant="subtitle1" fontWeight={700}>
+              Contract Summary
+            </Typography>
+
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                Title
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {form.title}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                Expires At
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {form.expires_at}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                Parties ({parties.length})
+              </Typography>
+              {parties.map((p, i) => (
+                <Typography key={i} variant="body2">
+                  {p.email}
+                </Typography>
+              ))}
+            </Box>
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                Files ({files.length})
+              </Typography>
+              {files.map((f, i) => (
+                <Typography key={i} variant="body2">
+                  {f.name}
+                </Typography>
+              ))}
+            </Box>
+
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}
+            >
+              <Button onClick={handleBack} disabled={loading}>
+                Back
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={loading}
+                startIcon={
+                  loading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : undefined
+                }
+              >
+                {loading
+                  ? (stageLabel[submitStage] ?? "Working...")
+                  : "Create Contract"}
+              </Button>
+            </Box>
+          </Box>
+        )}
       </Box>
     </Box>
   );

@@ -21,11 +21,13 @@ export default function ClientPage({
   useEffect(() => {
     if (!selectedOrgId) return;
     getOrgClient(selectedOrgId, Number(client_id)).then((response) => {
-      setClient(response.data);
+      setClient(response.client);
     });
   }, [selectedOrgId, client_id]);
 
-  if (!client) return null;
+  if (!client) {
+    return null;
+  }
   return (
     <Box>
       <BackButton href="/app/clients" label="Back to Clients" />

@@ -13,18 +13,21 @@ import { useUserContext } from "@/context/UserContext";
 import { OrgGroup } from "@/types/types";
 import { getOrgGroups } from "@/services/orgGroups";
 import CreateGroupModal from "@/components/Groups/CreateGroupModal";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
 
 function GroupsPage() {
   const { selectedOrgId } = useUserContext();
   const [data, setData] = useState<OrgGroup[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const router = useRouter();
+  const { hasPrivilege } = usePrivileges();
 
   useEffect(() => {
     if (!selectedOrgId) return;
-    getOrgGroups(selectedOrgId).then((response) => {
-      setData(response.groups);
-    });
+    getOrgGroups(selectedOrgId)
+      .then((response) => setData(response.groups))
+      .catch(() => setData([]));
   }, [selectedOrgId]);
 
   const columns: ColumnDef<OrgGroup>[] = [
@@ -68,13 +71,15 @@ function GroupsPage() {
           title="Groups"
           description="Manage groups within your organization."
         />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateOpen(true)}
-        >
-          Create Group
-        </Button>
+        {hasPrivilege(Privileges.CREATE_GROUPS) && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateOpen(true)}
+          >
+            Create Group
+          </Button>
+        )}
       </Box>
       <Searchbar placeholder="Search by group name" sx={{ width: 320 }} />
       <Box>
@@ -89,7 +94,9 @@ function GroupsPage() {
         onClose={() => setCreateOpen(false)}
         onSuccess={() => {
           if (selectedOrgId)
-            getOrgGroups(selectedOrgId).then((r) => setData(r.groups));
+            getOrgGroups(selectedOrgId)
+              .then((r) => setData(r.groups))
+              .catch(() => {});
         }}
       />
     </Box>

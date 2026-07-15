@@ -7,7 +7,10 @@ import GroupMembers from "@/components/Groups/GroupMembers";
 import GroupPrivileges from "@/components/Groups/GroupPrivilieges";
 import BackButton from "@/components/Clients/BackButton";
 import { useUserContext } from "@/context/UserContext";
-import { getOrgGroup } from "@/services/orgGroups";
+import { getOrgGroup, removeGroupMember } from "@/services/orgGroups";
+import { useSnackbar } from "@/context/SnackbarContext";
+import AddGroupMemberModal from "@/components/Groups/AddGroupMemberModal";
+import EditGroupPrivilegesModal from "@/components/Groups/EditGroupPrivilegesModal";
 
 export default function GroupPage({
   params,
@@ -17,6 +20,9 @@ export default function GroupPage({
   const { group_id } = use(params);
   const { selectedOrgId } = useUserContext();
   const [group, setGroup] = useState<any>(null);
+  const { showSnackbar } = useSnackbar();
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [editPrivilegesOpen, setEditPrivilegesOpen] = useState(false);
 
   useEffect(() => {
     if (!selectedOrgId) return;
@@ -25,14 +31,33 @@ export default function GroupPage({
     });
   }, [selectedOrgId, group_id]);
 
+  if (!group) return null;
+
   const handleAddMember = () => {
-    // TODO: otevřít modal pro přidání člena
+    setAddMemberOpen(true);
   };
 
-  const handleRemoveMember = async (userId: number) => {
-    // TODO: zavolat API pro odebrání člena ze skupiny
+  const handleEditPrivileges = () => {
+    setEditPrivilegesOpen(true);
   };
-  if (!group) return null;
+
+  const refreshGroup = () => {
+    if (!selectedOrgId) return;
+    getOrgGroup(selectedOrgId, Number(group_id)).then((response) => {
+      setGroup(response.group);
+    });
+  };
+
+  const handleRemoveMember = async (memberId: number) => {
+    if (!selectedOrgId) return;
+    try {
+      await removeGroupMember(selectedOrgId, Number(group_id), memberId);
+      showSnackbar("Member removed successfully", "success");
+      refreshGroup();
+    } catch {
+      showSnackbar("Failed to remove member.", "error");
+    }
+  };
 
   return (
     <Box>
@@ -45,8 +70,31 @@ export default function GroupPage({
           onAdd={handleAddMember}
           onRemove={handleRemoveMember}
         />
-        <GroupPrivileges groupId={group_id} privileges={group.privileges} />
+        <GroupPrivileges
+          groupId={group_id}
+          privileges={group.privileges}
+          onEdit={handleEditPrivileges}
+        />
       </Box>
+      <AddGroupMemberModal
+        open={addMemberOpen}
+        groupId={Number(group_id)}
+        existingMemberIds={
+          group.members?.map((m: any) => m.organization_member_id) ?? []
+        }
+        onClose={() => setAddMemberOpen(false)}
+        onSuccess={refreshGroup}
+      />
+
+      <EditGroupPrivilegesModal
+        open={editPrivilegesOpen}
+        groupId={Number(group_id)}
+        currentPrivilegeIds={
+          group.privileges?.map((p: any) => Number(p.id)) ?? []
+        }
+        onClose={() => setEditPrivilegesOpen(false)}
+        onSuccess={refreshGroup}
+      />
     </Box>
   );
 }

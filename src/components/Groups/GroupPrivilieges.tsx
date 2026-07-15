@@ -4,7 +4,9 @@ import { Box, Button, Typography } from "@mui/material";
 import AppTable, { ColumnDef } from "@/components/Table/AppTable";
 import Headline from "@/components/Headline";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
 
 type GroupPrivilegeItem = {
   id: number;
@@ -15,9 +17,16 @@ type GroupPrivilegeItem = {
 type Props = {
   groupId: string;
   privileges: GroupPrivilegeItem[];
+  onEdit: () => void;
 };
 
-export default function GroupPrivileges({ groupId, privileges }: Props) {
+export default function GroupPrivileges({
+  groupId,
+  privileges,
+  onEdit,
+}: Props) {
+  const { hasPrivilege } = usePrivileges();
+
   const columns: ColumnDef<GroupPrivilegeItem>[] = [
     {
       id: "name",
@@ -37,30 +46,20 @@ export default function GroupPrivileges({ groupId, privileges }: Props) {
         </Typography>
       ),
     },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: (row) => (
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<DeleteOutlineIcon />}
-          onClick={() => {
-            /* TODO: revoke */
-          }}
-        >
-          Revoke
-        </Button>
-      ),
-    },
   ];
 
   return (
     <Box>
       <Headline title="Privileges" size="small">
-        <Button variant="contained" startIcon={<AddIcon />}>
-          Add Privilege
-        </Button>
+        {hasPrivilege(Privileges.UPDATE_GROUP_PRIVILEGES) && (
+          <Button
+            variant="contained"
+            startIcon={<EditOutlinedIcon />}
+            onClick={onEdit}
+          >
+            Edit Privileges
+          </Button>
+        )}
       </Headline>
       <AppTable<GroupPrivilegeItem>
         data={privileges ?? []}
