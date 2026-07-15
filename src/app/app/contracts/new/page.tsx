@@ -57,6 +57,7 @@ export default function NewContractPage() {
     submitError,
     loading,
     handleSubmit,
+    addMyself,
   } = useCreateContractForm();
 
   const stageLabel: Record<string, string> = {
@@ -149,6 +150,14 @@ export default function NewContractPage() {
         {/* Step 2: Parties */}
         {activeStep === 1 && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Add yourself as a signing party:
+              </Typography>
+              <Button variant="outlined" size="small" onClick={addMyself}>
+                Add myself
+              </Button>
+            </Box>
             <Typography variant="body2" fontWeight={600}>
               Add from clients
             </Typography>

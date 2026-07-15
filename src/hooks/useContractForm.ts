@@ -1,4 +1,3 @@
-// src/hooks/useCreateContractForm.ts
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/context/SnackbarContext";
@@ -8,6 +7,7 @@ import { getOrgClients } from "@/services/orgClients";
 import { completeContract, createOrgContract } from "@/services/orgContracts";
 
 import { sha256 } from "js-sha256";
+import { useAuthContext } from "@/context/AuthContext";
 
 async function computeFileHash(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
@@ -33,6 +33,7 @@ export function useCreateContractForm() {
   const { showSnackbar } = useSnackbar();
   const { selectedOrgId } = useUserContext();
   const [activeStep, setActiveStep] = useState(0);
+  const { user } = useAuthContext();
 
   // Step 1: Details
   const [form, setForm] = React.useState({
@@ -71,6 +72,15 @@ export function useCreateContractForm() {
     setParties((prev) => [
       ...prev,
       { user_id: client.user_id, email: client.client_name, role: "SIGNER" },
+    ]);
+  };
+
+  const addMyself = () => {
+    if (!user) return;
+    if (parties.some((p) => p.user_id === Number(user.id))) return;
+    setParties((prev) => [
+      ...prev,
+      { user_id: Number(user.id), email: user.email, role: "SIGNER" },
     ]);
   };
 
@@ -236,5 +246,6 @@ export function useCreateContractForm() {
     submitError,
     loading,
     handleSubmit,
+    addMyself
   };
 }
