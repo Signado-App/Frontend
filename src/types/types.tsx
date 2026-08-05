@@ -264,3 +264,17 @@ export type GroupMemberItem = {
   first_name: string | null;
   last_name: string | null;
 };
+
+export type FieldType = "signature" | "text";
+
+export type PlacedField = {
+  id: string;
+  type: FieldType;
+  page: number; 
+  xRatio: number;
+  yRatio: number;
+  widthRatio: number;
+  heightRatio: number;
+  partyKey: string; 
+  label?: string; 
+};
