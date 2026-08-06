@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { useUserContext } from "@/context/UserContext";
-import { OrgClient } from "@/types/types";
+import { OrgClient, PlacedField } from "@/types/types";
 import { getOrgClients } from "@/services/orgClients";
 import { completeContract, createOrgContract } from "@/services/orgContracts";
-
+import { embedFieldsIntoPdf } from "@/utils/pdfFields";
 import { sha256 } from "js-sha256";
 import { useAuthContext } from "@/context/AuthContext";
 
@@ -50,6 +50,7 @@ export function useCreateContractForm() {
   ) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
+
   // Step 2: Parties
   const [parties, setParties] = useState<
     { user_id: number | null; email: string; role: string }[]
@@ -87,15 +88,17 @@ export function useCreateContractForm() {
   const removeParty = (index: number) => {
     setParties((prev) => prev.filter((_, i) => i !== index));
   };
+
   useEffect(() => {
     if (!selectedOrgId) return;
-    getOrgClients(selectedOrgId).then((response) => {
-      setOrgClients(response.clients);
-    });
+    getOrgClients(selectedOrgId)
+      .then((response) => setOrgClients(response.clients))
+      .catch(() => setOrgClients([]));
   }, [selectedOrgId]);
 
   // Step 3: Files
   const [files, setFiles] = useState<File[]>([]);
+  const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -105,7 +108,9 @@ export function useCreateContractForm() {
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    if (index === 0) setPlacedFields([]);
   };
+
   // Step 4: Review + submit
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -117,35 +122,40 @@ export function useCreateContractForm() {
   const goToStep = (step: number) => setActiveStep(step);
 
   const handleSubmit = async () => {
-    console.log("[CreateContract] handleSubmit called");
-
-    if (!selectedOrgId) {
-      console.log("[CreateContract] No selectedOrgId, aborting");
-
-      return;
-    }
+    if (!selectedOrgId) return;
     setSubmitError(null);
 
     let contractId: string | null = null;
+    let stage: SubmitStage = "creating";
 
-    // 1. Create contract
     try {
+      stage = "creating";
       setSubmitStage("creating");
-      console.log(
-        "[CreateContract] Computing file hashes for",
-        files.length,
-        "files",
+
+      // 1. vlož podpisová a textová pole do PDF
+      const preparedFiles = await Promise.all(
+        files.map(async (file, index) => {
+          if (file.type !== "application/pdf") return file;
+          // pole se zatím umisťují jen do prvního PDF
+          if (index !== 0) return file;
+          return embedFieldsIntoPdf(file, placedFields);
+        }),
       );
 
+      console.log("[Submit] placedFields:", placedFields.length, placedFields);
+      console.log("[Submit] původní velikost:", files[0]?.size);
+      console.log("[Submit] po vložení polí:", preparedFiles[0]?.size);
+
+      // 2. hash se počítá až z upravených souborů
       const filesData = await Promise.all(
-        files.map(async (file) => ({
+        preparedFiles.map(async (file) => ({
           name: file.name,
           size: file.size,
           type: file.type,
           hash: await computeFileHash(file),
         })),
       );
-      console.log("[CreateContract] filesData:", filesData);
+
       const payload = {
         title: form.title,
         description: form.description,
@@ -160,35 +170,27 @@ export function useCreateContractForm() {
         message: "",
         files: filesData,
       };
-      console.log("[CreateContract] Sending payload:", payload);
 
       const response = await createOrgContract(selectedOrgId, payload);
-      console.log("[CreateContract] Create response:", response);
-
       contractId = response.contract_id;
 
-      // 2. Upload files to S3
+      // 3. na S3 jdou upravené soubory, ne původní
       if (response.upload_urls && response.upload_urls.length > 0) {
+        stage = "uploading";
         setSubmitStage("uploading");
-        console.log(
-          "[CreateContract] Uploading files to",
-          response.upload_urls,
-        );
 
         await Promise.all(
           response.upload_urls.map((uploadInfo: any, index: number) =>
             fetch(uploadInfo.upload_url, {
               method: "PUT",
-              body: files[index],
-              headers: { "Content-Type": files[index].type },
+              body: preparedFiles[index],
+              headers: { "Content-Type": preparedFiles[index].type },
             }),
           ),
         );
 
-        // 3. Finalize
+        stage = "finalizing";
         setSubmitStage("finalizing");
-        console.log("[CreateContract] Calling complete for", contractId);
-
         await completeContract(selectedOrgId, contractId!, "VERIFY");
       }
 
@@ -198,12 +200,12 @@ export function useCreateContractForm() {
     } catch (e) {
       setSubmitStage("idle");
 
-      if (submitStage === "creating") {
+      if (stage === "creating") {
         setSubmitError(
           "Failed to create the contract. Check the details and parties.",
         );
         setActiveStep(0);
-      } else if (submitStage === "uploading") {
+      } else if (stage === "uploading") {
         setSubmitError("Failed to upload one or more files. Please try again.");
         setActiveStep(2);
       } else {
@@ -233,6 +235,7 @@ export function useCreateContractForm() {
     setPartyEmail,
     addParty,
     addPartyFromClient,
+    addMyself,
     removeParty,
     orgClients,
     isPartiesValid,
@@ -241,11 +244,12 @@ export function useCreateContractForm() {
     setFiles,
     handleFileChange,
     removeFile,
+    placedFields,
+    setPlacedFields,
 
     submitStage,
     submitError,
     loading,
     handleSubmit,
-    addMyself
   };
 }

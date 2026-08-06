@@ -42,7 +42,6 @@ type SignatureField = { page: number; x: number; y: number };
 
 export default function NewContractPage() {
   const router = useRouter();
-  const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
 
   const {
     activeStep,
@@ -69,6 +68,8 @@ export default function NewContractPage() {
     loading,
     handleSubmit,
     addMyself,
+    placedFields,
+    setPlacedFields,
   } = useCreateContractForm();
 
   const stageLabel: Record<string, string> = {
