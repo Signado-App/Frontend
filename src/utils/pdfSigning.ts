@@ -46,55 +46,77 @@ export function parseFieldName(name: string): {
 export async function readPdfFields(
   pdfBytes: ArrayBuffer,
 ): Promise<PdfFieldInfo[]> {
-  const pdfDoc = await PDFDocument.load(pdfBytes.slice(0));
-  const form = pdfDoc.getForm();
-  const pages = pdfDoc.getPages();
+  if (!pdfBytes || pdfBytes.byteLength < 5) return [];
 
-  const result: PdfFieldInfo[] = [];
+  // Rychlá kontrola PDF hlavičky '%PDF-'
+  const header = new Uint8Array(pdfBytes.slice(0, 5));
+  if (
+    header[0] !== 0x25 ||
+    header[1] !== 0x50 ||
+    header[2] !== 0x44 ||
+    header[3] !== 0x46 ||
+    header[4] !== 0x2d
+  ) {
+    console.warn(
+      "[readPdfFields] Buffer neobsahuje platnou PDF hlavičku (%PDF-).",
+    );
+    return [];
+  }
 
-  for (const field of form.getFields()) {
-    const name = field.getName();
-    const parsed = parseFieldName(name);
-    if (!parsed) continue;
-    const { type: rawType, partyKey } = parsed;
+  try {
+    const pdfDoc = await PDFDocument.load(pdfBytes.slice(0));
+    const form = pdfDoc.getForm();
+    const pages = pdfDoc.getPages();
 
-    const tu = field.acroField.dict.get(PDFName.of("TU"));
-    let label: string | undefined;
-    if (tu && typeof (tu as any).decodeText === "function") {
-      try {
-        label = (tu as any).decodeText();
-      } catch {
-        // ignore
+    const result: PdfFieldInfo[] = [];
+
+    for (const field of form.getFields()) {
+      const name = field.getName();
+      const parsed = parseFieldName(name);
+      if (!parsed) continue;
+      const { type: rawType, partyKey } = parsed;
+
+      const tu = field.acroField.dict.get(PDFName.of("TU"));
+      let label: string | undefined;
+      if (tu && typeof (tu as any).decodeText === "function") {
+        try {
+          label = (tu as any).decodeText();
+        } catch {
+          // ignore
+        }
+      }
+
+      for (const widget of field.acroField.getWidgets()) {
+        const rect = widget.getRectangle();
+
+        const pageRef = widget.P();
+        const pageIndex = pages.findIndex((p) => p.ref === pageRef);
+        if (pageIndex === -1) continue;
+
+        const page = pages[pageIndex];
+        const { width: pageWidth, height: pageHeight } = page.getSize();
+
+        result.push({
+          name,
+          type: rawType,
+          partyKey: partyKey ?? "",
+          page: pageIndex + 1,
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+          pageWidth,
+          pageHeight,
+          label,
+        });
       }
     }
 
-    for (const widget of field.acroField.getWidgets()) {
-      const rect = widget.getRectangle();
-
-      const pageRef = widget.P();
-      const pageIndex = pages.findIndex((p) => p.ref === pageRef);
-      if (pageIndex === -1) continue;
-
-      const page = pages[pageIndex];
-      const { width: pageWidth, height: pageHeight } = page.getSize();
-
-      result.push({
-        name,
-        type: rawType,
-        partyKey: partyKey ?? "",
-        page: pageIndex + 1,
-        x: rect.x,
-        y: rect.y,
-        width: rect.width,
-        height: rect.height,
-        pageWidth,
-        pageHeight,
-        label,
-      });
-    }
+    return result;
+  } catch (err) {
+    console.error("[readPdfFields] Chyba při načítání PDF dokumentu:", err);
+    return [];
   }
-
-  return result;
 }
 
 /**

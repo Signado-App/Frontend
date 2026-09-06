@@ -13,7 +13,8 @@ import {
 import dynamic from "next/dynamic";
 import { loginWithSigningToken } from "@/services/auth";
 import { getSigningContract, signContract } from "@/services/signing";
-import { embedSignatureIntoPdf } from "@/utils/pdfSigning";
+import apiClient from "@/services/apiClient";
+import { embedSignatureIntoPdf, readPdfFields } from "@/utils/pdfSigning";
 
 const SigningDocumentViewer = dynamic(
   () => import("@/components/Contract/SigningDocumentViewer"),
@@ -28,6 +29,7 @@ export default function SignPage({
   const { token } = use(params);
   const [contract, setContract] = useState<any>(null);
   const [pdfBytes, setPdfBytes] = useState<ArrayBuffer | null>(null);
+  const [resolvedPartyKey, setResolvedPartyKey] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [signed, setSigned] = useState(false);
@@ -40,25 +42,78 @@ export default function SignPage({
 
   useEffect(() => {
     loginWithSigningToken(token)
-      .then(() => getSigningContract())
-      .then(async (response) => {
-        const c = response.contract ?? response.data;
+      .then(async (loginRes) => {
+        console.log("[SignPage] loginWithSigningToken response:", loginRes);
+        const response = await getSigningContract();
+        console.log("[SignPage] getSigningContract raw response:", response);
+        return { loginRes, response };
+      })
+      .then(async ({ loginRes, response }) => {
+        const rawContract = response?.contract ?? response?.data ?? response;
+        const c = {
+          ...(loginRes?.signer ?? {}),
+          ...(loginRes?.user ?? {}),
+          ...(loginRes?.party ?? {}),
+          ...rawContract,
+        };
         setContract(c);
 
+        // Hledání URL PDF souboru ve všech možných strukturách odpovědi
         const fileUrl =
-          c?.files?.[0]?.download_url || `/api/contracts/${c?.id}/download`;
-        if (fileUrl) {
-          try {
-            const pdfRes = await fetch(fileUrl);
-            const bytes = await pdfRes.arrayBuffer();
-            setPdfBytes(bytes);
-          } catch (e) {
-            console.error("Failed to load PDF bytes:", e);
-          }
+          c?.files?.[0]?.download_url ||
+          c?.files?.[0]?.url ||
+          c?.files?.[0]?.file_url ||
+          c?.download_url ||
+          c?.file_url ||
+          response?.files?.[0]?.download_url ||
+          response?.files?.[0]?.url;
+
+        if (!fileUrl) {
+          console.warn(
+            "[SignPage] Backend v GET /contract/get nevrátil pole files s download_url:",
+            c,
+          );
+          setLoading(false);
+          return;
         }
-        setLoading(false);
+
+        try {
+          console.log("[SignPage] Stahuji PDF z URL:", fileUrl);
+          const pdfRes = await fetch(fileUrl);
+          if (!pdfRes.ok) {
+            throw new Error(
+              `Server vrátil chybu ${pdfRes.status}: ${pdfRes.statusText}`,
+            );
+          }
+          const bytes = await pdfRes.arrayBuffer();
+
+          // Kontrola, zda stažený obsah začíná PDF hlavičkou '%PDF-'
+          const header = new Uint8Array(bytes.slice(0, 5));
+          const isPdf =
+            header[0] === 0x25 && // %
+            header[1] === 0x50 && // P
+            header[2] === 0x44 && // D
+            header[3] === 0x46 && // F
+            header[4] === 0x2d; // -
+
+          if (!isPdf) {
+            throw new Error(
+              "Stažený soubor není platný PDF dokument (odpověď neobsahuje hlavičku %PDF-).",
+            );
+          }
+
+          setPdfBytes(bytes);
+        } catch (e: any) {
+          console.error("[SignPage] Chyba při načítání PDF:", e);
+          setError(
+            `Dokument smlouvy se nepodařilo načíst (${e?.message || e}). Zkontrolujte prosím stav souboru.`,
+          );
+        } finally {
+          setLoading(false);
+        }
       })
       .catch((err) => {
+        console.error("[SignPage] Chyba při přihlášení/načtení smlouvy:", err);
         if (err?.data?.specification === "expired") {
           setError(
             "Tento odkaz na podpis již vypršel. Nový odkaz byl odeslán na váš e-mail.",
@@ -69,6 +124,38 @@ export default function SignPage({
         setLoading(false);
       });
   }, [token]);
+
+  useEffect(() => {
+    if (!pdfBytes || !contract) return;
+    readPdfFields(pdfBytes.slice(0)).then((all) => {
+      const candidateKeys = [
+        String(contract.current_signer_key ?? ""),
+        String(contract.current_signer_id ?? ""),
+        String(contract.current_signer_email ?? ""),
+        String(contract.signer_email ?? ""),
+        String(contract.email ?? ""),
+      ].filter(Boolean);
+
+      const matched = all.find((f) =>
+        candidateKeys.some((k) => k.toLowerCase() === f.partyKey.toLowerCase()),
+      );
+
+      if (matched) {
+        setResolvedPartyKey(matched.partyKey);
+      } else if (all.length > 0) {
+        setResolvedPartyKey(all[0].partyKey);
+      }
+    });
+  }, [pdfBytes, contract]);
+
+  const partyKey =
+    resolvedPartyKey ||
+    String(
+      contract?.current_signer_key ??
+        contract?.current_signer_id ??
+        contract?.signer_email ??
+        "",
+    );
 
   const handleSign = async () => {
     if (!contract || !pdfBytes) return;
@@ -84,17 +171,10 @@ export default function SignPage({
       setSigning(true);
       setError(null);
 
-      const currentPartyKey = String(
-        contract.current_signer_key ??
-          contract.current_signer_id ??
-          contract.signer_email ??
-          "",
-      );
-
       const signedPdfBytes = await embedSignatureIntoPdf(
         pdfBytes.slice(0),
         signatureData,
-        currentPartyKey,
+        partyKey,
         {
           signedAt: new Date(),
           ipAddress: "Získá backend",
@@ -162,13 +242,6 @@ export default function SignPage({
       </Box>
     );
   }
-
-  const partyKey = String(
-    contract?.current_signer_key ??
-      contract?.current_signer_id ??
-      contract?.signer_email ??
-      "",
-  );
 
   return (
     <Box sx={{ maxWidth: 840, mx: "auto", p: { xs: 2, sm: 4 }, mt: 2 }}>
@@ -250,13 +323,59 @@ export default function SignPage({
             </Button>
           </Box>
         </>
-      ) : (
+      ) : loading ? (
         <Box sx={{ p: 6, textAlign: "center" }}>
           <CircularProgress size={32} />
           <Typography variant="body2" color="text.secondary" mt={2}>
             Načítám PDF dokument k podpisu…
           </Typography>
         </Box>
+      ) : (
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 4,
+            textAlign: "center",
+            borderRadius: 2,
+            borderStyle: "dashed",
+            borderColor: "#cbd5e1",
+            bgcolor: "#f8fafc",
+          }}
+        >
+          <Typography
+            variant="subtitle1"
+            fontWeight={700}
+            color="text.primary"
+            mb={1}
+          >
+            Dokument k podpisu nebyl nalezen
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            mb={3}
+            maxWidth={520}
+            mx="auto"
+          >
+            Backend v odpovědi na <code>GET /contract/get</code> neposlal odkaz
+            na soubor smlouvy (pole <code>files</code>). Pokud chcete otestovat
+            podepisování ihned, můžete PDF nahrát ručně:
+          </Typography>
+          <Button variant="contained" component="label">
+            Nahrát PDF soubor (pro test)
+            <input
+              type="file"
+              accept="application/pdf"
+              hidden
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const bytes = await file.arrayBuffer();
+                setPdfBytes(bytes);
+              }}
+            />
+          </Button>
+        </Paper>
       )}
     </Box>
   );

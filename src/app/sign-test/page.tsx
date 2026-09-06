@@ -10,21 +10,38 @@ import {
   TextField,
   Divider,
   Paper,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import dynamic from "next/dynamic";
 import { PDFDocument, PDFHexString, PDFName } from "pdf-lib";
 import SignatureCanvas from "react-signature-canvas";
+import { PlacedField } from "@/types/types";
+import { embedFieldsIntoPdf } from "@/utils/pdfFields";
+import EditNoteIcon from "@mui/icons-material/EditNote";
+import DrawIcon from "@mui/icons-material/Draw";
+import DownloadIcon from "@mui/icons-material/Download";
 
 const SigningDocumentViewer = dynamic(
   () => import("@/components/Contract/SigningDocumentViewer"),
   { ssr: false },
 );
+
+const FieldPlacementEditor = dynamic(
+  () => import("@/components/Contract/FieldPlacementEditor"),
+  { ssr: false },
+);
+
 import { embedSignatureIntoPdf } from "@/utils/pdfSigning";
 
 export default function SignFlowTestPage() {
+  const [rawFile, setRawFile] = useState<File | null>(null);
   const [pdfBytes, setPdfBytes] = useState<ArrayBuffer | null>(null);
   const [fileName, setFileName] = useState("dokument.pdf");
   const [partyKey, setPartyKey] = useState("party1");
+  const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
+  const [activeTab, setActiveTab] = useState<"editor" | "signer">("editor");
+
   const [hasSignature, setHasSignature] = useState(false);
   const [externalSigDataUrl, setExternalSigDataUrl] = useState<string | null>(
     null,
@@ -74,8 +91,41 @@ export default function SignFlowTestPage() {
     setSignedDone(false);
     handleClearSignature();
     setTextValues({});
+    setPlacedFields([]);
+    setRawFile(file);
     setFileName(file.name);
-    setPdfBytes(await file.arrayBuffer());
+    const bytes = await file.arrayBuffer();
+    setPdfBytes(bytes);
+    setActiveTab("editor");
+  };
+
+  // Vypálí pole z FieldPlacementEditor do PDF a přejde na záložku podepisování
+  const handleApplyEditorFields = async () => {
+    if (!rawFile) return;
+    try {
+      setError(null);
+      setSignedDone(false);
+      const modifiedFile = await embedFieldsIntoPdf(rawFile, placedFields);
+      const buf = await modifiedFile.arrayBuffer();
+      setPdfBytes(buf.slice(0));
+      setActiveTab("signer");
+    } catch (e) {
+      setError(`Chyba při ukládání polí do PDF: ${String(e)}`);
+    }
+  };
+
+  // Stáhne PDF s vypálenými poli
+  const handleDownloadPdfWithFields = async () => {
+    if (!rawFile) return;
+    try {
+      const modifiedFile = await embedFieldsIntoPdf(rawFile, placedFields);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(modifiedFile);
+      a.download = `with-fields-${rawFile.name}`;
+      a.click();
+    } catch (e) {
+      setError(`Chyba při stahování: ${String(e)}`);
+    }
   };
 
   const handleAddTestField = async () => {
@@ -144,6 +194,7 @@ export default function SignFlowTestPage() {
         saved.byteOffset + saved.byteLength,
       );
       setPdfBytes(freshBuffer as ArrayBuffer);
+      setActiveTab("signer");
     } catch (e) {
       setError(`Chyba při vkládání testovacího pole: ${String(e)}`);
     }
@@ -251,112 +302,215 @@ export default function SignFlowTestPage() {
         </Alert>
       )}
 
-      {pdfBytes ? (
+      {rawFile && pdfBytes ? (
         <>
           <Paper
             variant="outlined"
-            sx={{
-              p: 2.5,
-              mb: 3,
-              bgcolor: "#f8fafc",
-              borderRadius: 2,
-              border: "1px solid #cbd5e1",
-            }}
+            sx={{ mb: 3, bgcolor: "#ffffff", borderRadius: 2 }}
           >
-            <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
-              1. Nakreslete podpis do plátna
-            </Typography>
-            <Typography variant="body2" color="text.secondary" mb={1.5}>
-              Podpis nakreslený zde se automaticky ořízne a promítne přímo do
-              podpisového pole v dokumentu níže.
-            </Typography>
-
-            <Box
-              sx={{
-                width: "100%",
-                maxWidth: 520,
-                height: 160,
-                bgcolor: "#ffffff",
-                border: externalSigDataUrl
-                  ? "2px solid #10b981"
-                  : "2px dashed #94a3b8",
-                borderRadius: 2,
-                overflow: "hidden",
-                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)",
-              }}
+            <Tabs
+              value={activeTab}
+              onChange={(_, v) => setActiveTab(v)}
+              indicatorColor="primary"
+              textColor="primary"
+              variant="fullWidth"
             >
-              <SignatureCanvas
-                ref={externalSigRef}
-                penColor="black"
-                onEnd={handleExternalSigChange}
-                canvasProps={{
-                  width: 520,
-                  height: 160,
-                  style: {
-                    width: "100%",
-                    height: "100%",
-                    display: "block",
-                    touchAction: "none",
-                    cursor: "crosshair",
-                  },
-                }}
+              <Tab
+                value="editor"
+                icon={<EditNoteIcon />}
+                iconPosition="start"
+                label={`1. Umístění polí (${placedFields.length} polí v editoru)`}
               />
-            </Box>
-
-            <Stack direction="row" spacing={2} mt={1.5} alignItems="center">
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={handleClearSignature}
-                disabled={!externalSigDataUrl}
-              >
-                Vymazat podpis
-              </Button>
-              {externalSigDataUrl && (
-                <Typography
-                  variant="caption"
-                  color="success.main"
-                  fontWeight={600}
-                >
-                  ✓ Podpis připraven a promítnut do dokumentu
-                </Typography>
-              )}
-            </Stack>
+              <Tab
+                value="signer"
+                icon={<DrawIcon />}
+                iconPosition="start"
+                label="2. Vyplnění a podpis (z pohledu podepisujícího)"
+              />
+            </Tabs>
           </Paper>
 
-          <Typography variant="subtitle1" fontWeight={700} mb={1}>
-            2. Náhled dokumentu
-          </Typography>
+          {activeTab === "editor" && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  bgcolor: "#f8fafc",
+                  borderRadius: 2,
+                  border: "1px solid #cbd5e1",
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
+                  1. Umístění polí v dokumentu (stejný editor jako při zakládání
+                  smlouvy)
+                </Typography>
+                <Typography variant="body2" color="text.secondary" mb={2}>
+                  Přepínejte mezi <strong>Podpis</strong> a{" "}
+                  <strong>Text</strong>, vyberte popisek (např. <em>IČO</em>) a
+                  klikněte kamkoliv do stránky. Pole můžete přetahovat myší,
+                  měnit jejich velikost za rohy a upravovat popisek ikonou
+                  tužky.
+                </Typography>
 
-          <SigningDocumentViewer
-            pdfBytes={pdfBytes}
-            partyKey={partyKey}
-            externalSignature={externalSigDataUrl}
-            textValues={textValues}
-            onTextValuesChange={setTextValues}
-            onSignatureReady={(ready, getDataUrl) => {
-              // Pokud není použit externí podpis, použijeme vnitřní z vieweru
-              if (!externalSigDataUrl) {
-                setHasSignature(ready);
-                setGetSignatureDataUrl(() => getDataUrl);
-              }
-            }}
-          />
+                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleApplyEditorFields}
+                    disabled={placedFields.length === 0}
+                  >
+                    Uložit pole do PDF a otestovat podpis ({placedFields.length}{" "}
+                    polí) →
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<DownloadIcon />}
+                    onClick={handleDownloadPdfWithFields}
+                    disabled={placedFields.length === 0}
+                  >
+                    Stáhnout PDF s poli
+                  </Button>
+                </Stack>
+              </Paper>
 
-          <Divider sx={{ my: 3 }} />
+              <FieldPlacementEditor
+                file={rawFile}
+                parties={[
+                  { key: partyKey, label: `${partyKey} (Testovací strana)` },
+                ]}
+                fields={placedFields}
+                onChange={setPlacedFields}
+              />
 
-          <Button
-            variant="contained"
-            size="large"
-            disabled={!hasSignature || signing}
-            onClick={handleSign}
-          >
-            {signing ? "Podepisuji…" : "Podepsat a stáhnout"}
-          </Button>
+              {placedFields.length > 0 && (
+                <Box
+                  sx={{
+                    mt: 2,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={handleApplyEditorFields}
+                  >
+                    Přejít k vyplnění a podpisu ({placedFields.length} polí) →
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {activeTab === "signer" && (
+            <>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  mb: 3,
+                  bgcolor: "#f8fafc",
+                  borderRadius: 2,
+                  border: "1px solid #cbd5e1",
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
+                  Kreslicí plátno pro podpis
+                </Typography>
+                <Typography variant="body2" color="text.secondary" mb={1.5}>
+                  Podpis nakreslený zde se automaticky ořízne a promítne přímo
+                  do podpisového pole v dokumentu níže.
+                </Typography>
+
+                <Box
+                  sx={{
+                    width: "100%",
+                    maxWidth: 520,
+                    height: 160,
+                    bgcolor: "#ffffff",
+                    border: externalSigDataUrl
+                      ? "2px solid #10b981"
+                      : "2px dashed #94a3b8",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.05)",
+                  }}
+                >
+                  <SignatureCanvas
+                    ref={externalSigRef}
+                    penColor="black"
+                    onEnd={handleExternalSigChange}
+                    canvasProps={{
+                      width: 520,
+                      height: 160,
+                      style: {
+                        width: "100%",
+                        height: "100%",
+                        display: "block",
+                        touchAction: "none",
+                        cursor: "crosshair",
+                      },
+                    }}
+                  />
+                </Box>
+
+                <Stack direction="row" spacing={2} mt={1.5} alignItems="center">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={handleClearSignature}
+                    disabled={!externalSigDataUrl}
+                  >
+                    Vymazat podpis
+                  </Button>
+                  {externalSigDataUrl && (
+                    <Typography
+                      variant="caption"
+                      color="success.main"
+                      fontWeight={600}
+                    >
+                      ✓ Podpis připraven a promítnut do dokumentu
+                    </Typography>
+                  )}
+                </Stack>
+              </Paper>
+
+              <Typography variant="subtitle1" fontWeight={700} mb={1}>
+                Náhled dokumentu s poli k vyplnění a podpisu
+              </Typography>
+
+              <SigningDocumentViewer
+                pdfBytes={pdfBytes}
+                partyKey={partyKey}
+                externalSignature={externalSigDataUrl}
+                textValues={textValues}
+                onTextValuesChange={setTextValues}
+                onSignatureReady={(ready, getDataUrl) => {
+                  // Pokud není použit externí podpis, použijeme vnitřní z vieweru
+                  if (!externalSigDataUrl) {
+                    setHasSignature(ready);
+                    setGetSignatureDataUrl(() => getDataUrl);
+                  }
+                }}
+              />
+
+              <Divider sx={{ my: 3 }} />
+
+              <Button
+                variant="contained"
+                size="large"
+                disabled={!hasSignature || signing}
+                onClick={handleSign}
+              >
+                {signing ? "Podepisuji…" : "Podepsat a stáhnout"}
+              </Button>
+            </>
+          )}
         </>
       ) : (
         <Typography variant="body2" color="text.secondary">
-          Nejdřív nahraj PDF a případně klikni na „Vložit testovací pole“.
+          Nejdřív nahrajte PDF soubor tlačítkem výše.
         </Typography>
       )}
     </Box>
