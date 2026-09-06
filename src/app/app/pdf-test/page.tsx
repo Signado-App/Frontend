@@ -1,15 +1,54 @@
 "use client";
 
 import { useState } from "react";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, rgb } from "pdf-lib";
 import { PDFViewer } from "@embedpdf/react-pdf-viewer";
 import { Box, Button, Typography, Alert, Stack } from "@mui/material";
+import { embedSignatureIntoPdf, readPdfFields } from "@/utils/pdfSigning";
 
 export default function PdfTestPage() {
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [modifiedUrl, setModifiedUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const testSign = async () => {
+    if (!modifiedUrl) return;
+    const bytes = await fetch(modifiedUrl).then((r) => r.arrayBuffer());
+
+    const fields = await readPdfFields(bytes);
+    console.log("[Test] nalezená pole:", fields);
+
+    // podpis jako malý černý obdélník, jen pro ověření pozice
+    const canvas = document.createElement("canvas");
+    canvas.width = 300;
+    canvas.height = 100;
+    const ctx = canvas.getContext("2d")!;
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(20, 70);
+    ctx.bezierCurveTo(80, 10, 160, 90, 280, 30);
+    ctx.stroke();
+
+    const signed = await embedSignatureIntoPdf(
+      bytes,
+      canvas.toDataURL(),
+      fields[0]?.partyKey ?? "",
+      {
+        signedAt: new Date(),
+        ipAddress: "192.168.1.1",
+        device: navigator.userAgent,
+        signerName: "Test User",
+      },
+    );
+
+    const blob = new Blob([signed as BlobPart], { type: "application/pdf" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "signed.pdf";
+    a.click();
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,7 +75,7 @@ export default function PdfTestPage() {
       const page = pdfDoc.getPage(0);
       const { height } = page.getSize();
 
-      const nameField = form.createTextField("test.name");
+      const nameField = form.createTextField("text.party1.0");
       nameField.setText("");
       nameField.addToPage(page, {
         x: 50,
@@ -45,17 +84,24 @@ export default function PdfTestPage() {
         height: 30,
       });
 
-      const signatureField = form.createTextField("test.signature");
-      signatureField.setText("");
+      const signatureField = form.createTextField("signature.party1.1");
+      signatureField.setText("Sign Here");
       signatureField.addToPage(page, {
         x: 50,
         y: height - 220,
         width: 200,
         height: 50,
+        backgroundColor: rgb(1, 0.88, 0.1),
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 1,
       });
 
+      signatureField.enableReadOnly();
+
       const modifiedBytes = await pdfDoc.save();
-      const blob = new Blob([modifiedBytes], { type: "application/pdf" });
+      const blob = new Blob([modifiedBytes as BlobPart], {
+        type: "application/pdf",
+      });
       setModifiedUrl(URL.createObjectURL(blob));
       setStatus("Pole vložena. Zkus do nich ve vieweru napsat text.");
     } catch (e) {
@@ -120,6 +166,26 @@ export default function PdfTestPage() {
           disabled={!modifiedUrl}
         >
           Přečíst souřadnice polí
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={async () => {
+            if (!modifiedUrl) return;
+            const bytes = await fetch(modifiedUrl).then((r) => r.arrayBuffer());
+            const fields = await readPdfFields(bytes);
+            console.log("[Debug] pole přímo po vložení:", fields);
+          }}
+          disabled={!modifiedUrl}
+        >
+          Debug: vypsat pole
+        </Button>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={testSign}
+          disabled={!modifiedUrl}
+        >
+          Test podpisu
         </Button>
       </Stack>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Rnd } from "react-rnd";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import {
   Box,
@@ -12,12 +12,17 @@ import {
   Stack,
   ToggleButton,
   ToggleButtonGroup,
+  TextField,
+  Chip,
+  Popover,
+  Button,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import DrawOutlinedIcon from "@mui/icons-material/DrawOutlined";
 import TextFieldsIcon from "@mui/icons-material/TextFields";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { FieldType, PlacedField } from "@/types/types";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -28,8 +33,10 @@ const PAGE_WIDTH = 700;
 
 const DEFAULT_SIZE: Record<FieldType, { w: number; h: number }> = {
   signature: { w: 0.28, h: 0.06 },
-  text: { w: 0.28, h: 0.035 },
+  text: { w: 0.28, h: 0.038 },
 };
+
+const PRESET_LABELS = ["IČO", "Funkce", "Datum", "Poznámka", "Společnost"];
 
 type Party = { key: string; label: string };
 
@@ -55,8 +62,69 @@ export default function FieldPlacementEditor({
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeType, setActiveType] = useState<FieldType>("signature");
+  const [textLabel, setTextLabel] = useState("IČO");
   const [activePartyState, setActivePartyState] = useState<string | null>(null);
-  const [pageSize, setPageSize] = useState({ width: 0, height: 0, page: 0 });
+  const [pageDims, setPageDims] = useState<
+    Record<number, { width: number; height: number }>
+  >({});
+
+  // Klonování bufferu souboru, aby se předešlo detach chybám
+  const [fileData, setFileData] = useState<Uint8Array | null>(null);
+  useEffect(() => {
+    let active = true;
+    file.arrayBuffer().then((buf) => {
+      if (active) {
+        setFileData(new Uint8Array(buf.slice(0)));
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [file]);
+
+  const fileSource = useMemo(() => {
+    if (fileData) return { data: fileData };
+    return file;
+  }, [fileData, file]);
+
+  // Editace existujícího pole přes popover
+  const [editAnchorEl, setEditAnchorEl] = useState<HTMLElement | null>(null);
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editParty, setEditParty] = useState("");
+
+  const openEditField = (
+    e: React.MouseEvent<HTMLElement>,
+    field: PlacedField,
+  ) => {
+    e.stopPropagation();
+    setEditingFieldId(field.id);
+    setEditLabel(field.label || "");
+    setEditParty(field.partyKey);
+    setEditAnchorEl(e.currentTarget);
+  };
+
+  const closeEditField = () => {
+    setEditAnchorEl(null);
+    setEditingFieldId(null);
+  };
+
+  const saveEditField = () => {
+    if (editingFieldId) {
+      onChange(
+        fields.map((f) =>
+          f.id === editingFieldId
+            ? {
+                ...f,
+                label: editLabel.trim() || undefined,
+                partyKey: editParty,
+              }
+            : f,
+        ),
+      );
+    }
+    closeEditField();
+  };
 
   const activeParty =
     activePartyState && parties.some((p) => p.key === activePartyState)
@@ -64,6 +132,7 @@ export default function FieldPlacementEditor({
       : (parties[0]?.key ?? "");
 
   const pageFields = fields.filter((f) => f.page === currentPage);
+  const pageSize = pageDims[currentPage] ?? { width: 0, height: 0 };
 
   const addField = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!activeParty) return;
@@ -71,8 +140,11 @@ export default function FieldPlacementEditor({
     const rect = e.currentTarget.getBoundingClientRect();
     const size = DEFAULT_SIZE[activeType];
 
-    const xRatio = (e.clientX - rect.left) / rect.width - size.w / 2;
-    const yRatio = (e.clientY - rect.top) / rect.height - size.h / 2;
+    const rawXRatio = (e.clientX - rect.left) / rect.width - size.w / 2;
+    const rawYRatio = (e.clientY - rect.top) / rect.height - size.h / 2;
+
+    const xRatio = Math.max(0, Math.min(1 - size.w, rawXRatio));
+    const yRatio = Math.max(0, Math.min(1 - size.h, rawYRatio));
 
     onChange([
       ...fields,
@@ -84,8 +156,12 @@ export default function FieldPlacementEditor({
         yRatio,
         widthRatio: size.w,
         heightRatio: size.h,
+        x: pageSize.width > 0 ? xRatio * pageSize.width : undefined,
+        y: pageSize.height > 0 ? yRatio * pageSize.height : undefined,
+        width: pageSize.width > 0 ? size.w * pageSize.width : undefined,
+        height: pageSize.height > 0 ? size.h * pageSize.height : undefined,
         partyKey: activeParty,
-        label: activeType === "text" ? "Text" : undefined,
+        label: activeType === "text" ? textLabel.trim() || "Text" : undefined,
       },
     ]);
   };
@@ -98,7 +174,14 @@ export default function FieldPlacementEditor({
 
   return (
     <Box>
-      <Stack direction="row" spacing={2} alignItems="center" mb={1}>
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        mb={1.5}
+        flexWrap="wrap"
+        useFlexGap
+      >
         <ToggleButtonGroup
           size="small"
           exclusive
@@ -127,6 +210,36 @@ export default function FieldPlacementEditor({
             </MenuItem>
           ))}
         </Select>
+
+        {activeType === "text" && (
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            flexWrap="wrap"
+          >
+            <TextField
+              size="small"
+              label="Popisek pole"
+              value={textLabel}
+              onChange={(e) => setTextLabel(e.target.value)}
+              sx={{ width: 140 }}
+            />
+            <Stack direction="row" spacing={0.5}>
+              {PRESET_LABELS.map((preset) => (
+                <Chip
+                  key={preset}
+                  size="small"
+                  label={preset}
+                  variant={textLabel === preset ? "filled" : "outlined"}
+                  color={textLabel === preset ? "secondary" : "default"}
+                  onClick={() => setTextLabel(preset)}
+                  sx={{ cursor: "pointer" }}
+                />
+              ))}
+            </Stack>
+          </Stack>
+        )}
       </Stack>
 
       <Typography variant="body2" color="text.secondary" mb={1}>
@@ -134,7 +247,7 @@ export default function FieldPlacementEditor({
       </Typography>
 
       <Document
-        file={file}
+        file={fileSource}
         onLoadSuccess={({ numPages }) => setNumPages(numPages)}
       >
         <Box
@@ -143,6 +256,8 @@ export default function FieldPlacementEditor({
             width: PAGE_WIDTH,
             border: "1px solid #e5e7eb",
             cursor: "crosshair",
+            bgcolor: "#ffffff",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
           }}
           onClick={addField}
         >
@@ -152,16 +267,14 @@ export default function FieldPlacementEditor({
             renderTextLayer={false}
             renderAnnotationLayer={false}
             onRenderSuccess={(page) =>
-              setPageSize({
-                width: page.width,
-                height: page.height,
-                page: currentPage,
-              })
+              setPageDims((prev) => ({
+                ...prev,
+                [currentPage]: { width: page.width, height: page.height },
+              }))
             }
           />
 
           {pageSize.width > 0 &&
-            pageSize.page === currentPage &&
             pageFields.map((f) => (
               <Rnd
                 key={f.id}
@@ -183,6 +296,8 @@ export default function FieldPlacementEditor({
                             ...x,
                             xRatio: d.x / pageSize.width,
                             yRatio: d.y / pageSize.height,
+                            x: d.x,
+                            y: d.y,
                           }
                         : x,
                     ),
@@ -198,6 +313,10 @@ export default function FieldPlacementEditor({
                             heightRatio: ref.offsetHeight / pageSize.height,
                             xRatio: pos.x / pageSize.width,
                             yRatio: pos.y / pageSize.height,
+                            width: ref.offsetWidth,
+                            height: ref.offsetHeight,
+                            x: pos.x,
+                            y: pos.y,
                           }
                         : x,
                     ),
@@ -215,6 +334,8 @@ export default function FieldPlacementEditor({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  borderRadius: 4,
+                  zIndex: 10,
                 }}
               >
                 <Typography
@@ -232,9 +353,31 @@ export default function FieldPlacementEditor({
                     userSelect: "none",
                   }}
                 >
-                  {f.type === "signature" ? "Podpis" : f.label} ·{" "}
+                  {f.type === "signature" ? "Podpis" : f.label || "Text"} ·{" "}
                   {partyLabel(f.partyKey)}
                 </Typography>
+
+                {f.type === "text" && (
+                  <IconButton
+                    size="small"
+                    sx={{
+                      position: "absolute",
+                      top: "50%",
+                      right: 22,
+                      transform: "translateY(-50%)",
+                      width: 18,
+                      height: 18,
+                      zIndex: 20,
+                      bgcolor: "white",
+                      border: "1px solid #e5e7eb",
+                      "&:hover": { bgcolor: "#f3e8ff" },
+                    }}
+                    onClick={(e) => openEditField(e, f)}
+                    title="Upravit popisek pole"
+                  >
+                    <EditOutlinedIcon sx={{ fontSize: 11, color: "#6d28d9" }} />
+                  </IconButton>
+                )}
 
                 <IconButton
                   size="small"
@@ -251,6 +394,7 @@ export default function FieldPlacementEditor({
                     "&:hover": { bgcolor: "#fee2e2" },
                   }}
                   onClick={() => removeField(f.id)}
+                  title="Smazat pole"
                 >
                   <CloseIcon sx={{ fontSize: 11 }} />
                 </IconButton>
@@ -259,8 +403,58 @@ export default function FieldPlacementEditor({
         </Box>
       </Document>
 
+      {/* Popover pro úpravu textového pole */}
+      <Popover
+        open={Boolean(editAnchorEl)}
+        anchorEl={editAnchorEl}
+        onClose={closeEditField}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        transformOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Box
+          sx={{
+            p: 2,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1.5,
+            minWidth: 260,
+          }}
+        >
+          <Typography variant="subtitle2" fontWeight={600}>
+            Upravit textové pole
+          </Typography>
+          <TextField
+            size="small"
+            label="Popisek / účel pole"
+            value={editLabel}
+            onChange={(e) => setEditLabel(e.target.value)}
+            placeholder="např. IČO, Funkce, Poznámka"
+            autoFocus
+          />
+          <Select
+            size="small"
+            value={editParty}
+            onChange={(e) => setEditParty(e.target.value)}
+          >
+            {parties.map((p) => (
+              <MenuItem key={p.key} value={p.key}>
+                {p.label}
+              </MenuItem>
+            ))}
+          </Select>
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button size="small" onClick={closeEditField}>
+              Zrušit
+            </Button>
+            <Button size="small" variant="contained" onClick={saveEditField}>
+              Uložit
+            </Button>
+          </Stack>
+        </Box>
+      </Popover>
+
       {numPages > 1 && (
-        <Stack direction="row" alignItems="center" spacing={1} mt={1}>
+        <Stack direction="row" alignItems="center" spacing={1} mt={1.5}>
           <IconButton
             size="small"
             disabled={currentPage <= 1}

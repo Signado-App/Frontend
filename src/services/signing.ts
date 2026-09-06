@@ -5,15 +5,11 @@ export async function getSigningContract() {
   return response.data;
 }
 
-export async function signContract(
-  contractId: string,
-  data: {
-    device: string;
-    document_hash: string;
-    location: string;
-    signature_svg: object;
-  },
-) {
-  const response = await apiClient.post(`/contract/${contractId}/sign`, data);
+export async function signContract(contractId: string, data: FormData) {
+  const response = await apiClient.post(
+    `/contract/${contractId}/sign`,
+    data,
+    {},
+  );
   return response.data;
 }

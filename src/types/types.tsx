@@ -268,6 +268,10 @@ export type GroupMemberItem = {
 export type FieldType = "signature" | "text";
 
 export type PlacedField = {
+  x: number | undefined;
+  y: number | undefined;
+  width: number | undefined;
+  height: number | undefined;
   id: string;
   type: FieldType;
   page: number; 

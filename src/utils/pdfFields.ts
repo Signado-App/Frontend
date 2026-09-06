@@ -1,4 +1,4 @@
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFHexString, PDFName } from "pdf-lib";
 import { PlacedField } from "@/types/types";
 
 export async function embedFieldsIntoPdf(
@@ -24,6 +24,16 @@ export async function embedFieldsIntoPdf(
 
     const field = form.createTextField(name);
     field.setText("");
+    if (f.label) {
+      try {
+        field.acroField.dict.set(
+          PDFName.of("TU"),
+          PDFHexString.fromText(f.label),
+        );
+      } catch {
+        // fallback ignore
+      }
+    }
     if (f.type === "signature") {
       field.enableReadOnly();
     }
@@ -31,5 +41,5 @@ export async function embedFieldsIntoPdf(
   });
 
   const modifiedBytes = await pdfDoc.save();
-  return new File([modifiedBytes], file.name, { type: file.type });
+  return new File([modifiedBytes as BlobPart], file.name, { type: file.type });
 }
