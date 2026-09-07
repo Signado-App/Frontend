@@ -180,13 +180,18 @@ export function useCreateContractForm() {
         setSubmitStage("uploading");
 
         await Promise.all(
-          response.upload_urls.map((uploadInfo: any, index: number) =>
-            fetch(uploadInfo.upload_url, {
+          response.upload_urls.map(async (uploadInfo: any, index: number) => {
+            const uploadRes = await fetch(uploadInfo.upload_url, {
               method: "PUT",
               body: preparedFiles[index],
               headers: { "Content-Type": preparedFiles[index].type },
-            }),
-          ),
+            });
+            if (!uploadRes.ok) {
+              throw new Error(
+                `Chyba při nahrávání souboru na úložiště (${uploadRes.status}: ${uploadRes.statusText})`,
+              );
+            }
+          }),
         );
 
         stage = "finalizing";

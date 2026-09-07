@@ -68,7 +68,11 @@ apiClient.interceptors.response.use(
     const apiError: ApiErrorShape = {
       type: "API_ERROR",
       status,
-      message: data?.message ?? "An error occurred",
+      message:
+        data?.message ??
+        (data as any)?.msg ??
+        (data as any)?.specification ??
+        "An error occurred",
       data,
     };
     return Promise.reject(apiError);
