@@ -75,7 +75,6 @@ apiClient.interceptors.response.use(
   },
 );
 apiClient.interceptors.request.use((config) => {
-  console.log("[Request] cookies:", document.cookie);
   const accessCsrf =
     getCookie("csrf_access_token") ?? localStorage.getItem("access_csrf");
   if (accessCsrf) {
