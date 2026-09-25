@@ -73,7 +73,7 @@ function ContractsPage() {
       cell: (row) => (
         <Typography variant="body2" color="text.secondary">
           {row.last_activity
-            ? new Date(row.last_activity).toLocaleString("cs-CZ")
+            ? new Date(row.last_activity).toLocaleString("en-US")
             : "-"}
         </Typography>
       ),

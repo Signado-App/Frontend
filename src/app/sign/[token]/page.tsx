@@ -47,6 +47,13 @@ export default function SignPage({
     loginWithSigningToken(token)
       .then(async (loginRes) => {
         console.log("[SignPage] loginWithSigningToken response:", loginRes);
+        const csrf =
+          loginRes?.data?.access_csrf ||
+          loginRes?.access_csrf ||
+          loginRes?.csrf_access_token;
+        if (csrf && typeof window !== "undefined") {
+          localStorage.setItem("access_csrf", csrf);
+        }
         const response = await getSigningContract();
         console.log("[SignPage] getSigningContract raw response:", response);
         return { loginRes, response };

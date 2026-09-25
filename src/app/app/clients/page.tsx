@@ -69,7 +69,7 @@ function ClientsPage() {
       cell: (row) => (
         <Typography variant="body2" color="text.secondary">
           {row.created_at
-            ? new Date(row.created_at).toLocaleDateString("cs-CZ")
+            ? new Date(row.created_at).toLocaleDateString("en-US")
             : "-"}
         </Typography>
       ),

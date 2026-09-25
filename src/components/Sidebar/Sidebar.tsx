@@ -187,9 +187,9 @@ export default function Sidebar() {
           refreshOrganizations();
         }}
       />
-      <Button variant="text" fullWidth onClick={refresh} sx={{ mt: "auto" }}>
+      {/* <Button variant="text" fullWidth onClick={refresh} sx={{ mt: "auto" }}>
         Test get user
-      </Button>
+      </Button> */}
       <Button
         variant="text"
         fullWidth

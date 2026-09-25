@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { Box } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import Headline from "@/components/Headline";
 import GroupMembers from "@/components/Groups/GroupMembers";
 import GroupPrivileges from "@/components/Groups/GroupPrivilieges";
@@ -31,7 +31,13 @@ export default function GroupPage({
     });
   }, [selectedOrgId, group_id]);
 
-  if (!group) return null;
+  if (!group) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", p: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const handleAddMember = () => {
     setAddMemberOpen(true);

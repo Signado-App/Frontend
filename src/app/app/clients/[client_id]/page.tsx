@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react";
 import { OrgClientDetail } from "@/types/types";
 import { getOrgClient } from "@/services/orgClients";
 import { useUserContext } from "@/context/UserContext";
-import { Box } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import BackButton from "@/components/Clients/BackButton";
 import ClientPageContent from "@/components/Clients/ClientPageContent";
 import ClientInfo from "@/components/Clients/ClientInfo";
@@ -26,7 +26,11 @@ export default function ClientPage({
   }, [selectedOrgId, client_id]);
 
   if (!client) {
-    return null;
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", p: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
   return (
     <Box>

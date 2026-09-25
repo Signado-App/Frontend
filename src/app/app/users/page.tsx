@@ -137,7 +137,7 @@ function UsersPage() {
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
         <Headline
           title="Users"
-          description="Manage clients of your organization."
+          description="Manage members and users of your organization."
         />
         {hasPrivilege(Privileges.ADD_USERS) && (
           <Button
@@ -155,9 +155,8 @@ function UsersPage() {
           onTabChange={setCurrentTab}
           Tabs={["All", "Active", "Invited"]}
         />
-        ;
         <Box sx={{ display: "flex", gap: 2 }}>
-          <Searchbar placeholder="Search by client name" sx={{ width: 320 }} />
+          <Searchbar placeholder="Search by user name" sx={{ width: 320 }} />
           <Select value="main" size="small" sx={{}}>
             <MenuItem value="main">Name A-Z</MenuItem>
             <MenuItem value="second">Highest value</MenuItem>
