@@ -28,11 +28,21 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import dynamic from "next/dynamic";
+
+const FieldPlacementEditor = dynamic(
+  () => import("@/components/Contract/FieldPlacementEditor"),
+  { ssr: false },
+);
+import { useState } from "react";
+import { PlacedField } from "@/types/types";
 
 const steps = ["Details", "Parties", "Files", "Review"];
+type SignatureField = { page: number; x: number; y: number };
 
 export default function NewContractPage() {
   const router = useRouter();
+
   const {
     activeStep,
     handleNext,
@@ -58,6 +68,8 @@ export default function NewContractPage() {
     loading,
     handleSubmit,
     addMyself,
+    placedFields,
+    setPlacedFields,
   } = useCreateContractForm();
 
   const stageLabel: Record<string, string> = {
@@ -261,6 +273,18 @@ export default function NewContractPage() {
                   </ListItem>
                 ))}
               </List>
+            )}
+
+            {files.length > 0 && files[0].type === "application/pdf" && (
+              <FieldPlacementEditor
+                file={files[0]}
+                parties={parties.map((p) => ({
+                  key: String(p.user_id ?? p.email),
+                  label: p.email,
+                }))}
+                fields={placedFields}
+                onChange={setPlacedFields}
+              />
             )}
 
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>

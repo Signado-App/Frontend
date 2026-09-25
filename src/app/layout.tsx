@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/context/themeProvider/ThemeContext";
 import { SnackbarProvider } from "@/context/SnackbarContext";
 import { PrivilegesProvider } from "@/context/PrivilegesContext";
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
