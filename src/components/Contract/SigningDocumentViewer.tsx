@@ -19,7 +19,11 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ViewDayOutlinedIcon from "@mui/icons-material/ViewDayOutlined";
 import ViewAgendaOutlinedIcon from "@mui/icons-material/ViewAgendaOutlined";
-import { PdfFieldInfo, readPdfFields } from "@/utils/pdfSigning";
+import {
+  PdfFieldInfo,
+  readPdfFields,
+  trimCanvasToDataUrl,
+} from "@/utils/pdfSigning";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -80,26 +84,25 @@ export default function SigningDocumentViewer({
         const sigs = mine.filter((f) => f.type === "signature");
         if (sigs.length === 0) {
           setError(
-            "V dokumentu nebylo nalezeno žádné podpisové pole pro stranu: " +
-              partyKey,
+            "No signature field found in document for party: " + partyKey,
           );
         } else if (sigs[0]?.page) {
           // Automaticky nalistuj stranu s podpisem
           setCurrentPage(sigs[0].page);
         }
       })
-      .catch(() => setError("Dokument se nepodařilo přečíst."));
+      .catch(() => setError("Failed to read document."));
   }, [pdfBytes, partyKey]);
 
   const handleSignatureChange = () => {
-    const canvas = sigRef.current;
-    const isEmpty = !canvas || canvas.isEmpty();
+    const sig = sigRef.current;
+    const isEmpty = !sig || sig.isEmpty();
     onSignatureReady(!isEmpty, () => {
-      if (!canvas || canvas.isEmpty()) return null;
+      if (!sig || sig.isEmpty()) return null;
       try {
-        return canvas.getTrimmedCanvas().toDataURL("image/png");
+        return trimCanvasToDataUrl(sig.getCanvas());
       } catch {
-        return canvas.toDataURL("image/png");
+        return sig.toDataURL("image/png");
       }
     });
   };
@@ -147,7 +150,7 @@ export default function SigningDocumentViewer({
                 fontWeight={600}
                 sx={{ minWidth: 90, textAlign: "center" }}
               >
-                Strana {currentPage} z {numPages}
+                Page {currentPage} of {numPages}
               </Typography>
               <IconButton
                 size="small"
@@ -159,7 +162,7 @@ export default function SigningDocumentViewer({
             </Stack>
           ) : (
             <Typography variant="body2" color="text.secondary" fontWeight={500}>
-              Zobrazeno všech {numPages} stran pod sebou
+              Showing all {numPages} pages
             </Typography>
           )}
 
@@ -173,8 +176,8 @@ export default function SigningDocumentViewer({
                   variant="outlined"
                   label={
                     externalSignature
-                      ? "✓ Podpis vložen na této straně"
-                      : `✍️ Podpisové pole na této straně`
+                      ? "Signature placed on this page"
+                      : `Signature field on this page`
                   }
                 />
               ) : (
@@ -185,7 +188,7 @@ export default function SigningDocumentViewer({
                   startIcon={<EditOutlinedIcon />}
                   onClick={() => setCurrentPage(primarySigField.page)}
                 >
-                  Přejít na podpis (str. {primarySigField.page})
+                  Go to signature (p. {primarySigField.page})
                 </Button>
               )}
             </Stack>
@@ -200,15 +203,15 @@ export default function SigningDocumentViewer({
                 color: "#6d28d9",
                 bgcolor: "rgba(139,92,246,0.06)",
               }}
-              label={`📝 ${textFields.length} ${
-                textFields.length === 1 ? "textové pole" : "textových polí"
+              label={`${textFields.length} ${
+                textFields.length === 1 ? "text field" : "text fields"
               }`}
             />
           )}
 
           {/* Přepínač zobrazení: po jedné straně vs. všechny */}
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <Tooltip title="Zobrazit po jedné straně (doporučeno)">
+            <Tooltip title="Single page view (recommended)">
               <IconButton
                 size="small"
                 color={viewMode === "single" ? "primary" : "default"}
@@ -217,7 +220,7 @@ export default function SigningDocumentViewer({
                 <ViewDayOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Zobrazit všechny strany pod sebou">
+            <Tooltip title="Continuous scroll view">
               <IconButton
                 size="small"
                 color={viewMode === "all" ? "primary" : "default"}
@@ -248,7 +251,7 @@ export default function SigningDocumentViewer({
           onLoadSuccess={({ numPages }) => setNumPages(numPages)}
           loading={
             <Typography variant="body2" color="text.secondary" sx={{ py: 6 }}>
-              Načítám dokument…
+              Loading document…
             </Typography>
           }
         >
@@ -297,7 +300,7 @@ export default function SigningDocumentViewer({
 
                     if (f.type === "text") {
                       const val = textValues?.[f.name] ?? "";
-                      const placeholder = f.label || "Vyplňte text...";
+                      const placeholder = f.label || "Enter text...";
                       const fontSize = Math.max(
                         10,
                         Math.min(14, height * 0.42),
@@ -379,7 +382,7 @@ export default function SigningDocumentViewer({
                           <Box
                             component="img"
                             src={externalSignature}
-                            alt="Podpis"
+                            alt="Signature"
                             sx={{
                               width: "100%",
                               height: "100%",
@@ -391,7 +394,10 @@ export default function SigningDocumentViewer({
                         ) : isPrimary ? (
                           <SignatureCanvas
                             ref={sigRef}
-                            penColor="black"
+                            penColor="#0f172a"
+                            minWidth={1.2}
+                            maxWidth={3.0}
+                            velocityFilterWeight={0.7}
                             onEnd={handleSignatureChange}
                             canvasProps={{
                               width: Math.round(width),
@@ -417,7 +423,7 @@ export default function SigningDocumentViewer({
                               pointerEvents: "none",
                             }}
                           >
-                            {idx > 0 ? "Stejný podpis" : ""}
+                            {idx > 0 ? "Same signature" : ""}
                           </Typography>
                         )}
                       </Box>
@@ -446,7 +452,7 @@ export default function SigningDocumentViewer({
             <NavigateBeforeIcon />
           </IconButton>
           <Typography variant="body2" fontWeight={600}>
-            Strana {currentPage} z {numPages}
+            Page {currentPage} of {numPages}
           </Typography>
           <IconButton
             size="small"
@@ -468,7 +474,7 @@ export default function SigningDocumentViewer({
               onSignatureReady(false, () => null);
             }}
           >
-            Vymazat podpis
+            Clear signature
           </Button>
         </Stack>
       )}

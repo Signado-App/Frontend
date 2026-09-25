@@ -15,6 +15,8 @@ import { loginWithSigningToken } from "@/services/auth";
 import { getSigningContract, signContract } from "@/services/signing";
 import apiClient from "@/services/apiClient";
 import { embedSignatureIntoPdf, readPdfFields } from "@/utils/pdfSigning";
+import { sha256 } from "js-sha256";
+import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 
 const SigningDocumentViewer = dynamic(
   () => import("@/components/Contract/SigningDocumentViewer"),
@@ -33,6 +35,7 @@ export default function SignPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [signed, setSigned] = useState(false);
+  const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
   const [signing, setSigning] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
   const [getSignatureDataUrl, setGetSignatureDataUrl] = useState<
@@ -98,28 +101,31 @@ export default function SignPage({
 
           if (!isPdf) {
             throw new Error(
-              "Stažený soubor není platný PDF dokument (odpověď neobsahuje hlavičku %PDF-).",
+              "Downloaded file is not a valid PDF document (missing %PDF- header).",
             );
           }
 
           setPdfBytes(bytes);
         } catch (e: any) {
-          console.error("[SignPage] Chyba při načítání PDF:", e);
+          console.error("[SignPage] Error loading PDF:", e);
           setError(
-            `Dokument smlouvy se nepodařilo načíst (${e?.message || e}). Zkontrolujte prosím stav souboru.`,
+            `Failed to load contract document (${e?.message || e}). Please check the file status.`,
           );
         } finally {
           setLoading(false);
         }
       })
       .catch((err) => {
-        console.error("[SignPage] Chyba při přihlášení/načtení smlouvy:", err);
+        console.error(
+          "[SignPage] Error authenticating or fetching contract:",
+          err,
+        );
         if (err?.data?.specification === "expired") {
           setError(
-            "Tento odkaz na podpis již vypršel. Nový odkaz byl odeslán na váš e-mail.",
+            "This signing link has expired. A new link has been sent to your email.",
           );
         } else {
-          setError("Neplatný nebo vypršený odkaz k podpisu.");
+          setError("Invalid or expired signing link.");
         }
         setLoading(false);
       });
@@ -162,7 +168,7 @@ export default function SignPage({
     const signatureData = getSignatureDataUrl();
     if (!signatureData) {
       setError(
-        "Před odesláním prosím nakreslete svůj podpis do vyznačeného pole.",
+        "Please draw your signature in the designated field before submitting.",
       );
       return;
     }
@@ -177,30 +183,44 @@ export default function SignPage({
         partyKey,
         {
           signedAt: new Date(),
-          ipAddress: "Získá backend",
           device: navigator.userAgent,
           signerName:
-            contract.current_signer_name ??
-            contract.signer_name ??
-            "Podepisující",
+            contract.current_signer_name ?? contract.signer_name ?? "Signer",
         },
         textValues,
       );
 
-      const signedFile = new Blob([signedPdfBytes as BlobPart], {
+      // Připravíme lokální URL pro stažení podepsaného PDF
+      const signedBlob = new Blob([signedPdfBytes as BlobPart], {
         type: "application/pdf",
       });
+      const localDownloadUrl = URL.createObjectURL(signedBlob);
+      setSignedPdfUrl(localDownloadUrl);
 
-      const formData = new FormData();
-      formData.append("file", signedFile, "signed_contract.pdf");
-      formData.append("device", navigator.userAgent);
+      // Spočítáme SHA-256 hash dokumentu (nebo použijeme ID smlouvy)
+      const documentHash = pdfBytes ? sha256(pdfBytes) : String(contract.id);
 
-      await signContract(contract.id, formData);
+      // Odešleme JSON přesně podle požadavků backendu
+      await signContract(contract.id, {
+        signature_svg: {
+          data: signatureData,
+          svg: signatureData,
+        },
+        document_hash: documentHash,
+        device: navigator.userAgent,
+        location: "",
+      });
 
       setSigned(true);
-    } catch (err) {
-      console.error(err);
-      setError("Podpis se nepodařilo odeslat. Zkuste to prosím znovu.");
+    } catch (err: any) {
+      console.error("[SignPage] Error submitting signature:", err);
+      const msg =
+        err?.data?.specification === "already_signed"
+          ? "This contract has already been signed."
+          : err?.data?.specification === "missing_required_fields"
+            ? "Missing required fields for signing."
+            : err?.message || "Failed to submit signature. Please try again.";
+      setError(msg);
     } finally {
       setSigning(false);
     }
@@ -233,12 +253,25 @@ export default function SignPage({
     return (
       <Box sx={{ maxWidth: 600, mx: "auto", p: 4, mt: 8, textAlign: "center" }}>
         <Typography variant="h5" fontWeight={700} mb={2}>
-          Dokument byl úspěšně podepsán
+          Document Successfully Signed
         </Typography>
-        <Typography color="text.secondary">
-          Děkujeme za podpis smlouvy. Kopie byla uložena a všem stranám bude
-          zaslána potvrzovací zpráva.
+        <Typography color="text.secondary" mb={3}>
+          Thank you for signing. Your signature has been recorded and the
+          document was updated.
         </Typography>
+        {signedPdfUrl && (
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="contained"
+              component="a"
+              href={signedPdfUrl}
+              download={`signed_${contract?.title || "contract"}.pdf`}
+              startIcon={<DownloadOutlinedIcon />}
+            >
+              Download Signed PDF
+            </Button>
+          </Box>
+        )}
       </Box>
     );
   }
@@ -246,11 +279,11 @@ export default function SignPage({
   return (
     <Box sx={{ maxWidth: 840, mx: "auto", p: { xs: 2, sm: 4 }, mt: 2 }}>
       <Typography variant="h4" fontWeight={700} mb={1}>
-        Podepsat dokument
+        Sign Document
       </Typography>
       <Typography color="text.secondary" mb={3}>
-        Zkontrolujte prosím dokument níže, vyplňte případná požadovaná pole a
-        připojte svůj podpis.
+        Please review the document below, fill in any required fields, and
+        provide your signature.
       </Typography>
 
       {contract && (
@@ -269,17 +302,25 @@ export default function SignPage({
           <Stack direction="row" spacing={3} mt={1.5} flexWrap="wrap">
             {contract.sign_by && (
               <Typography variant="body2">
-                Podepsat do:{" "}
+                Sign by:{" "}
                 <strong>
-                  {new Date(contract.sign_by).toLocaleDateString("cs-CZ")}
+                  {new Date(contract.sign_by).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </strong>
               </Typography>
             )}
             {contract.expires_at && (
               <Typography variant="body2">
-                Platnost do:{" "}
+                Expires at:{" "}
                 <strong>
-                  {new Date(contract.expires_at).toLocaleDateString("cs-CZ")}
+                  {new Date(contract.expires_at).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </strong>
               </Typography>
             )}
@@ -319,7 +360,7 @@ export default function SignPage({
               }
               sx={{ minWidth: 200 }}
             >
-              {signing ? "Odesílám podpis…" : "Podepsat a odeslat"}
+              {signing ? "Submitting signature…" : "Sign and Submit"}
             </Button>
           </Box>
         </>
@@ -327,7 +368,7 @@ export default function SignPage({
         <Box sx={{ p: 6, textAlign: "center" }}>
           <CircularProgress size={32} />
           <Typography variant="body2" color="text.secondary" mt={2}>
-            Načítám PDF dokument k podpisu…
+            Loading PDF document…
           </Typography>
         </Box>
       ) : (
@@ -348,7 +389,7 @@ export default function SignPage({
             color="text.primary"
             mb={1}
           >
-            Dokument k podpisu nebyl nalezen
+            Document unavailable
           </Typography>
           <Typography
             variant="body2"
@@ -357,12 +398,12 @@ export default function SignPage({
             maxWidth={520}
             mx="auto"
           >
-            Backend v odpovědi na <code>GET /contract/get</code> neposlal odkaz
-            na soubor smlouvy (pole <code>files</code>). Pokud chcete otestovat
-            podepisování ihned, můžete PDF nahrát ručně:
+            The server response did not include a download URL for the contract
+            file. If you want to test signing immediately, you can upload a PDF
+            manually:
           </Typography>
           <Button variant="contained" component="label">
-            Nahrát PDF soubor (pro test)
+            Upload PDF File (test)
             <input
               type="file"
               accept="application/pdf"

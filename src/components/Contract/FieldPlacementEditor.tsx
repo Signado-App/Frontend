@@ -36,7 +36,7 @@ const DEFAULT_SIZE: Record<FieldType, { w: number; h: number }> = {
   text: { w: 0.28, h: 0.038 },
 };
 
-const PRESET_LABELS = ["IČO", "Funkce", "Datum", "Poznámka", "Společnost"];
+const PRESET_LABELS = ["Job Title", "Company", "Date", "Note", "Reg. No."];
 
 type Party = { key: string; label: string };
 
@@ -62,7 +62,7 @@ export default function FieldPlacementEditor({
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeType, setActiveType] = useState<FieldType>("signature");
-  const [textLabel, setTextLabel] = useState("IČO");
+  const [textLabel, setTextLabel] = useState("Date");
   const [activePartyState, setActivePartyState] = useState<string | null>(null);
   const [pageDims, setPageDims] = useState<
     Record<number, { width: number; height: number }>
@@ -190,7 +190,7 @@ export default function FieldPlacementEditor({
         >
           <ToggleButton value="signature">
             <DrawOutlinedIcon fontSize="small" sx={{ mr: 0.5 }} />
-            Podpis
+            Signature
           </ToggleButton>
           <ToggleButton value="text">
             <TextFieldsIcon fontSize="small" sx={{ mr: 0.5 }} />
@@ -220,7 +220,7 @@ export default function FieldPlacementEditor({
           >
             <TextField
               size="small"
-              label="Popisek pole"
+              label="Field label"
               value={textLabel}
               onChange={(e) => setTextLabel(e.target.value)}
               sx={{ width: 140 }}
@@ -243,7 +243,7 @@ export default function FieldPlacementEditor({
       </Stack>
 
       <Typography variant="body2" color="text.secondary" mb={1}>
-        Klikni do dokumentu pro umístění pole. Pole lze přetáhnout i zvětšit.
+        Click anywhere on the document to place a field. Drag to move or resize.
       </Typography>
 
       <Document
@@ -353,7 +353,7 @@ export default function FieldPlacementEditor({
                     userSelect: "none",
                   }}
                 >
-                  {f.type === "signature" ? "Podpis" : f.label || "Text"} ·{" "}
+                  {f.type === "signature" ? "Signature" : f.label || "Text"} ·{" "}
                   {partyLabel(f.partyKey)}
                 </Typography>
 
@@ -373,7 +373,7 @@ export default function FieldPlacementEditor({
                       "&:hover": { bgcolor: "#f3e8ff" },
                     }}
                     onClick={(e) => openEditField(e, f)}
-                    title="Upravit popisek pole"
+                    title="Edit field label"
                   >
                     <EditOutlinedIcon sx={{ fontSize: 11, color: "#6d28d9" }} />
                   </IconButton>
@@ -394,7 +394,7 @@ export default function FieldPlacementEditor({
                     "&:hover": { bgcolor: "#fee2e2" },
                   }}
                   onClick={() => removeField(f.id)}
-                  title="Smazat pole"
+                  title="Delete field"
                 >
                   <CloseIcon sx={{ fontSize: 11 }} />
                 </IconButton>
@@ -421,14 +421,14 @@ export default function FieldPlacementEditor({
           }}
         >
           <Typography variant="subtitle2" fontWeight={600}>
-            Upravit textové pole
+            Edit Text Field
           </Typography>
           <TextField
             size="small"
-            label="Popisek / účel pole"
+            label="Field label / purpose"
             value={editLabel}
             onChange={(e) => setEditLabel(e.target.value)}
-            placeholder="např. IČO, Funkce, Poznámka"
+            placeholder="e.g. Job Title, Company, Note"
             autoFocus
           />
           <Select
@@ -444,10 +444,10 @@ export default function FieldPlacementEditor({
           </Select>
           <Stack direction="row" spacing={1} justifyContent="flex-end">
             <Button size="small" onClick={closeEditField}>
-              Zrušit
+              Cancel
             </Button>
             <Button size="small" variant="contained" onClick={saveEditField}>
-              Uložit
+              Save
             </Button>
           </Stack>
         </Box>
@@ -463,7 +463,7 @@ export default function FieldPlacementEditor({
             <NavigateBeforeIcon />
           </IconButton>
           <Typography variant="body2">
-            Strana {currentPage} z {numPages}
+            Page {currentPage} of {numPages}
           </Typography>
           <IconButton
             size="small"
@@ -482,7 +482,7 @@ export default function FieldPlacementEditor({
           mt={1}
           display="block"
         >
-          Umístěno {fields.length} polí
+          {fields.length} {fields.length === 1 ? "field" : "fields"} placed
         </Typography>
       )}
     </Box>

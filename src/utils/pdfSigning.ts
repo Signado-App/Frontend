@@ -58,7 +58,7 @@ export async function readPdfFields(
     header[4] !== 0x2d
   ) {
     console.warn(
-      "[readPdfFields] Buffer neobsahuje platnou PDF hlavičku (%PDF-).",
+      "[readPdfFields] Buffer does not contain a valid PDF header (%PDF-).",
     );
     return [];
   }
@@ -167,6 +167,110 @@ export function renderTextToPng(
 }
 
 /**
+ * Ořízne prázdné průhledné okraje z HTMLCanvasElement na přesný obdélník tahu podpisu.
+ * Zabraňuje zmenšení podpisu a řeší nekompatibilitu trim-canvas s ESM bundlery.
+ */
+export function trimCanvasToDataUrl(
+  canvas: HTMLCanvasElement,
+  padding = 4,
+): string {
+  try {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return canvas.toDataURL("image/png");
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const data = imgData.data;
+
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const alpha = data[(y * width + x) * 4 + 3];
+        if (alpha > 10) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    // Žádný nakreslený tah (prázdné plátno)
+    if (maxX < minX || maxY < minY) {
+      return canvas.toDataURL("image/png");
+    }
+
+    const cropX = Math.max(0, minX - padding);
+    const cropY = Math.max(0, minY - padding);
+    const cropW = Math.min(width - cropX, maxX - cropX + 1 + padding);
+    const cropH = Math.min(height - cropY, maxY - cropY + 1 + padding);
+
+    const trimmed = document.createElement("canvas");
+    trimmed.width = cropW;
+    trimmed.height = cropH;
+    const trimmedCtx = trimmed.getContext("2d");
+    if (!trimmedCtx) return canvas.toDataURL("image/png");
+
+    trimmedCtx.drawImage(
+      canvas,
+      cropX,
+      cropY,
+      cropW,
+      cropH,
+      0,
+      0,
+      cropW,
+      cropH,
+    );
+
+    return trimmed.toDataURL("image/png");
+  } catch (err) {
+    console.warn("[trimCanvasToDataUrl] Chyba při ořezávání plátna:", err);
+    return canvas.toDataURL("image/png");
+  }
+}
+
+/**
+ * Bezpečně ořízne transparentní okraje z libovolného PNG DataURL (asynchronně v prohlížeči).
+ */
+export async function trimSignatureImage(dataUrl: string): Promise<string> {
+  if (
+    typeof window === "undefined" ||
+    typeof document === "undefined" ||
+    !dataUrl.startsWith("data:image/")
+  ) {
+    return dataUrl;
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(dataUrl);
+
+        ctx.drawImage(img, 0, 0);
+        const trimmed = trimCanvasToDataUrl(canvas);
+        resolve(trimmed);
+      } catch {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+/**
  * Vloží nakreslený podpis a vyplněná textová pole dané strany do PDF
  * a pod podpis vykreslí razítko s metadaty.
  */
@@ -188,7 +292,10 @@ export async function embedSignatureIntoPdf(
   const pdfDoc = await PDFDocument.load(pdfBytes.slice(0));
   const form = pdfDoc.getForm();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const pngImage = await pdfDoc.embedPng(dataUrlToBytes(signatureDataUrl));
+
+  // Ořízneme transparentní okraje, aby podpis dostal maximální prostor a nebyl zmenšený
+  const trimmedDataUrl = await trimSignatureImage(signatureDataUrl);
+  const pngImage = await pdfDoc.embedPng(dataUrlToBytes(trimmedDataUrl));
 
   // 1. Zpracuj textová pole této strany (vlož text a odstraň původní pole)
   for (const f of myTextFields) {
@@ -271,8 +378,7 @@ export async function embedSignatureIntoPdf(
     }
   }
 
-  const stampLines = buildStampLines(metadata);
-
+  // 3. Vykresli podpis a razítko do každého podpisového pole
   for (const f of mySigFields) {
     const page = pdfDoc.getPage(f.page - 1);
 
@@ -287,38 +393,81 @@ export async function embedSignatureIntoPdf(
       borderWidth: 0.5,
     });
 
-    const stampHeight = Math.min(f.height * 0.45, stampLines.length * 6.5 + 4);
-    const signatureHeight = f.height - stampHeight;
+    const isCompact = f.height < 45;
+    const fontSize = isCompact ? 4.5 : 5.2;
+    const lineSpacing = fontSize + 1.6;
+
+    const stampLines: string[] = [];
+    const signerLabel = metadata.signerName
+      ? toWinAnsi(metadata.signerName)
+      : "Verified signature";
+
+    const dateStr = metadata.signedAt.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    if (isCompact) {
+      stampLines.push(
+        toWinAnsi(`Digitally signed by: ${signerLabel} (${dateStr})`),
+      );
+    } else {
+      stampLines.push(toWinAnsi(`Digitally signed by: ${signerLabel}`));
+      const ip =
+        metadata.ipAddress && metadata.ipAddress !== "Získá backend"
+          ? ` • IP: ${toWinAnsi(metadata.ipAddress)}`
+          : "";
+      stampLines.push(toWinAnsi(`Date: ${dateStr}${ip}`));
+    }
+
+    const stampHeight = stampLines.length * lineSpacing + 2;
+    const sigAreaHeight = Math.max(12, f.height - stampHeight - 4);
+    const sigAreaWidth = Math.max(20, f.width - 8);
 
     const scaled = fitInside(
       pngImage.width,
       pngImage.height,
-      f.width - 8,
-      signatureHeight - 6,
+      sigAreaWidth,
+      sigAreaHeight,
     );
 
+    // Kreslení podpisu (zarovnaný nad razítkem ve vyhrazeném prostoru)
     page.drawImage(pngImage, {
       x: f.x + (f.width - scaled.width) / 2,
-      y: f.y + stampHeight + (signatureHeight - scaled.height) / 2,
+      y: f.y + stampHeight + (sigAreaHeight - scaled.height) / 2 + 1,
       width: scaled.width,
       height: scaled.height,
     });
 
-    const fontSize = 5;
-    stampLines.forEach((line, i) => {
-      page.drawText(line, {
-        x: f.x + 4,
-        y: f.y + stampHeight - (i + 1) * (fontSize + 1.2),
-        size: fontSize,
-        font,
-        color: rgb(0.25, 0.25, 0.25),
-      });
+    // Decentní oddělovací linka mezi podpisem a razítkem
+    page.drawLine({
+      start: { x: f.x + 4, y: f.y + stampHeight },
+      end: { x: f.x + f.width - 4, y: f.y + stampHeight },
+      color: rgb(0.9, 0.92, 0.94),
+      thickness: 0.5,
     });
+
+    // Kreslení řádků razítka zespoda nahoru - spodní řádek je vždy na f.y + 2.5 (nikdy nepřeteče)
+    stampLines
+      .slice()
+      .reverse()
+      .forEach((line, i) => {
+        page.drawText(line, {
+          x: f.x + 5,
+          y: f.y + 2.5 + i * lineSpacing,
+          size: fontSize,
+          font,
+          color: rgb(0.4, 0.45, 0.5),
+        });
+      });
   }
 
   // Pokud v dokumentu nezůstala žádná další podpisová pole jiných stran,
   // můžeme formulář zaflattenovat (uzamknout).
-  // Pokud ještě někdo další čeká na podpis, pole pro něj zachováme.
   const hasRemainingSignatures = form.getFields().some((field) => {
     const parsed = parseFieldName(field.getName());
     return parsed?.type === "signature" && parsed.partyKey !== partyKey;
@@ -329,22 +478,6 @@ export async function embedSignatureIntoPdf(
   }
 
   return pdfDoc.save();
-}
-
-function buildStampLines(m: SignatureMetadata): string[] {
-  const lines: string[] = [];
-
-  lines.push("Signed by:");
-  if (m.signerName) lines.push(toWinAnsi(m.signerName).toUpperCase());
-  lines.push(`Date: ${m.signedAt.toLocaleString("en-GB")}`);
-  if (m.ipAddress) lines.push(`IP: ${m.ipAddress}`);
-  if (m.device) lines.push(`Device: ${toWinAnsi(truncate(m.device, 60))}`);
-
-  return lines;
-}
-
-function truncate(text: string, max: number) {
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
 function fitInside(

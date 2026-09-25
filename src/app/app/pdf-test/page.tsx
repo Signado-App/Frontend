@@ -65,7 +65,7 @@ export default function PdfTestPage() {
 
     try {
       setError(null);
-      setStatus("Vkládám pole...");
+      setStatus("Inserting fields...");
 
       const existingPdfBytes = await fetch(originalUrl).then((r) =>
         r.arrayBuffer(),
@@ -103,9 +103,9 @@ export default function PdfTestPage() {
         type: "application/pdf",
       });
       setModifiedUrl(URL.createObjectURL(blob));
-      setStatus("Pole vložena. Zkus do nich ve vieweru napsat text.");
+      setStatus("Fields inserted. Try entering text into them in the viewer.");
     } catch (e) {
-      setError(`Chyba při vkládání polí: ${String(e)}`);
+      setError(`Error inserting fields: ${String(e)}`);
       setStatus(null);
     }
   };
@@ -125,25 +125,27 @@ export default function PdfTestPage() {
         return { name, rects };
       });
 
-      console.log("[PdfTest] Pole v dokumentu:", info);
-      setStatus(`Nalezeno ${info.length} polí. Souřadnice vypsány v konzoli.`);
+      console.log("[PdfTest] Document fields:", info);
+      setStatus(
+        `Found ${info.length} field(s). Coordinates logged to console.`,
+      );
     } catch (e) {
-      setError(`Chyba při čtení polí: ${String(e)}`);
+      setError(`Error reading fields: ${String(e)}`);
     }
   };
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", p: 4 }}>
       <Typography variant="h5" fontWeight={700} mb={1}>
-        PDF form field test
+        PDF Form Field Test
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        Ověřuje, jestli pole vytvořená přes pdf-lib jdou vyplnit v EmbedPDF.
+        Verifies whether fields created via pdf-lib can be viewed and filled.
       </Typography>
 
       <Stack direction="row" spacing={2} mb={2}>
         <Button variant="outlined" component="label">
-          Nahrát PDF
+          Upload PDF
           <input
             type="file"
             hidden
@@ -157,7 +159,7 @@ export default function PdfTestPage() {
           onClick={addTestFields}
           disabled={!originalUrl}
         >
-          Vložit testovací pole
+          Insert Test Fields
         </Button>
 
         <Button
@@ -165,7 +167,7 @@ export default function PdfTestPage() {
           onClick={readFieldPositions}
           disabled={!modifiedUrl}
         >
-          Přečíst souřadnice polí
+          Read Field Coordinates
         </Button>
         <Button
           variant="outlined"
@@ -173,11 +175,11 @@ export default function PdfTestPage() {
             if (!modifiedUrl) return;
             const bytes = await fetch(modifiedUrl).then((r) => r.arrayBuffer());
             const fields = await readPdfFields(bytes);
-            console.log("[Debug] pole přímo po vložení:", fields);
+            console.log("[Debug] fields immediately after insert:", fields);
           }}
           disabled={!modifiedUrl}
         >
-          Debug: vypsat pole
+          Debug: Log Fields
         </Button>
         <Button
           variant="contained"
@@ -185,7 +187,7 @@ export default function PdfTestPage() {
           onClick={testSign}
           disabled={!modifiedUrl}
         >
-          Test podpisu
+          Test Signature
         </Button>
       </Stack>
 
@@ -211,7 +213,7 @@ export default function PdfTestPage() {
 
       {!modifiedUrl && originalUrl && (
         <Typography variant="body2" color="text.secondary">
-          PDF načteno. Klikni na „Vložit testovací pole“.
+          PDF loaded. Click "Insert Test Fields".
         </Typography>
       )}
     </Box>

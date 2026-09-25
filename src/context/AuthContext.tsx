@@ -50,7 +50,14 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.removeItem("access_csrf");
       localStorage.removeItem("refresh_csrf");
       localStorage.removeItem("selectedOrgId");
+      if (typeof document !== "undefined") {
+        document.cookie =
+          "csrf_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie =
+          "csrf_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      }
       setUser(null);
+      setOrganizations([]);
 
       const isAppRoute =
         typeof window !== "undefined" &&
@@ -82,7 +89,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       const response = await getUser();
       console.log("[Auth] getUser response on login:", response);
       if (!response?.data) {
-        throw new Error("Nepodařilo se načíst uživatelský profil");
+        throw new Error("Failed to load user profile");
       }
       setUser(response.data);
       await refreshOrganizations();
@@ -109,7 +116,14 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.removeItem("access_csrf");
       localStorage.removeItem("refresh_csrf");
       localStorage.removeItem("selectedOrgId");
+      if (typeof document !== "undefined") {
+        document.cookie =
+          "csrf_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie =
+          "csrf_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      }
       setUser(null);
+      setOrganizations([]);
       router.push("/auth/login");
     }
   };

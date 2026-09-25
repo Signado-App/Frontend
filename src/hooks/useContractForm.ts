@@ -188,7 +188,7 @@ export function useCreateContractForm() {
             });
             if (!uploadRes.ok) {
               throw new Error(
-                `Chyba při nahrávání souboru na úložiště (${uploadRes.status}: ${uploadRes.statusText})`,
+                `Error uploading file to storage (${uploadRes.status}: ${uploadRes.statusText})`,
               );
             }
           }),

@@ -32,7 +32,7 @@ const FieldPlacementEditor = dynamic(
   { ssr: false },
 );
 
-import { embedSignatureIntoPdf } from "@/utils/pdfSigning";
+import { embedSignatureIntoPdf, trimCanvasToDataUrl } from "@/utils/pdfSigning";
 
 export default function SignFlowTestPage() {
   const [rawFile, setRawFile] = useState<File | null>(null);
@@ -56,20 +56,20 @@ export default function SignFlowTestPage() {
   const externalSigRef = useRef<SignatureCanvas>(null);
 
   const handleExternalSigChange = () => {
-    const canvas = externalSigRef.current;
-    if (!canvas || canvas.isEmpty()) {
+    const sig = externalSigRef.current;
+    if (!sig || sig.isEmpty()) {
       setExternalSigDataUrl(null);
       setHasSignature(false);
       setGetSignatureDataUrl(() => () => null);
       return;
     }
     try {
-      const trimmed = canvas.getTrimmedCanvas().toDataURL("image/png");
+      const trimmed = trimCanvasToDataUrl(sig.getCanvas());
       setExternalSigDataUrl(trimmed);
       setHasSignature(true);
       setGetSignatureDataUrl(() => () => trimmed);
     } catch {
-      const full = canvas.toDataURL("image/png");
+      const full = sig.toDataURL("image/png");
       setExternalSigDataUrl(full);
       setHasSignature(true);
       setGetSignatureDataUrl(() => () => full);
@@ -99,7 +99,7 @@ export default function SignFlowTestPage() {
     setActiveTab("editor");
   };
 
-  // Vypálí pole z FieldPlacementEditor do PDF a přejde na záložku podepisování
+  // Burn fields from FieldPlacementEditor into PDF and switch to signing tab
   const handleApplyEditorFields = async () => {
     if (!rawFile) return;
     try {
@@ -110,11 +110,11 @@ export default function SignFlowTestPage() {
       setPdfBytes(buf.slice(0));
       setActiveTab("signer");
     } catch (e) {
-      setError(`Chyba při ukládání polí do PDF: ${String(e)}`);
+      setError(`Error saving fields to PDF: ${String(e)}`);
     }
   };
 
-  // Stáhne PDF s vypálenými poli
+  // Download PDF with placed fields
   const handleDownloadPdfWithFields = async () => {
     if (!rawFile) return;
     try {
@@ -124,7 +124,7 @@ export default function SignFlowTestPage() {
       a.download = `with-fields-${rawFile.name}`;
       a.click();
     } catch (e) {
-      setError(`Chyba při stahování: ${String(e)}`);
+      setError(`Error downloading: ${String(e)}`);
     }
   };
 
@@ -145,19 +145,19 @@ export default function SignFlowTestPage() {
       const fieldW = Math.min(220, width * 0.4);
       const fieldH = Math.min(60, height * 0.1);
 
-      // 1. Přidej textové pole (např. pro IČO nebo poznámku)
+      // 1. Add text field (e.g. Note / Company)
       const textFieldName = `text.${partyKey}.1`;
       try {
         form.removeField(form.getField(textFieldName));
       } catch {
-        // pole neexistovalo
+        // ignore
       }
       const txtField = form.createTextField(textFieldName);
       txtField.setText("");
       try {
         txtField.acroField.dict.set(
           PDFName.of("TU"),
-          PDFHexString.fromText("IČO / Poznámka"),
+          PDFHexString.fromText("Note / Company"),
         );
       } catch {
         // ignore
@@ -169,12 +169,12 @@ export default function SignFlowTestPage() {
         height: 28,
       });
 
-      // 2. Přidej podpisové pole
+      // 2. Add signature field
       const fieldName = `signature.${partyKey}.0`;
       try {
         form.removeField(form.getField(fieldName));
       } catch {
-        // pole zatím neexistovalo
+        // ignore
       }
 
       const sigField = form.createTextField(fieldName);
@@ -188,7 +188,6 @@ export default function SignFlowTestPage() {
       });
 
       const saved = await pdfDoc.save();
-      // saved.slice().buffer zajistí čistý nový ArrayBuffer
       const freshBuffer = saved.buffer.slice(
         saved.byteOffset,
         saved.byteOffset + saved.byteLength,
@@ -196,7 +195,7 @@ export default function SignFlowTestPage() {
       setPdfBytes(freshBuffer as ArrayBuffer);
       setActiveTab("signer");
     } catch (e) {
-      setError(`Chyba při vkládání testovacího pole: ${String(e)}`);
+      setError(`Error inserting test field: ${String(e)}`);
     }
   };
 
@@ -204,7 +203,7 @@ export default function SignFlowTestPage() {
     if (!pdfBytes) return;
     const dataUrl = getSignatureDataUrl();
     if (!dataUrl) {
-      setError("Nejdřív nakresli podpis do vyznačeného pole.");
+      setError("Please draw your signature in the designated field first.");
       return;
     }
 
@@ -218,16 +217,13 @@ export default function SignFlowTestPage() {
         partyKey,
         {
           signedAt: new Date(),
-          ipAddress: "127.0.0.1", // TODO: až bude backend, IP zjistí server, ne klient
+          ipAddress: "127.0.0.1",
           device: navigator.userAgent,
           signerName: "Test Signer",
         },
         textValues,
       );
 
-      // TODO: až bude routa od backendu, tady se místo stažení
-      // pošle `signed` (Uint8Array) na presigned upload URL, podobně
-      // jako u file uploadu při vytváření kontraktu.
       const blob = new Blob([signed as BlobPart], { type: "application/pdf" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -236,7 +232,7 @@ export default function SignFlowTestPage() {
 
       setSignedDone(true);
     } catch (e) {
-      setError(`Podpis se nepodařilo vložit: ${String(e)}`);
+      setError(`Failed to embed signature: ${String(e)}`);
     } finally {
       setSigning(false);
     }
@@ -245,12 +241,12 @@ export default function SignFlowTestPage() {
   return (
     <Box sx={{ maxWidth: 800, mx: "auto", p: 4 }}>
       <Typography variant="h5" fontWeight={700} mb={1}>
-        Test signing flow
+        Signature & Field Placement Test
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
-        Nahraj PDF s podpisovými poli (vytvořené v Create Contract flow nebo na
-        /pdf-test), případně klikni na „Vložit testovací pole“, podepiš a stáhni
-        výsledek.
+        Upload a PDF with signature fields (created in Create Contract flow or
+        in PDF test), or click "Add test fields", sign, and download the
+        resulting document.
       </Typography>
 
       <Stack
@@ -262,7 +258,7 @@ export default function SignFlowTestPage() {
         useFlexGap
       >
         <Button variant="outlined" component="label">
-          Nahrát PDF
+          Upload PDF
           <input
             type="file"
             hidden
@@ -276,7 +272,7 @@ export default function SignFlowTestPage() {
           label="Party key"
           value={partyKey}
           onChange={(e) => setPartyKey(e.target.value)}
-          helperText="Musí odpovídat partyKey použitému při umístění pole"
+          helperText="Must match the partyKey used when placing fields"
         />
 
         {pdfBytes && (
@@ -285,7 +281,7 @@ export default function SignFlowTestPage() {
             color="secondary"
             onClick={handleAddTestField}
           >
-            + Vložit testovací pole pro {partyKey}
+            + Add test fields for {partyKey}
           </Button>
         )}
       </Stack>
@@ -298,7 +294,7 @@ export default function SignFlowTestPage() {
 
       {signedDone && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          Podepsané PDF bylo staženo.
+          Signed PDF downloaded successfully.
         </Alert>
       )}
 
@@ -319,13 +315,13 @@ export default function SignFlowTestPage() {
                 value="editor"
                 icon={<EditNoteIcon />}
                 iconPosition="start"
-                label={`1. Umístění polí (${placedFields.length} polí v editoru)`}
+                label={`1. Field Placement (${placedFields.length} in editor)`}
               />
               <Tab
                 value="signer"
                 icon={<DrawIcon />}
                 iconPosition="start"
-                label="2. Vyplnění a podpis (z pohledu podepisujícího)"
+                label="2. Fill & Sign (Signer View)"
               />
             </Tabs>
           </Paper>
@@ -342,15 +338,13 @@ export default function SignFlowTestPage() {
                 }}
               >
                 <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
-                  1. Umístění polí v dokumentu (stejný editor jako při zakládání
-                  smlouvy)
+                  1. Place fields in document (same editor as Create Contract)
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mb={2}>
-                  Přepínejte mezi <strong>Podpis</strong> a{" "}
-                  <strong>Text</strong>, vyberte popisek (např. <em>IČO</em>) a
-                  klikněte kamkoliv do stránky. Pole můžete přetahovat myší,
-                  měnit jejich velikost za rohy a upravovat popisek ikonou
-                  tužky.
+                  Switch between <strong>Signature</strong> and{" "}
+                  <strong>Text</strong>, select a label (e.g. <em>Note</em>) and
+                  click anywhere on the page. You can drag and resize placed
+                  fields.
                 </Typography>
 
                 <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
@@ -360,8 +354,8 @@ export default function SignFlowTestPage() {
                     onClick={handleApplyEditorFields}
                     disabled={placedFields.length === 0}
                   >
-                    Uložit pole do PDF a otestovat podpis ({placedFields.length}{" "}
-                    polí) →
+                    Save fields to PDF & test signing ({placedFields.length}{" "}
+                    fields) →
                   </Button>
                   <Button
                     variant="outlined"
@@ -369,16 +363,14 @@ export default function SignFlowTestPage() {
                     onClick={handleDownloadPdfWithFields}
                     disabled={placedFields.length === 0}
                   >
-                    Stáhnout PDF s poli
+                    Download PDF with fields
                   </Button>
                 </Stack>
               </Paper>
 
               <FieldPlacementEditor
                 file={rawFile}
-                parties={[
-                  { key: partyKey, label: `${partyKey} (Testovací strana)` },
-                ]}
+                parties={[{ key: partyKey, label: `${partyKey} (Test Party)` }]}
                 fields={placedFields}
                 onChange={setPlacedFields}
               />
@@ -396,7 +388,7 @@ export default function SignFlowTestPage() {
                     size="large"
                     onClick={handleApplyEditorFields}
                   >
-                    Přejít k vyplnění a podpisu ({placedFields.length} polí) →
+                    Proceed to Fill & Sign ({placedFields.length} fields) →
                   </Button>
                 </Box>
               )}
@@ -416,11 +408,11 @@ export default function SignFlowTestPage() {
                 }}
               >
                 <Typography variant="subtitle1" fontWeight={700} mb={0.5}>
-                  Kreslicí plátno pro podpis
+                  Signature Canvas
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mb={1.5}>
-                  Podpis nakreslený zde se automaticky ořízne a promítne přímo
-                  do podpisového pole v dokumentu níže.
+                  Signature drawn here is automatically trimmed and placed into
+                  the designated signature field in the document below.
                 </Typography>
 
                 <Box
@@ -439,7 +431,10 @@ export default function SignFlowTestPage() {
                 >
                   <SignatureCanvas
                     ref={externalSigRef}
-                    penColor="black"
+                    penColor="#0f172a"
+                    minWidth={1.2}
+                    maxWidth={3.0}
+                    velocityFilterWeight={0.7}
                     onEnd={handleExternalSigChange}
                     canvasProps={{
                       width: 520,
@@ -462,7 +457,7 @@ export default function SignFlowTestPage() {
                     onClick={handleClearSignature}
                     disabled={!externalSigDataUrl}
                   >
-                    Vymazat podpis
+                    Clear signature
                   </Button>
                   {externalSigDataUrl && (
                     <Typography
@@ -470,14 +465,14 @@ export default function SignFlowTestPage() {
                       color="success.main"
                       fontWeight={600}
                     >
-                      ✓ Podpis připraven a promítnut do dokumentu
+                      ✓ Signature ready and reflected in document
                     </Typography>
                   )}
                 </Stack>
               </Paper>
 
               <Typography variant="subtitle1" fontWeight={700} mb={1}>
-                Náhled dokumentu s poli k vyplnění a podpisu
+                Document Preview with Fields to Fill and Sign
               </Typography>
 
               <SigningDocumentViewer
@@ -487,7 +482,6 @@ export default function SignFlowTestPage() {
                 textValues={textValues}
                 onTextValuesChange={setTextValues}
                 onSignatureReady={(ready, getDataUrl) => {
-                  // Pokud není použit externí podpis, použijeme vnitřní z vieweru
                   if (!externalSigDataUrl) {
                     setHasSignature(ready);
                     setGetSignatureDataUrl(() => getDataUrl);
@@ -503,14 +497,14 @@ export default function SignFlowTestPage() {
                 disabled={!hasSignature || signing}
                 onClick={handleSign}
               >
-                {signing ? "Podepisuji…" : "Podepsat a stáhnout"}
+                {signing ? "Signing…" : "Sign and Download"}
               </Button>
             </>
           )}
         </>
       ) : (
         <Typography variant="body2" color="text.secondary">
-          Nejdřív nahrajte PDF soubor tlačítkem výše.
+          Please upload a PDF file using the button above first.
         </Typography>
       )}
     </Box>
