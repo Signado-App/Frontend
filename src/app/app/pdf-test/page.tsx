@@ -213,7 +213,7 @@ export default function PdfTestPage() {
 
       {!modifiedUrl && originalUrl && (
         <Typography variant="body2" color="text.secondary">
-          PDF loaded. Click "Insert Test Fields".
+          PDF loaded. Click &quot;Insert Test Fields&quot;.
         </Typography>
       )}
     </Box>

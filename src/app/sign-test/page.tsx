@@ -245,8 +245,8 @@ export default function SignFlowTestPage() {
       </Typography>
       <Typography variant="body2" color="text.secondary" mb={3}>
         Upload a PDF with signature fields (created in Create Contract flow or
-        in PDF test), or click "Add test fields", sign, and download the
-        resulting document.
+        in PDF test), or click &quot;Add test fields&quot;, sign, and download
+        the resulting document.
       </Typography>
 
       <Stack

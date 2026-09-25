@@ -28,7 +28,13 @@ const SIDEBAR_WIDTH = 280;
 
 export default function Sidebar() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedOrg, setSelectedOrg] = useState<number>(0);
+  const [selectedOrg, setSelectedOrg] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("selectedOrgId");
+      return stored ? Number(stored) : 0;
+    }
+    return 0;
+  });
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const { hasPrivilege, loadPrivileges } = usePrivileges();
@@ -50,11 +56,6 @@ export default function Sidebar() {
     );
     return [...new Set([...direct, ...fromGroups])];
   };
-
-  useEffect(() => {
-    const stored = localStorage.getItem("selectedOrgId");
-    if (stored) setSelectedOrg(Number(stored));
-  }, []);
 
   useEffect(() => {
     if (validSelectedOrg === 0 && mode === "organization") {

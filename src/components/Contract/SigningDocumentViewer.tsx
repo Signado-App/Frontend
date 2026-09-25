@@ -75,9 +75,11 @@ export default function SigningDocumentViewer({
 
   // Pole z aktuálního PDF se čtou jednou při načtení, ne při každém renderu.
   useEffect(() => {
-    setError(null);
+    let cancelled = false;
     readPdfFields(pdfBytes.slice(0))
       .then((all) => {
+        if (cancelled) return;
+        setError(null);
         const mine = all.filter((f) => f.partyKey === partyKey);
         setFields(mine);
 
@@ -91,7 +93,13 @@ export default function SigningDocumentViewer({
           setCurrentPage(sigs[0].page);
         }
       })
-      .catch(() => setError("Failed to read document."));
+      .catch(() => {
+        if (!cancelled) setError("Failed to read document.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [pdfBytes, partyKey]);
 
   const handleSignatureChange = () => {
