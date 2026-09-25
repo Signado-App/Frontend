@@ -90,16 +90,6 @@ export function useCreateContractForm() {
   };
   useEffect(() => {
     if (!selectedOrgId) return;
-    getOrgClients(selectedOrgId).then((response) => {
-      setOrgClients(response.clients);
-    });
-  }, [selectedOrgId]);
-
-  // Step 3: Files
-  const [files, setFiles] = useState<File[]>([]);
-
-  useEffect(() => {
-    if (!selectedOrgId) return;
     getOrgClients(selectedOrgId)
       .then((response) => setOrgClients(response.clients))
       .catch(() => setOrgClients([]));
@@ -119,9 +109,6 @@ export function useCreateContractForm() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
     if (index === 0) setPlacedFields([]);
   };
-  // Step 4: Review + submit
-  const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Step 4: Review + submit
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
