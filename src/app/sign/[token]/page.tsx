@@ -129,10 +129,10 @@ export default function SignPage({
         );
         if (err?.data?.specification === "expired") {
           setError(
-            "This signing link has expired. A new link has been sent to your email.",
+            "Tento odkaz na podpis již vypršel. Nový odkaz byl odeslán na váš e-mail.",
           );
         } else {
-          setError("Invalid or expired signing link.");
+          setError("Neplatný nebo vypršený odkaz k podpisu.");
         }
         setLoading(false);
       });
@@ -217,6 +217,12 @@ export default function SignPage({
         device: navigator.userAgent,
         location: "",
       });
+
+      const formData = new FormData();
+      formData.append("file", signedFile, "signed_contract.pdf");
+      formData.append("device", navigator.userAgent);
+
+      await signContract(contract.id, formData);
 
       setSigned(true);
     } catch (err: any) {
