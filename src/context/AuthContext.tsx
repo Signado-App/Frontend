@@ -47,13 +47,23 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      const isAppRoute = window.location.pathname.startsWith("/app");
+      localStorage.removeItem("access_csrf");
+      localStorage.removeItem("refresh_csrf");
+      localStorage.removeItem("selectedOrgId");
+      if (typeof document !== "undefined") {
+        document.cookie =
+          "csrf_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie =
+          "csrf_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      }
+      setUser(null);
+      setOrganizations([]);
+
+      const isAppRoute =
+        typeof window !== "undefined" &&
+        window.location.pathname.startsWith("/app");
 
       if (isAppRoute) {
-        localStorage.removeItem("access_csrf");
-        localStorage.removeItem("refresh_csrf");
-        localStorage.removeItem("selectedOrgId");
-        setUser(null);
         showSnackbar(
           "Your session has expired. Please log in again.",
           "warning",
@@ -67,14 +77,35 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, showSnackbar]);
 
   const login = async (accessCsrf: string, refreshCsrf: string) => {
     console.log("[Auth] Saving CSRF tokens:", accessCsrf, refreshCsrf);
     localStorage.removeItem("selectedOrgId");
     localStorage.setItem("access_csrf", accessCsrf);
     localStorage.setItem("refresh_csrf", refreshCsrf);
-    await refresh();
+
+    try {
+      const response = await getUser();
+      console.log("[Auth] getUser response on login:", response);
+      if (!response?.data) {
+        throw new Error("Failed to load user profile");
+      }
+      setUser(response.data);
+      await refreshOrganizations();
+    } catch (err: any) {
+      console.error(
+        "[Auth] Login failed during getUser:",
+        err?.message,
+        err?.data,
+        err,
+      );
+      localStorage.removeItem("access_csrf");
+      localStorage.removeItem("refresh_csrf");
+      localStorage.removeItem("selectedOrgId");
+      setUser(null);
+      throw err;
+    }
   };
 
   const logout = async () => {
@@ -85,7 +116,14 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.removeItem("access_csrf");
       localStorage.removeItem("refresh_csrf");
       localStorage.removeItem("selectedOrgId");
+      if (typeof document !== "undefined") {
+        document.cookie =
+          "csrf_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie =
+          "csrf_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      }
       setUser(null);
+      setOrganizations([]);
       router.push("/auth/login");
     }
   };

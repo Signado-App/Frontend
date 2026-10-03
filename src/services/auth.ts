@@ -41,6 +41,14 @@ export async function loginUser(
 ): Promise<LoginResponse> {
   try {
     const response = await apiClient.post("/public/auth/login", data);
+    if (
+      response.data?.status === "ERROR" ||
+      (response.data?.status &&
+        response.data?.status !== "SUCCESS" &&
+        !response.data?.data)
+    ) {
+      throw new InvalidCredentialsError();
+    }
     return response.data;
   } catch (err) {
     mapCommonApiErrors(err);

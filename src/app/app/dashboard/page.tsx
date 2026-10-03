@@ -82,7 +82,7 @@ function DashboardPage() {
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Invited{" "}
-                    {new Date(org.joined_at).toLocaleDateString("cs-CZ")}
+                    {new Date(org.joined_at).toLocaleDateString("en-US")}
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", gap: 1 }}>

@@ -68,15 +68,28 @@ apiClient.interceptors.response.use(
     const apiError: ApiErrorShape = {
       type: "API_ERROR",
       status,
-      message: data?.message ?? "An error occurred",
+      message:
+        data?.message ??
+        (data as any)?.msg ??
+        (data as any)?.specification ??
+        "An error occurred",
       data,
     };
     return Promise.reject(apiError);
   },
 );
 apiClient.interceptors.request.use((config) => {
-  const accessCsrf =
-    getCookie("csrf_access_token") ?? localStorage.getItem("access_csrf");
+  let accessCsrf: string | null = null;
+  if (typeof document !== "undefined") {
+    accessCsrf = getCookie("csrf_access_token");
+  }
+  if (
+    !accessCsrf &&
+    typeof window !== "undefined" &&
+    typeof localStorage !== "undefined"
+  ) {
+    accessCsrf = localStorage.getItem("access_csrf");
+  }
   if (accessCsrf) {
     config.headers["X-CSRF-TOKEN"] = accessCsrf;
   }
@@ -84,6 +97,7 @@ apiClient.interceptors.request.use((config) => {
 });
 
 function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
   const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
   return match ? match[2] : null;
 }

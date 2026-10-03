@@ -24,12 +24,13 @@ export const UserContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [selectedOrg, setSelectedOrgState] = useState<OrganizationInfo | null>(
     null,
   );
-  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("selectedOrgId");
-    if (stored) setSelectedOrgId(Number(stored));
-  }, []);
+  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("selectedOrgId");
+      return stored ? Number(stored) : null;
+    }
+    return null;
+  });
 
   const setMode = (
     mode: Mode,

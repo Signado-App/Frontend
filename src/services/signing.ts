@@ -5,11 +5,17 @@ export async function getSigningContract() {
   return response.data;
 }
 
-export async function signContract(contractId: string, data: FormData) {
-  const response = await apiClient.post(`/contract/${contractId}/sign`, data, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+export type SignContractPayload = {
+  signature_svg: object;
+  document_hash: string;
+  device?: string;
+  location?: string;
+};
+
+export async function signContract(
+  contractId: string,
+  data: SignContractPayload,
+) {
+  const response = await apiClient.post(`/contract/${contractId}/sign`, data);
   return response.data;
 }

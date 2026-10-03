@@ -53,20 +53,30 @@ export function useLoginForm() {
       showSnackbar("Login successful!", "success");
       console.log(data);
       router.push("/app/dashboard");
-    } catch (err) {
-      if (err instanceof InvalidCredentialsError) {
+    } catch (err: any) {
+      console.error("[Login] Error during login:", err);
+      if (
+        err instanceof InvalidCredentialsError ||
+        err?.status === 401 ||
+        err?.type === "UNAUTHORIZED"
+      ) {
         setError("Invalid email or password");
-      } else if (err instanceof AccountNotActiveError) {
+      } else if (err instanceof AccountNotActiveError || err?.status === 403) {
         showSnackbar(
           "Account is not activated. Please verify your email.",
           "error",
         );
-      } else if (err instanceof NetworkError) {
+      } else if (err instanceof NetworkError || err?.type === "NETWORK_ERROR") {
         showSnackbar("Cannot connect to server. Check your internet.", "error");
-      } else if (err instanceof ServerError) {
+      } else if (
+        err instanceof ServerError ||
+        (err?.status && err.status >= 500)
+      ) {
         showSnackbar("Server error. Please try again in a moment.", "error");
       } else {
-        showSnackbar("Login failed. Please try again.", "error");
+        setError(
+          err?.message || "Login failed. Please check your credentials.",
+        );
       }
     } finally {
       setLoading(false);
