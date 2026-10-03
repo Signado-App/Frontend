@@ -99,17 +99,6 @@ export function useCreateContractForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
 
-  useEffect(() => {
-    if (!selectedOrgId) return;
-    getOrgClients(selectedOrgId)
-      .then((response) => setOrgClients(response.clients))
-      .catch(() => setOrgClients([]));
-  }, [selectedOrgId]);
-
-  // Step 3: Files
-  const [files, setFiles] = useState<File[]>([]);
-  const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
@@ -120,10 +109,6 @@ export function useCreateContractForm() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
     if (index === 0) setPlacedFields([]);
   };
-
-  // Step 4: Review + submit
-  const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Step 4: Review + submit
   const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
