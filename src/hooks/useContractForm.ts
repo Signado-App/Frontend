@@ -92,7 +92,36 @@ export function useCreateContractForm() {
   useEffect(() => {
     if (!selectedOrgId) return;
     getOrgClients(selectedOrgId)
-      .then((response) => setOrgClients(response.clients))
+      .then((response) => {
+        const clients = response.clients || [];
+        setOrgClients(clients);
+
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const clientId = params.get("clientId");
+          const clientUserId = params.get("clientUserId");
+          if (clientId || clientUserId) {
+            const matched = clients.find(
+              (c: OrgClient) =>
+                (clientId && String(c.id) === clientId) ||
+                (clientUserId && String(c.user_id) === clientUserId),
+            );
+            if (matched) {
+              setParties((prev) => {
+                if (prev.some((p) => p.user_id === matched.user_id)) return prev;
+                return [
+                  ...prev,
+                  {
+                    user_id: matched.user_id,
+                    email: matched.client_name,
+                    role: "SIGNER",
+                  },
+                ];
+              });
+            }
+          }
+        }
+      })
       .catch(() => setOrgClients([]));
   }, [selectedOrgId]);
 

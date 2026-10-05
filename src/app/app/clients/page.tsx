@@ -34,15 +34,24 @@ function ClientsPage() {
     Disabled: "DISABLED",
   };
 
+  const clientsList = Array.isArray(data) ? data : [];
   const filteredData =
     currentTab === "All"
-      ? data
-      : data.filter((c) => c.status === statusMap[currentTab]);
+      ? clientsList
+      : clientsList.filter((c) => c.status === statusMap[currentTab]);
 
   useEffect(() => {
     if (!selectedOrgId) return;
     getOrgClients(selectedOrgId)
-      .then((response) => setData(response.clients))
+      .then((response) =>
+        setData(
+          Array.isArray(response?.clients)
+            ? response.clients
+            : Array.isArray(response?.data)
+              ? response.data
+              : [],
+        ),
+      )
       .catch(() => setData([]));
   }, [selectedOrgId]);
 

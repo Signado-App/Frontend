@@ -55,6 +55,7 @@ export async function updateUserMemberships(
     {
       member_id: memberId,
       privileges: privilegeIds,
+      privilege_ids: privilegeIds,
     },
   );
   return response.data;

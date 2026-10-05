@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 import {
   Box,
   Button,
@@ -9,14 +9,20 @@ import {
   Alert,
   Paper,
   Stack,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import dynamic from "next/dynamic";
 import { loginWithSigningToken } from "@/services/auth";
 import { getSigningContract, signContract } from "@/services/signing";
-import apiClient from "@/services/apiClient";
 import { embedSignatureIntoPdf, readPdfFields } from "@/utils/pdfSigning";
 import { sha256 } from "js-sha256";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
+import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 const SigningDocumentViewer = dynamic(
   () => import("@/components/Contract/SigningDocumentViewer"),
@@ -31,8 +37,10 @@ export default function SignPage({
   const { token } = use(params);
   const [contract, setContract] = useState<any>(null);
   const [pdfBytes, setPdfBytes] = useState<ArrayBuffer | null>(null);
+  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
   const [resolvedPartyKey, setResolvedPartyKey] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [fileLoading, setFileLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signed, setSigned] = useState(false);
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null);
@@ -42,11 +50,58 @@ export default function SignPage({
     () => string | null
   >(() => () => null);
   const [textValues, setTextValues] = useState<Record<string, string>>({});
+  const [isAlreadySigned, setIsAlreadySigned] = useState(false);
+  const [alreadySignedDialogOpen, setAlreadySignedDialogOpen] = useState(false);
+
+  const loadPdfFromUrl = useCallback(async (fileUrl: string) => {
+    try {
+      setFileLoading(true);
+      console.log("[SignPage] Loading PDF from URL:", fileUrl);
+      const pdfRes = await fetch(fileUrl);
+      if (!pdfRes.ok) {
+        throw new Error(
+          `Server returned status ${pdfRes.status}: ${pdfRes.statusText}`,
+        );
+      }
+      const bytes = await pdfRes.arrayBuffer();
+
+      // Check %PDF- header
+      const header = new Uint8Array(bytes.slice(0, 5));
+      const isPdf =
+        header[0] === 0x25 && // %
+        header[1] === 0x50 && // P
+        header[2] === 0x44 && // D
+        header[3] === 0x46 && // F
+        header[4] === 0x2d; // -
+
+      if (!isPdf) {
+        throw new Error(
+          "Downloaded file is not a valid PDF document (missing %PDF- header).",
+        );
+      }
+
+      setPdfBytes(bytes);
+    } catch (e: any) {
+      console.error("[SignPage] Error loading PDF:", e);
+      setError(
+        `Failed to load contract document (${e?.message || e}). Please check the file status.`,
+      );
+    } finally {
+      setFileLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     loginWithSigningToken(token)
       .then(async (loginRes) => {
         console.log("[SignPage] loginWithSigningToken response:", loginRes);
+        if (
+          loginRes?.specification === "already_signed" ||
+          loginRes?.data?.specification === "already_signed" ||
+          loginRes?.status === "FORBIDDEN"
+        ) {
+          throw { data: loginRes?.data || loginRes };
+        }
         const csrf =
           loginRes?.data?.access_csrf ||
           loginRes?.access_csrf ||
@@ -56,6 +111,13 @@ export default function SignPage({
         }
         const response = await getSigningContract();
         console.log("[SignPage] getSigningContract raw response:", response);
+        if (
+          response?.specification === "already_signed" ||
+          response?.data?.specification === "already_signed" ||
+          response?.status === "FORBIDDEN"
+        ) {
+          throw { data: response?.data || response };
+        }
         return { loginRes, response };
       })
       .then(async ({ loginRes, response }) => {
@@ -68,7 +130,15 @@ export default function SignPage({
         };
         setContract(c);
 
-        // Hledání URL PDF souboru ve všech možných strukturách odpovědi
+        if (
+          c?.status === "SIGNED" ||
+          c?.status === "COMPLETED" ||
+          c?.current_signer_status === "SIGNED"
+        ) {
+          setIsAlreadySigned(true);
+        }
+
+        // Find file download URL
         const fileUrl =
           c?.files?.[0]?.download_url ||
           c?.files?.[0]?.url ||
@@ -80,54 +150,42 @@ export default function SignPage({
 
         if (!fileUrl) {
           console.warn(
-            "[SignPage] Backend v GET /contract/get nevrátil pole files s download_url:",
+            "[SignPage] No download_url found in GET /contract/get response:",
             c,
           );
           setLoading(false);
           return;
         }
 
-        try {
-          console.log("[SignPage] Stahuji PDF z URL:", fileUrl);
-          const pdfRes = await fetch(fileUrl);
-          if (!pdfRes.ok) {
-            throw new Error(
-              `Server vrátil chybu ${pdfRes.status}: ${pdfRes.statusText}`,
-            );
-          }
-          const bytes = await pdfRes.arrayBuffer();
-
-          // Kontrola, zda stažený obsah začíná PDF hlavičkou '%PDF-'
-          const header = new Uint8Array(bytes.slice(0, 5));
-          const isPdf =
-            header[0] === 0x25 && // %
-            header[1] === 0x50 && // P
-            header[2] === 0x44 && // D
-            header[3] === 0x46 && // F
-            header[4] === 0x2d; // -
-
-          if (!isPdf) {
-            throw new Error(
-              "Downloaded file is not a valid PDF document (missing %PDF- header).",
-            );
-          }
-
-          setPdfBytes(bytes);
-        } catch (e: any) {
-          console.error("[SignPage] Error loading PDF:", e);
-          setError(
-            `Failed to load contract document (${e?.message || e}). Please check the file status.`,
-          );
-        } finally {
-          setLoading(false);
-        }
+        await loadPdfFromUrl(fileUrl);
+        setLoading(false);
       })
       .catch((err) => {
         console.error(
           "[SignPage] Error authenticating or fetching contract:",
           err,
         );
-        if (err?.data?.specification === "expired") {
+        const spec =
+          err?.data?.specification ||
+          err?.response?.data?.specification ||
+          err?.specification ||
+          err?.message;
+        const status =
+          err?.status ||
+          err?.data?.status ||
+          err?.response?.data?.status;
+
+        if (
+          spec === "already_signed" ||
+          status === "FORBIDDEN" ||
+          (status === 403 && spec === "already_signed")
+        ) {
+          setError(
+            "This contract has already been signed and can no longer be signed.",
+          );
+          setIsAlreadySigned(true);
+          setAlreadySignedDialogOpen(true);
+        } else if (spec === "expired") {
           setError(
             "This signing link has expired. A new link has been sent to your email.",
           );
@@ -136,7 +194,7 @@ export default function SignPage({
         }
         setLoading(false);
       });
-  }, [token]);
+  }, [token, loadPdfFromUrl]);
 
   useEffect(() => {
     if (!pdfBytes || !contract) return;
@@ -172,6 +230,15 @@ export default function SignPage({
 
   const handleSign = async () => {
     if (!contract || !pdfBytes) return;
+
+    if (isAlreadySigned) {
+      setError(
+        "This contract has already been signed and can no longer be signed with this link.",
+      );
+      setAlreadySignedDialogOpen(true);
+      return;
+    }
+
     const signatureData = getSignatureDataUrl();
     if (!signatureData) {
       setError(
@@ -197,18 +264,19 @@ export default function SignPage({
         textValues,
       );
 
-      // Připravíme lokální URL pro stažení podepsaného PDF
+      // Local download URL for signed PDF
       const signedBlob = new Blob([signedPdfBytes as BlobPart], {
         type: "application/pdf",
       });
       const localDownloadUrl = URL.createObjectURL(signedBlob);
       setSignedPdfUrl(localDownloadUrl);
 
-      // Spočítáme SHA-256 hash dokumentu (nebo použijeme ID smlouvy)
+      // Calculate SHA-256 hash of document
       const documentHash = pdfBytes ? sha256(pdfBytes) : String(contract.id);
+      const contractId = contract.id ?? contract.contract_id ?? contract.uuid;
 
-      // Odešleme JSON přesně podle požadavků backendu
-      await signContract(contract.id, {
+      // Submit signature to backend
+      const res = await signContract(contractId, {
         signature_svg: {
           data: signatureData,
           svg: signatureData,
@@ -218,15 +286,44 @@ export default function SignPage({
         location: "",
       });
 
+      if (
+        res?.specification === "already_signed" ||
+        res?.data?.specification === "already_signed" ||
+        res?.status === "FORBIDDEN"
+      ) {
+        throw { data: res?.data || res };
+      }
+
       setSigned(true);
     } catch (err: any) {
       console.error("[SignPage] Error submitting signature:", err);
+      const spec =
+        err?.data?.specification ||
+        err?.response?.data?.specification ||
+        err?.specification ||
+        err?.message;
+      const status =
+        err?.status ||
+        err?.data?.status ||
+        err?.response?.data?.status;
+
+      if (
+        spec === "already_signed" ||
+        status === "FORBIDDEN" ||
+        (status === 403 && spec === "already_signed")
+      ) {
+        const msg =
+          "This contract has already been signed and can no longer be signed with this link.";
+        setError(msg);
+        setIsAlreadySigned(true);
+        setAlreadySignedDialogOpen(true);
+        return;
+      }
+
       const msg =
-        err?.data?.specification === "already_signed"
-          ? "This contract has already been signed."
-          : err?.data?.specification === "missing_required_fields"
-            ? "Missing required fields for signing."
-            : err?.message || "Failed to submit signature. Please try again.";
+        spec === "missing_required_fields"
+          ? "Missing required fields for signing."
+          : err?.message || "Failed to submit signature. Please try again.";
       setError(msg);
     } finally {
       setSigning(false);
@@ -251,7 +348,7 @@ export default function SignPage({
   if (error && !contract) {
     return (
       <Box sx={{ maxWidth: 600, mx: "auto", p: 4, mt: 8 }}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity={isAlreadySigned ? "warning" : "error"}>{error}</Alert>
       </Box>
     );
   }
@@ -282,6 +379,8 @@ export default function SignPage({
       </Box>
     );
   }
+
+  const contractFiles: any[] = contract?.files || [];
 
   return (
     <Box sx={{ maxWidth: 840, mx: "auto", p: { xs: 2, sm: 4 }, mt: 2 }}>
@@ -335,13 +434,109 @@ export default function SignPage({
         </Paper>
       )}
 
+      {/* Multi-document handling & attachments list */}
+      {contractFiles.length > 1 && (
+        <Paper
+          variant="outlined"
+          sx={{ p: 2, mb: 3, borderRadius: 2, bgcolor: "#f8fafc" }}
+        >
+          <Typography
+            variant="subtitle2"
+            fontWeight={700}
+            mb={1.5}
+            display="flex"
+            alignItems="center"
+            gap={1}
+          >
+            <AttachFileOutlinedIcon fontSize="small" /> Contract Documents (
+            {contractFiles.length})
+          </Typography>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.5}
+            flexWrap="wrap"
+          >
+            {contractFiles.map((file: any, idx: number) => {
+              const isSelected = selectedFileIndex === idx;
+              const fileName =
+                file.name ||
+                file.filename ||
+                file.file_name ||
+                `Document ${idx + 1}`;
+              const downloadUrl = file.download_url || file.url || file.file_url;
+              return (
+                <Box
+                  key={idx}
+                  sx={{
+                    p: 1.5,
+                    border: isSelected
+                      ? "2px solid #3b82f6"
+                      : "1px solid #e2e8f0",
+                    borderRadius: 2,
+                    bgcolor: isSelected ? "#eff6ff" : "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 2,
+                    minWidth: 200,
+                    cursor: downloadUrl ? "pointer" : "default",
+                    transition: "all 0.2s ease",
+                  }}
+                  onClick={() => {
+                    if (downloadUrl && idx !== selectedFileIndex) {
+                      setSelectedFileIndex(idx);
+                      loadPdfFromUrl(downloadUrl);
+                    }
+                  }}
+                >
+                  <Box sx={{ minWidth: 0, overflow: "hidden" }}>
+                    <Typography
+                      variant="body2"
+                      fontWeight={isSelected ? 700 : 500}
+                      noWrap
+                    >
+                      {fileName}
+                    </Typography>
+                    {file.size_bytes && (
+                      <Typography variant="caption" color="text.secondary">
+                        {(file.size_bytes / 1024).toFixed(1)} KB
+                      </Typography>
+                    )}
+                  </Box>
+                  {downloadUrl && (
+                    <IconButton
+                      size="small"
+                      component="a"
+                      href={downloadUrl}
+                      download={fileName}
+                      target="_blank"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Download file"
+                    >
+                      <DownloadOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </Box>
+              );
+            })}
+          </Stack>
+        </Paper>
+      )}
+
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity={isAlreadySigned ? "warning" : "error"} sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
 
-      {pdfBytes ? (
+      {fileLoading ? (
+        <Box sx={{ p: 6, textAlign: "center" }}>
+          <CircularProgress size={32} />
+          <Typography variant="body2" color="text.secondary" mt={2}>
+            Loading document…
+          </Typography>
+        </Box>
+      ) : pdfBytes ? (
         <>
           <SigningDocumentViewer
             pdfBytes={pdfBytes}
@@ -354,30 +549,47 @@ export default function SignPage({
             }}
           />
 
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              mt: 4,
+              gap: 2,
+            }}
+          >
+            {error && (
+              <Alert
+                severity={isAlreadySigned ? "warning" : "error"}
+                sx={{ width: "100%", maxWidth: 600 }}
+              >
+                {error}
+              </Alert>
+            )}
+
             <Button
               variant="contained"
               size="large"
               onClick={handleSign}
-              disabled={!hasSignature || signing}
+              disabled={isAlreadySigned || !hasSignature || signing}
+              color={isAlreadySigned ? "warning" : "primary"}
               startIcon={
                 signing ? (
                   <CircularProgress size={16} color="inherit" />
+                ) : isAlreadySigned ? (
+                  <LockOutlinedIcon />
                 ) : undefined
               }
               sx={{ minWidth: 200 }}
             >
-              {signing ? "Submitting signature…" : "Sign and Submit"}
+              {isAlreadySigned
+                ? "Already Signed"
+                : signing
+                  ? "Submitting signature…"
+                  : "Sign and Submit"}
             </Button>
           </Box>
         </>
-      ) : loading ? (
-        <Box sx={{ p: 6, textAlign: "center" }}>
-          <CircularProgress size={32} />
-          <Typography variant="body2" color="text.secondary" mt={2}>
-            Loading PDF document…
-          </Typography>
-        </Box>
       ) : (
         <Paper
           variant="outlined"
@@ -425,6 +637,62 @@ export default function SignPage({
           </Button>
         </Paper>
       )}
+
+      {/* Dialog upozorňující, že smlouva již byla podepsána */}
+      <Dialog
+        open={alreadySignedDialogOpen}
+        onClose={() => setAlreadySignedDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3, p: 1 },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            pt: 3,
+            pb: 1,
+          }}
+        >
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              bgcolor: "#fef3c7",
+              color: "#d97706",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mb: 1.5,
+            }}
+          >
+            <LockOutlinedIcon sx={{ fontSize: 32 }} />
+          </Box>
+          <Typography variant="h6" fontWeight={700} textAlign="center">
+            Contract Already Signed
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: "center", pb: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            This contract has already been signed using this signing link. It
+            cannot be signed again.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "center", pb: 3, px: 3 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={() => setAlreadySignedDialogOpen(false)}
+            sx={{ borderRadius: 2 }}
+          >
+            Understood
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -11,6 +11,7 @@ import {
   Typography,
   IconButton,
   Box,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useState, useEffect } from "react";
@@ -38,9 +39,10 @@ export default function EditUserPrivilegesModal({
 }: Props) {
   const [selected, setSelected] = useState<number[]>([]);
   const [availablePrivileges, setAvailablePrivileges] = useState<
-    { id: string; name: string; description: string }[]
+    { id: string | number; name: string; description?: string }[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingPrivileges, setFetchingPrivileges] = useState(false);
   const { selectedOrgId } = useUserContext();
   const { showSnackbar } = useSnackbar();
 
@@ -50,11 +52,23 @@ export default function EditUserPrivilegesModal({
 
   useEffect(() => {
     if (!open || !selectedOrgId) return;
+    setFetchingPrivileges(true);
     getAvailableUserPrivileges(selectedOrgId)
-      .then((response) =>
-        setAvailablePrivileges(response.data.available_privileges),
-      )
-      .catch(() => setAvailablePrivileges([]));
+      .then((response) => {
+        const privs =
+          response?.data?.available_privileges ||
+          response?.available_privileges ||
+          (Array.isArray(response?.data) ? response.data : []) ||
+          (Array.isArray(response) ? response : []);
+        setAvailablePrivileges(privs);
+      })
+      .catch((err) => {
+        console.error("Failed to load available privileges:", err);
+        setAvailablePrivileges([]);
+      })
+      .finally(() => {
+        setFetchingPrivileges(false);
+      });
   }, [open, selectedOrgId]);
 
   const togglePrivilege = (id: number) => {
@@ -71,8 +85,14 @@ export default function EditUserPrivilegesModal({
       showSnackbar("User privileges updated successfully", "success");
       onSuccess();
       onClose();
-    } catch {
-      showSnackbar("Failed to update privileges.", "error");
+    } catch (err: any) {
+      console.error("Failed to update user privileges:", err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to update privileges.";
+      showSnackbar(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -91,36 +111,58 @@ export default function EditUserPrivilegesModal({
           <Typography variant="h6" fontWeight={700}>
             Edit User Privileges
           </Typography>
-          <IconButton onClick={onClose}>
+          <IconButton onClick={onClose} size="small">
             <CloseIcon />
           </IconButton>
         </Box>
       </DialogTitle>
-      <DialogContent>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            maxHeight: 400,
-            overflowY: "auto",
-          }}
-        >
-          {availablePrivileges.map((priv) => (
-            <FormControlLabel
-              key={priv.id}
-              control={
-                <Checkbox
-                  checked={selected.includes(Number(priv.id))}
-                  onChange={() => togglePrivilege(Number(priv.id))}
-                />
-              }
-              label={priv.name}
-            />
-          ))}
-        </Box>
+      <DialogContent dividers>
+        {fetchingPrivileges ? (
+          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+            <CircularProgress size={28} />
+          </Box>
+        ) : availablePrivileges.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+            No privileges available to assign.
+          </Typography>
+        ) : (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              maxHeight: 400,
+              overflowY: "auto",
+              gap: 0.5,
+            }}
+          >
+            {availablePrivileges.map((priv) => (
+              <FormControlLabel
+                key={String(priv.id)}
+                control={
+                  <Checkbox
+                    checked={selected.includes(Number(priv.id))}
+                    onChange={() => togglePrivilege(Number(priv.id))}
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>
+                      {priv.name}
+                    </Typography>
+                    {priv.description && (
+                      <Typography variant="caption" color="text.secondary">
+                        {priv.description}
+                      </Typography>
+                    )}
+                  </Box>
+                }
+              />
+            ))}
+          </Box>
+        )}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant="outlined" onClick={onClose}>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button variant="outlined" onClick={onClose} disabled={loading}>
           Cancel
         </Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading}>

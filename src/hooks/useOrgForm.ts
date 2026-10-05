@@ -5,7 +5,7 @@ import { updateOrganization } from "@/services/organizations";
 import React from "react";
 
 export function useOrgForm() {
-  const { selectedOrgId, selectedOrg } = useUserContext();
+  const { selectedOrgId, selectedOrg, setMode, mode } = useUserContext();
   const { showSnackbar } = useSnackbar();
   const { refreshOrganizations } = useAuthContext();
 
@@ -29,6 +29,12 @@ export function useOrgForm() {
       await updateOrganization(selectedOrgId, { name: form.name });
       showSnackbar("Organization updated successfully", "success");
       await refreshOrganizations();
+      if (selectedOrg) {
+        setMode(mode, selectedOrgId, {
+          ...selectedOrg,
+          organization_name: form.name,
+        });
+      }
     } catch {
       showSnackbar("Failed to update organization.", "error");
     } finally {

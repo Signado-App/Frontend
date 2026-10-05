@@ -4,7 +4,7 @@ import { updateUser } from "@/services/user";
 import React, { useEffect, useState } from "react";
 
 export function useProfileForm() {
-  const { user } = useAuthContext();
+  const { user, refresh } = useAuthContext();
 
   const [email, setEmail] = useState(user?.email ?? "");
   const { showSnackbar } = useSnackbar();
@@ -34,6 +34,7 @@ export function useProfileForm() {
     try {
       setLoading(true);
       await updateUser(form);
+      await refresh();
       showSnackbar("Profile updated successfully", "success");
     } catch {
       showSnackbar("Failed to update profile. Please try again.", "error");

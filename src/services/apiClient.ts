@@ -25,7 +25,18 @@ const apiClient = axios.create({
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ message?: string }>) => {
+  async (error: AxiosError<{ message?: string }>) => {
+    // Retry on network error (e.g. cold start, initial connection reset or CORS preflight delay)
+    const config = error.config as
+      | (typeof error.config & { _retryCount?: number })
+      | undefined;
+    if (!error.response && config && (config._retryCount ?? 0) < 2) {
+      config._retryCount = (config._retryCount ?? 0) + 1;
+      const delay = config._retryCount * 300;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return apiClient(config);
+    }
+
     // Network error
     if (!error.response) {
       const apiError: ApiErrorShape = {
