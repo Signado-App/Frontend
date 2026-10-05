@@ -8,8 +8,13 @@ import FolderOpenOutlinedIcon from "@mui/icons-material/FolderOpenOutlined";
 import ContractsTab from "@/components/Clients/ContractsTab";
 import InvoicesTab from "@/components/Clients/InvoicesTab";
 import DocumentsTab from "@/components/Clients/DocumentsTab";
+import { OrgClientDetail } from "@/types/types";
 
-export default function ClientPageContent() {
+type Props = {
+  client: OrgClientDetail;
+};
+
+export default function ClientPageContent({ client }: Props) {
   const [tab, setTab] = useState(0);
 
   return (
@@ -34,9 +39,9 @@ export default function ClientPageContent() {
         </Tabs>
       </Box>
       <Box sx={{ mt: 3 }}>
-        {tab === 0 && <ContractsTab />}
-        {tab === 1 && <InvoicesTab />}
-        {tab === 2 && <DocumentsTab />}
+        {tab === 0 && <ContractsTab client={client} />}
+        {tab === 1 && <InvoicesTab client={client} />}
+        {tab === 2 && <DocumentsTab client={client} />}
       </Box>
     </Box>
   );

@@ -28,3 +28,20 @@ export async function addOrgClient(
   );
   return response.data;
 }
+
+export async function updateOrgClient(
+  orgId: number,
+  clientId: number,
+  data: {
+    client_name?: string;
+    email?: string;
+    client_metadata?: Record<string, unknown>;
+  },
+) {
+  const response = await apiClient.put(
+    `/protected/organization/${orgId}/clients/${clientId}`,
+    data,
+  );
+  return response.data;
+}
+

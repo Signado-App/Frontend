@@ -35,15 +35,19 @@ function UsersPage() {
   const { hasPrivilege } = usePrivileges();
   const [editPrivilegesOpen, setEditPrivilegesOpen] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const [editingMemberPrivileges, setEditingMemberPrivileges] = useState<
+    number[]
+  >([]);
   const statusMap: Record<string, string> = {
     All: "",
     Active: "ACTIVE",
     Invited: "INVITED",
   };
+  const usersList = Array.isArray(data) ? data : [];
   const filteredData =
     currentTab === "All"
-      ? data
-      : data.filter((c) => c.status === statusMap[currentTab]);
+      ? usersList
+      : usersList.filter((c) => c.status === statusMap[currentTab]);
 
   const handleRemove = async (memberId: number) => {
     if (!selectedOrgId) return;
@@ -58,12 +62,24 @@ function UsersPage() {
   useEffect(() => {
     if (!selectedOrgId) return;
     getOrgUsers(selectedOrgId)
-      .then((response) => setData(response.data))
+      .then((response) =>
+        setData(
+          Array.isArray(response?.data)
+            ? response.data
+            : Array.isArray(response?.users)
+              ? response.users
+              : [],
+        ),
+      )
       .catch(() => setData([]));
   }, [selectedOrgId]);
 
-  const handleEditPrivileges = (memberId: number) => {
-    setEditingMemberId(memberId);
+  const handleEditPrivileges = (row: OrgMember) => {
+    setEditingMemberId(row.member_id);
+    const privs = ((row as any).privileges || []).map((p: any) =>
+      typeof p === "object" ? Number(p.id) : Number(p),
+    );
+    setEditingMemberPrivileges(privs);
     setEditPrivilegesOpen(true);
   };
   const columns: ColumnDef<OrgMember>[] = [
@@ -112,7 +128,7 @@ function UsersPage() {
             <Button
               variant="outlined"
               startIcon={<EditOutlinedIcon />}
-              onClick={() => handleEditPrivileges(row.member_id)}
+              onClick={() => handleEditPrivileges(row)}
             >
               Privileges
             </Button>
@@ -184,7 +200,7 @@ function UsersPage() {
       <EditUserPrivilegesModal
         open={editPrivilegesOpen}
         memberId={editingMemberId ?? 0}
-        currentPrivilegeIds={[]}
+        currentPrivilegeIds={editingMemberPrivileges}
         onClose={() => setEditPrivilegesOpen(false)}
         onSuccess={() => {
           if (selectedOrgId)

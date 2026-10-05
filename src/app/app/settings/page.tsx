@@ -1,6 +1,17 @@
 "use client";
 
-import { Box, Button, Divider, TextField, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Divider,
+  TextField,
+  Typography,
+  Tabs,
+  Tab,
+} from "@mui/material";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
+import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import Headline from "@/components/Headline";
 import { useState } from "react";
 import { useProfileForm } from "@/hooks/useProfileForm";
@@ -15,6 +26,8 @@ import { useSnackbar } from "@/context/SnackbarContext";
 import { deleteOrganization } from "@/services/organizations";
 
 export default function SettingsPage() {
+  const [tab, setTab] = useState(0);
+
   const {
     form: profileForm,
     loading: profileLoading,
@@ -22,6 +35,7 @@ export default function SettingsPage() {
     handleSubmit: handleProfileSubmit,
     email,
   } = useProfileForm();
+
   const {
     form: passwordForm,
     loading: passwordLoading,
@@ -38,58 +52,139 @@ export default function SettingsPage() {
     handleSubmit: handleOrgSubmit,
   } = useOrgForm();
 
-  const { mode } = useUserContext();
-  const { selectedOrgId, setMode } = useUserContext();
-  const { refreshOrganizations } = useAuthContext();
+  const { mode, selectedOrgId, setMode } = useUserContext();
+  const { refreshOrganizations, logout } = useAuthContext();
   const { showSnackbar } = useSnackbar();
+
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const { logout } = useAuthContext();
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <Headline title="Settings" description="Manage your account settings." />
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Headline
+        title="Settings"
+        description="Manage your personal profile, organization settings, and account security."
+      />
 
-      {mode === "organization" && (
-        <Box
-          sx={{
-            maxWidth: 600,
-            display: "flex",
-            flexDirection: "column",
-            gap: 3,
-          }}
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={tab}
+          onChange={(_, val) => setTab(val)}
+          variant="scrollable"
+          scrollButtons="auto"
         >
+          <Tab
+            iconPosition="start"
+            icon={<PersonOutlineOutlinedIcon fontSize="small" />}
+            label="Profile"
+          />
+          {mode === "organization" && (
+            <Tab
+              iconPosition="start"
+              icon={<BusinessOutlinedIcon fontSize="small" />}
+              label="Organization"
+            />
+          )}
+          <Tab
+            iconPosition="start"
+            icon={<SecurityOutlinedIcon fontSize="small" />}
+            label="Security & Account"
+          />
+        </Tabs>
+      </Box>
+
+      {/* Tab 0: Profile */}
+      {tab === 0 && (
+        <Box sx={{ maxWidth: 640, display: "flex", flexDirection: "column", gap: 3 }}>
           <FloatingContainer>
-            <Headline title="Organization" size="small" marginBottom={2} />
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Headline title="Personal Information" size="small" marginBottom={2} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <TextField
+                id="email"
+                name="email"
+                label="Email"
+                value={email}
+                disabled
+                helperText="Primary email used for account authentication"
+              />
+              <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", sm: "row" } }}>
+                <TextField
+                  id="firstName"
+                  name="firstName"
+                  label="First Name"
+                  value={profileForm.firstName}
+                  onChange={handleProfileChange}
+                  fullWidth
+                />
+                <TextField
+                  id="lastName"
+                  name="lastName"
+                  label="Last Name"
+                  value={profileForm.lastName}
+                  onChange={handleProfileChange}
+                  fullWidth
+                />
+              </Box>
+              <TextField
+                id="phone"
+                name="phone"
+                label="Phone"
+                value={profileForm.phone}
+                onChange={handleProfileChange}
+              />
+              <Button
+                variant="contained"
+                sx={{ alignSelf: "flex-start", mt: 1 }}
+                onClick={handleProfileSubmit}
+                disabled={profileLoading}
+              >
+                {profileLoading ? "Saving..." : "Save Profile Changes"}
+              </Button>
+            </Box>
+          </FloatingContainer>
+        </Box>
+      )}
+
+      {/* Tab 1: Organization (if in organization mode) */}
+      {mode === "organization" && tab === 1 && (
+        <Box sx={{ maxWidth: 640, display: "flex", flexDirection: "column", gap: 3 }}>
+          <FloatingContainer>
+            <Headline title="Organization Settings" size="small" marginBottom={2} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
               <TextField
                 id="orgName"
                 name="name"
                 label="Organization Name"
                 value={orgForm.name}
                 onChange={handleOrgChange}
+                fullWidth
               />
               <Button
                 variant="contained"
                 sx={{ alignSelf: "flex-start" }}
                 onClick={handleOrgSubmit}
+                disabled={orgLoading}
               >
-                Save Changes
+                {orgLoading ? "Saving..." : "Save Organization"}
               </Button>
-              <Divider />
+
+              <Divider sx={{ my: 1 }} />
+
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 2,
                 }}
               >
                 <Box>
-                  <Typography variant="body2" fontWeight={600}>
+                  <Typography variant="body2" fontWeight={600} color="error.main">
                     Delete Organization
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    This action cannot be undone
+                  <Typography variant="caption" color="text.secondary">
+                    Permanently delete this organization and revoke member access.
                   </Typography>
                 </Box>
                 <Button
@@ -109,10 +204,7 @@ export default function SettingsPage() {
                 onConfirm={async () => {
                   try {
                     await deleteOrganization(selectedOrgId!);
-                    showSnackbar(
-                      "Organization deleted successfully",
-                      "success",
-                    );
+                    showSnackbar("Organization deleted successfully", "success");
                     setMode("client", null, null);
                     await refreshOrganizations();
                   } catch {
@@ -127,62 +219,10 @@ export default function SettingsPage() {
           </FloatingContainer>
         </Box>
       )}
-      {mode === "client" && (
-        <Box
-          sx={{
-            maxWidth: 600,
-            display: "flex",
-            flexDirection: "column",
-            gap: 3,
-          }}
-        >
-          <FloatingContainer>
-            <Headline title="Profile" size="small" marginBottom={2} />
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <TextField
-                id="email"
-                name="email"
-                label="Email"
-                value={email}
-                disabled
-                helperText="Contact support to change your email"
-              />
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <TextField
-                  id="firstName"
-                  name="firstName"
-                  label="First Name"
-                  value={profileForm.firstName}
-                  onChange={handleProfileChange}
-                  sx={{ flex: 1 }}
-                />
-                <TextField
-                  id="lastName"
-                  name="lastName"
-                  label="Last Name"
-                  value={profileForm.lastName}
-                  onChange={handleProfileChange}
-                  sx={{ flex: 1 }}
-                />
-              </Box>
-              <TextField
-                id="phone"
-                name="phone"
-                label="Phone"
-                value={profileForm.phone}
-                onChange={handleProfileChange}
-              />
-              <Button
-                variant="contained"
-                sx={{ alignSelf: "flex-start" }}
-                onClick={handleProfileSubmit}
-                disabled={profileLoading}
-              >
-                {profileLoading ? "Saving..." : "Save Changes"}
-              </Button>
-            </Box>
-          </FloatingContainer>
 
+      {/* Tab: Security & Account (index 2 for organization mode, index 1 for client mode) */}
+      {((mode === "organization" && tab === 2) || (mode === "client" && tab === 1)) && (
+        <Box sx={{ maxWidth: 640, display: "flex", flexDirection: "column", gap: 3 }}>
           <FloatingContainer>
             <Headline title="Change Password" size="small" marginBottom={2} />
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -201,9 +241,7 @@ export default function SettingsPage() {
                 type="password"
                 value={passwordForm.newPassword}
                 onChange={handlePasswordChange}
-                error={
-                  passwordForm.newPassword.length > 0 && !isNewPasswordValid
-                }
+                error={passwordForm.newPassword.length > 0 && !isNewPasswordValid}
                 helperText={
                   passwordForm.newPassword.length > 0 && !isNewPasswordValid
                     ? "Password must be at least 8 characters"
@@ -217,12 +255,10 @@ export default function SettingsPage() {
                 type="password"
                 value={passwordForm.confirmPassword}
                 onChange={handlePasswordChange}
-                error={
-                  passwordForm.confirmPassword.length > 0 && !passwordsMatch
-                }
+                error={passwordForm.confirmPassword.length > 0 && !passwordsMatch}
                 helperText={
                   passwordForm.confirmPassword.length > 0 && !passwordsMatch
-                    ? "Passwords don't match"
+                    ? "Passwords do not match"
                     : ""
                 }
               />
@@ -232,34 +268,44 @@ export default function SettingsPage() {
                 onClick={handlePasswordSubmit}
                 disabled={passwordLoading}
               >
-                {passwordLoading ? "Changing..." : "Change Password"}
+                {passwordLoading ? "Updating..." : "Update Password"}
               </Button>
             </Box>
           </FloatingContainer>
+
           <FloatingContainer>
-            <Headline
-              title="Two Factor Authentication"
-              size="small"
-              marginBottom={2}
-            />
+            <Headline title="Two-Factor Authentication" size="small" marginBottom={2} />
             <Box
               sx={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                flexWrap: "wrap",
+                gap: 2,
               }}
             >
               <Box>
                 <Typography variant="body2" fontWeight={600}>
-                  Two Factor Authentication
+                  Two-Factor Authentication (2FA)
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Add an extra layer of security to your account
+                <Typography variant="caption" color="text.secondary">
+                  Add an extra layer of security to prevent unauthorized access.
                 </Typography>
               </Box>
-              <Button variant="outlined">Enable 2FA</Button>
+              <Button
+                variant="outlined"
+                onClick={() =>
+                  showSnackbar(
+                    "Two-factor authentication will be available in the upcoming security release.",
+                    "info",
+                  )
+                }
+              >
+                Enable 2FA
+              </Button>
             </Box>
           </FloatingContainer>
+
           <FloatingContainer>
             <Headline title="Delete Account" size="small" marginBottom={2} />
             <Box
@@ -267,15 +313,16 @@ export default function SettingsPage() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                flexWrap: "wrap",
+                gap: 2,
               }}
             >
               <Box>
-                <Typography variant="body2" fontWeight={600}>
+                <Typography variant="body2" fontWeight={600} color="error.main">
                   Delete Account
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Your account will be deleted. Your email will remain on
-                  contracts you have signed.
+                <Typography variant="caption" color="text.secondary">
+                  Permanently delete your account. This action cannot be reversed.
                 </Typography>
               </Box>
 
@@ -293,9 +340,14 @@ export default function SettingsPage() {
                 description="Your account will be permanently deleted. Your email will remain on contracts you have signed. This action cannot be undone."
                 confirmLabel="Delete Account"
                 onConfirm={async () => {
-                  await deleteUser();
-                  logout();
-                  setDeleteOpen(false);
+                  try {
+                    await deleteUser();
+                    logout();
+                  } catch {
+                    showSnackbar("Failed to delete account.", "error");
+                  } finally {
+                    setDeleteOpen(false);
+                  }
                 }}
                 onClose={() => setDeleteOpen(false)}
               />

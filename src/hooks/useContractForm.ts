@@ -6,6 +6,7 @@ import { OrgClient, PlacedField } from "@/types/types";
 import { getOrgClients } from "@/services/orgClients";
 import { completeContract, createOrgContract } from "@/services/orgContracts";
 import { embedFieldsIntoPdf } from "@/utils/pdfFields";
+import { convertDocxToPdf, isDocxFile } from "@/utils/docxToPdf";
 import { sha256 } from "js-sha256";
 import { useAuthContext } from "@/context/AuthContext";
 
@@ -91,17 +92,68 @@ export function useCreateContractForm() {
   useEffect(() => {
     if (!selectedOrgId) return;
     getOrgClients(selectedOrgId)
-      .then((response) => setOrgClients(response.clients))
+      .then((response) => {
+        const clients = response.clients || [];
+        setOrgClients(clients);
+
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const clientId = params.get("clientId");
+          const clientUserId = params.get("clientUserId");
+          if (clientId || clientUserId) {
+            const matched = clients.find(
+              (c: OrgClient) =>
+                (clientId && String(c.id) === clientId) ||
+                (clientUserId && String(c.user_id) === clientUserId),
+            );
+            if (matched) {
+              setParties((prev) => {
+                if (prev.some((p) => p.user_id === matched.user_id)) return prev;
+                return [
+                  ...prev,
+                  {
+                    user_id: matched.user_id,
+                    email: matched.client_name,
+                    role: "SIGNER",
+                  },
+                ];
+              });
+            }
+          }
+        }
+      })
       .catch(() => setOrgClients([]));
   }, [selectedOrgId]);
 
   // Step 3: Files
   const [files, setFiles] = useState<File[]>([]);
   const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
+  const [convertingDocx, setConvertingDocx] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const selectedFiles = Array.from(e.target.files);
+
+    setConvertingDocx(true);
+    try {
+      const processedFiles: File[] = [];
+      for (const file of selectedFiles) {
+        if (isDocxFile(file)) {
+          showSnackbar(`Converting "${file.name}" to PDF...`, "info");
+          const converted = await convertDocxToPdf(file);
+          processedFiles.push(converted);
+          showSnackbar(`"${file.name}" converted to PDF successfully!`, "success");
+        } else {
+          processedFiles.push(file);
+        }
+      }
+      setFiles((prev) => [...prev, ...processedFiles]);
+    } catch (err) {
+      console.error("[useContractForm] Error converting DOCX to PDF:", err);
+      showSnackbar("Failed to convert Word document to PDF.", "error");
+    } finally {
+      setConvertingDocx(false);
+      e.target.value = "";
     }
   };
 
@@ -250,6 +302,7 @@ export function useCreateContractForm() {
     removeFile,
     placedFields,
     setPlacedFields,
+    convertingDocx,
 
     submitStage,
     submitError,

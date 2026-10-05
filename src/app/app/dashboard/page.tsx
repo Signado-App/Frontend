@@ -24,7 +24,7 @@ function DashboardPage() {
     new_contracts: number;
   } | null>(null);
 
-  const pendingInvites = organizations.filter(
+  const pendingInvites = (organizations || []).filter(
     (o) => o.role_status === "INVITED",
   );
 

@@ -34,18 +34,36 @@ function ContractsPage() {
     Expired: "EXPIRED",
     Cancelled: "CANCELLED",
   };
+  const contractsList = Array.isArray(data) ? data : [];
   const filteredData =
     currentTab === "All"
-      ? data
-      : data.filter((c) => c.status === statusMap[currentTab]);
+      ? contractsList
+      : contractsList.filter((c) => c.status === statusMap[currentTab]);
+
   useEffect(() => {
     if (selectedOrgId) {
       getOrgContracts(selectedOrgId)
-        .then((response) => setData(response.contracts))
+        .then((response) =>
+          setData(
+            Array.isArray(response?.contracts)
+              ? response.contracts
+              : Array.isArray(response?.data)
+                ? response.data
+                : [],
+          ),
+        )
         .catch(() => setData([]));
     } else {
       getContracts()
-        .then((response) => setData(response.contracts))
+        .then((response) =>
+          setData(
+            Array.isArray(response?.contracts)
+              ? response.contracts
+              : Array.isArray(response?.data)
+                ? response.data
+                : [],
+          ),
+        )
         .catch(() => setData([]));
     }
   }, [selectedOrgId]);

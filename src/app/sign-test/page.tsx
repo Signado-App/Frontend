@@ -33,6 +33,7 @@ const FieldPlacementEditor = dynamic(
 );
 
 import { embedSignatureIntoPdf, trimCanvasToDataUrl } from "@/utils/pdfSigning";
+import { convertDocxToPdf, isDocxFile } from "@/utils/docxToPdf";
 
 export default function SignFlowTestPage() {
   const [rawFile, setRawFile] = useState<File | null>(null);
@@ -92,9 +93,20 @@ export default function SignFlowTestPage() {
     handleClearSignature();
     setTextValues({});
     setPlacedFields([]);
-    setRawFile(file);
-    setFileName(file.name);
-    const bytes = await file.arrayBuffer();
+
+    let activeFile = file;
+    if (isDocxFile(file)) {
+      try {
+        activeFile = await convertDocxToPdf(file);
+      } catch (err) {
+        setError(`Failed to convert DOCX to PDF: ${String(err)}`);
+        return;
+      }
+    }
+
+    setRawFile(activeFile);
+    setFileName(activeFile.name);
+    const bytes = await activeFile.arrayBuffer();
     setPdfBytes(bytes);
     setActiveTab("editor");
   };
@@ -258,11 +270,11 @@ export default function SignFlowTestPage() {
         useFlexGap
       >
         <Button variant="outlined" component="label">
-          Upload PDF
+          Upload Document (.pdf, .docx)
           <input
             type="file"
             hidden
-            accept="application/pdf"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             onChange={handleFileChange}
           />
         </Button>

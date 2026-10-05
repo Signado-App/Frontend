@@ -1,100 +1,183 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Headline from "@/components/Headline";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography, Paper, CircularProgress } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import StatCard from "../Dashboard/StatCard";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
-import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import AppTable, { ColumnDef } from "../Table/AppTable";
-import { Contract } from "../../types/types";
+import { OrgClientDetail, OrgContract } from "../../types/types";
 import StatusChip from "../StatusChip";
+import { useUserContext } from "@/context/UserContext";
+import { getOrgContracts, getOrgContract } from "@/services/orgContracts";
+import { useRouter } from "next/navigation";
+import ContractDetailModal from "@/components/Contract/ContractDetailModal";
 
-const columns: ColumnDef<Contract>[] = [
-  {
-    id: "id",
-    header: "Contract ID",
-    cell: (row) => (
-      <Typography variant="body2" fontWeight={600} color="text.primary">
-        {row.id}
-      </Typography>
-    ),
-  },
-  {
-    id: "name",
-    header: "Contract Name",
-    cell: (row) => (
-      <Box>
-        <Typography variant="body2" fontWeight={600} color="text.primary">
-          {row.name}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {row.description}
-        </Typography>
-      </Box>
-    ),
-  },
-  {
-    id: "status",
-    header: "Status",
-    cell: (row) => {
-      return <StatusChip status={row.status} />;
+type Props = {
+  client?: OrgClientDetail;
+};
+
+export default function ContractsTab({ client }: Props) {
+  const router = useRouter();
+  const { selectedOrgId } = useUserContext();
+  const [contracts, setContracts] = useState<OrgContract[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedContract, setSelectedContract] = useState<OrgContract | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!selectedOrgId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    getOrgContracts(selectedOrgId)
+      .then(async (response) => {
+        const allContracts: OrgContract[] =
+          response?.contracts || response?.data || [];
+        if (!client) {
+          setContracts(allContracts);
+          return;
+        }
+
+        const clientUserId = client.user_id;
+        const clientEmail = client.user_details?.email?.trim().toLowerCase();
+
+        // If client has no user_id and no email, they cannot have contracts yet
+        if (!clientUserId && !clientEmail) {
+          setContracts([]);
+          return;
+        }
+
+        // Fetch details for contracts to check actual parties
+        const detailedContracts = await Promise.all(
+          allContracts.map((c) =>
+            getOrgContract(selectedOrgId, c.id)
+              .then((res) => res.contract || c)
+              .catch(() => c),
+          ),
+        );
+
+        const clientContracts = detailedContracts.filter((c: any) => {
+          if (!c) return false;
+          // Direct client association check
+          if (c.client_id && c.client_id === client.id) return true;
+          if (
+            c.client_user_id &&
+            clientUserId &&
+            c.client_user_id === clientUserId
+          )
+            return true;
+
+          // Check if client is in parties
+          if (Array.isArray(c.parties)) {
+            return c.parties.some((p: any) => {
+              if (clientUserId && p.user_id === clientUserId) return true;
+              if (
+                clientEmail &&
+                p.email &&
+                p.email.toLowerCase() === clientEmail
+              )
+                return true;
+              return false;
+            });
+          }
+          return false;
+        });
+
+        setContracts(clientContracts);
+      })
+      .catch((err) => {
+        console.error("Failed to load client contracts:", err);
+        setContracts([]);
+      })
+      .finally(() => setLoading(false));
+  }, [selectedOrgId, client]);
+
+  const handleAddContract = () => {
+    if (client) {
+      router.push(
+        `/app/contracts/new?clientId=${client.id}&clientUserId=${client.user_id}`,
+      );
+    } else {
+      router.push("/app/contracts/new");
+    }
+  };
+
+  const columns: ColumnDef<OrgContract>[] = [
+    {
+      id: "title",
+      header: "Contract Name",
+      cell: (row) => (
+        <Box>
+          <Typography variant="body2" fontWeight={600} color="text.primary">
+            {row.title}
+          </Typography>
+          {row.description && (
+            <Typography variant="body2" color="text.secondary">
+              {row.description}
+            </Typography>
+          )}
+        </Box>
+      ),
     },
-  },
-  {
-    id: "lastActivity",
-    header: "Last Activity",
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    align: "left",
-    cell: (row) => (
-      <Button
-        variant="outlined"
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          color: "text.primary",
-        }}
-        startIcon={<VisibilityOutlinedIcon />}
-      >
-        View
-      </Button>
-    ),
-  },
-];
+    {
+      id: "status",
+      header: "Status",
+      cell: (row) => <StatusChip status={row.status} />,
+    },
+    {
+      id: "last_activity",
+      header: "Last Activity",
+      cell: (row) => (
+        <Typography variant="body2" color="text.secondary">
+          {row.last_activity
+            ? new Date(row.last_activity).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })
+            : "-"}
+        </Typography>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      align: "left",
+      cell: (row) => (
+        <Button
+          variant="outlined"
+          size="small"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            color: "text.primary",
+          }}
+          startIcon={<VisibilityOutlinedIcon />}
+          onClick={() => setSelectedContract(row)}
+        >
+          View
+        </Button>
+      ),
+    },
+  ];
 
-const data: Contract[] = [
-  {
-    id: "1",
-    name: "Software Agreement",
-    description: "Full-stack application development with React and Node.js",
-    status: "Active",
-    lastActivity: "Dec 20, 2024",
-  },
-  {
-    id: "2",
-    name: "Consulting Contract",
-    status: "Signed",
-    lastActivity: "Dec 15, 2024",
-  },
-  {
-    id: "3",
-    name: "NDA Agreement",
-    status: "Expired",
-    lastActivity: "Nov 30, 2024",
-  },
-  {
-    id: "4",
-    name: "Service Level Agreement",
-    status: "Draft",
-    lastActivity: "Dec 18, 2024",
-  },
-];
+  const totalContracts = contracts.length;
+  const signedContracts = contracts.filter((c) => c.status === "SIGNED").length;
+  const pendingContracts = contracts.filter(
+    (c) => c.status === "PENDING_SIGNATURES",
+  ).length;
+  const draftContracts = contracts.filter((c) => c.status === "DRAFT").length;
 
-export default function ContractsTab() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4, mt: 4 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
@@ -102,10 +185,17 @@ export default function ContractsTab() {
           title="Contracts"
           description="Manage client contracts and agreements"
         />
-        <Button variant="contained" color="primary" startIcon={<AddIcon />}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={handleAddContract}
+        >
           Add New Contract
         </Button>
       </Box>
+
+      {/* Dynamic Statistics Cards */}
       <Box
         sx={{
           display: "grid",
@@ -115,28 +205,80 @@ export default function ContractsTab() {
       >
         <StatCard
           label="Total Contracts"
-          value="4"
+          value={String(totalContracts)}
           icon={<DescriptionOutlinedIcon sx={{ color: "#60a5fa" }} />}
         />
         <StatCard
           label="Signed"
-          value="2"
-          icon={<DescriptionOutlinedIcon sx={{ color: "#4ade80" }} />}
+          value={String(signedContracts)}
+          icon={<CheckCircleOutlineIcon sx={{ color: "#4ade80" }} />}
         />
         <StatCard
           label="Pending"
-          value="1"
+          value={String(pendingContracts)}
           icon={<AccessTimeOutlinedIcon sx={{ color: "#f59e0b" }} />}
         />
         <StatCard
-          label="Total Value"
-          value="$80.5K"
-          icon={<AttachMoneyOutlinedIcon sx={{ color: "#a78bfa" }} />}
+          label="Draft"
+          value={String(draftContracts)}
+          icon={<EditNoteIcon sx={{ color: "#a78bfa" }} />}
         />
       </Box>
-      <Box>
-        <AppTable<Contract> data={data} columns={columns} />
-      </Box>
+
+      {/* Content Area */}
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}>
+          <CircularProgress size={32} />
+        </Box>
+      ) : contracts.length === 0 ? (
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 6,
+            textAlign: "center",
+            borderRadius: 3,
+            borderStyle: "dashed",
+            borderColor: "#cbd5e1",
+            bgcolor: "#f8fafc",
+          }}
+        >
+          <DescriptionOutlinedIcon
+            sx={{ fontSize: 48, color: "#94a3b8", mb: 2 }}
+          />
+          <Typography variant="h6" fontWeight={700} color="text.primary" mb={1}>
+            No contracts for this client yet
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            mb={3}
+            maxWidth={420}
+            mx="auto"
+          >
+            This client does not have any active or past contracts associated
+            with their profile. Click below to create and assign the first
+            contract.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleAddContract}
+          >
+            Create First Contract
+          </Button>
+        </Paper>
+      ) : (
+        <Box>
+          <AppTable<OrgContract> data={contracts} columns={columns} />
+        </Box>
+      )}
+
+      <ContractDetailModal
+        open={!!selectedContract}
+        onClose={() => setSelectedContract(null)}
+        contract={selectedContract}
+      />
     </Box>
   );
 }

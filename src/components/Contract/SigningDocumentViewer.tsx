@@ -67,10 +67,32 @@ export default function SigningDocumentViewer({
   const [error, setError] = useState<string | null>(null);
   const sigRef = useRef<SignatureCanvas>(null);
 
-  // Klonujeme buffer pro PDF.js Web Worker, aby nedošlo k jeho "odpojení" (detach)
+  const lastBytesRef = useRef<Uint8Array | null>(null);
+  const fileSourceRef = useRef<{ data: Uint8Array } | null>(null);
+
+  // Klonujeme buffer pro PDF.js Web Worker se stabilní referencí
   const fileSource = useMemo(() => {
     if (!pdfBytes) return null;
-    return { data: new Uint8Array(pdfBytes.slice(0)) };
+    const currentArray = new Uint8Array(pdfBytes);
+
+    const len = currentArray.byteLength;
+    if (
+      lastBytesRef.current &&
+      lastBytesRef.current.byteLength === len &&
+      (len === 0 ||
+        (lastBytesRef.current[0] === currentArray[0] &&
+          lastBytesRef.current[Math.floor(len / 2)] ===
+            currentArray[Math.floor(len / 2)] &&
+          lastBytesRef.current[len - 1] === currentArray[len - 1])) &&
+      fileSourceRef.current
+    ) {
+      return fileSourceRef.current;
+    }
+
+    lastBytesRef.current = currentArray;
+    const newSource = { data: new Uint8Array(pdfBytes.slice(0)) };
+    fileSourceRef.current = newSource;
+    return newSource;
   }, [pdfBytes]);
 
   // Pole z aktuálního PDF se čtou jednou při načtení, ne při každém renderu.

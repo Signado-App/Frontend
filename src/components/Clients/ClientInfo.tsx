@@ -1,71 +1,129 @@
-import { Box, Typography, Paper } from "@mui/material";
+"use client";
+
+import { useState } from "react";
+import { Box, Typography, Button, Stack } from "@mui/material";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import LocalPhoneOutlinedIcon from "@mui/icons-material/LocalPhoneOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import AddIcon from "@mui/icons-material/Add";
+import { useRouter } from "next/navigation";
 import Headline from "../Headline";
 import FloatingContainer from "../FloatingContainer/FloatingContainer";
+import EditClientModal from "./EditClientModal";
+import { OrgClientDetail } from "@/types/types";
 
 type ClientInfoProps = {
-  name: string;
-  address: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
+  client: OrgClientDetail;
+  onClientUpdated?: () => void;
 };
 
-const infoItems = [
-  {
-    icon: <LocationOnOutlinedIcon sx={{ color: "#60a5fa" }} />,
-    iconBg: "#eff6ff",
-    label: "Address",
-    key: "address",
-  },
-  {
-    icon: <PersonOutlineOutlinedIcon sx={{ color: "#4ade80" }} />,
-    iconBg: "#f0fdf4",
-    label: "Contact Person",
-    key: "contactPerson",
-  },
-  {
-    icon: <MailOutlineIcon sx={{ color: "#a78bfa" }} />,
-    iconBg: "#f5f3ff",
-    label: "Email",
-    key: "email",
-  },
-  {
-    icon: <LocalPhoneOutlinedIcon sx={{ color: "#f97316" }} />,
-    iconBg: "#fff7ed",
-    label: "Phone",
-    key: "phone",
-  },
-];
-
 export default function ClientInfo({
-  name,
-  address,
-  contactPerson,
-  email,
-  phone,
+  client,
+  onClientUpdated,
 }: ClientInfoProps) {
-  const values = { address, contactPerson, email, phone };
+  const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
+
+  const name = client.client_name || "Client Details";
+  const address = (client.client_metadata?.address as string) || "Not specified";
+  const firstName = client.user_details?.first_name || "";
+  const lastName = client.user_details?.last_name || "";
+  const contactPerson = `${firstName} ${lastName}`.trim() || "Not specified";
+  const email = client.user_details?.email || "Not specified";
+  const phone =
+    (client.client_metadata?.phone as string) ||
+    (client.client_metadata?.phone_number as string) ||
+    "Not specified";
+
+  const infoItems = [
+    {
+      icon: <LocationOnOutlinedIcon sx={{ color: "#60a5fa" }} />,
+      iconBg: "#eff6ff",
+      label: "Address",
+      value: address,
+    },
+    {
+      icon: <PersonOutlineOutlinedIcon sx={{ color: "#4ade80" }} />,
+      iconBg: "#f0fdf4",
+      label: "Contact Person",
+      value: contactPerson,
+    },
+    {
+      icon: <MailOutlineIcon sx={{ color: "#a78bfa" }} />,
+      iconBg: "#f5f3ff",
+      label: "Email",
+      value: email,
+    },
+    {
+      icon: <LocalPhoneOutlinedIcon sx={{ color: "#f97316" }} />,
+      iconBg: "#fff7ed",
+      label: "Phone",
+      value: phone,
+    },
+  ];
+
+  const handleCreateContract = () => {
+    router.push(
+      `/app/contracts/new?clientId=${client.id}&clientUserId=${client.user_id}`,
+    );
+  };
 
   return (
-    // <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
     <FloatingContainer>
-      <Headline title={name} description="Client relationship overview" />
-      <Box sx={{ display: "flex", gap: 4 }}>
-        {infoItems.map(({ icon, iconBg, label, key }) => (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        <Headline title={name} description="Client relationship overview" />
+
+        <Stack direction="row" spacing={1.5}>
+          <Button
+            variant="outlined"
+            startIcon={<EditOutlinedIcon />}
+            onClick={() => setEditOpen(true)}
+          >
+            Edit Client
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateContract}
+          >
+            Create Contract
+          </Button>
+        </Stack>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "1fr 1fr",
+            md: "repeat(4, 1fr)",
+          },
+          gap: 3,
+        }}
+      >
+        {infoItems.map(({ icon, iconBg, label, value }) => (
           <Box
-            key={key}
+            key={label}
             sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}
           >
             <Box
               sx={{
                 bgcolor: iconBg,
                 borderRadius: "50%",
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -74,18 +132,34 @@ export default function ClientInfo({
             >
               {icon}
             </Box>
-            <Box>
-              <Typography variant="body2" fontWeight={700}>
+            <Box sx={{ minWidth: 0, overflow: "hidden" }}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
                 {label}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {values[key as keyof typeof values]}
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                }}
+              >
+                {value}
               </Typography>
             </Box>
           </Box>
         ))}
       </Box>
+
+      <EditClientModal
+        open={editOpen}
+        client={client}
+        onClose={() => setEditOpen(false)}
+        onSuccess={() => {
+          if (onClientUpdated) onClientUpdated();
+        }}
+      />
     </FloatingContainer>
-    // </Paper>
   );
 }

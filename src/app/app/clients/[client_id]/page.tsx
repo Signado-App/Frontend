@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 import { OrgClientDetail } from "@/types/types";
 import { getOrgClient } from "@/services/orgClients";
 import { useUserContext } from "@/context/UserContext";
@@ -17,36 +17,43 @@ export default function ClientPage({
   const { client_id } = use(params);
   const { selectedOrgId } = useUserContext();
   const [client, setClient] = useState<OrgClientDetail | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const refreshClient = useCallback(() => {
     if (!selectedOrgId) return;
-    getOrgClient(selectedOrgId, Number(client_id)).then((response) => {
-      setClient(response.client);
-    });
+    getOrgClient(selectedOrgId, Number(client_id))
+      .then((response) => {
+        setClient(response.client);
+      })
+      .catch((err) => {
+        console.error("Failed to load client details:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [selectedOrgId, client_id]);
 
-  if (!client) {
+  useEffect(() => {
+    refreshClient();
+  }, [refreshClient]);
+
+  if (loading || !client) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", p: 8 }}>
         <CircularProgress />
       </Box>
     );
   }
+
   return (
     <Box>
       <BackButton href="/app/clients" label="Back to Clients" />
       <Box sx={{ display: "flex", flexDirection: "column", gap: 4, mt: 4 }}>
         <Box>
-          <ClientInfo
-            name={client.client_name}
-            address={(client.client_metadata?.address as string) ?? ""}
-            contactPerson={`${client.user_details.first_name ?? ""} ${client.user_details.last_name ?? ""}`}
-            email={client.user_details.email ?? ""}
-            phone={(client.client_metadata?.phone as string) ?? ""}
-          />
+          <ClientInfo client={client} onClientUpdated={refreshClient} />
         </Box>
         <Box>
-          <ClientPageContent />
+          <ClientPageContent client={client} />
         </Box>
       </Box>
     </Box>
