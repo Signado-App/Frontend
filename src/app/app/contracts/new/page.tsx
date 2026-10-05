@@ -70,6 +70,7 @@ export default function NewContractPage() {
     addMyself,
     placedFields,
     setPlacedFields,
+    convertingDocx,
   } = useCreateContractForm();
 
   const stageLabel: Record<string, string> = {
@@ -248,11 +249,26 @@ export default function NewContractPage() {
             <Button
               variant="outlined"
               component="label"
-              startIcon={<AttachFileOutlinedIcon />}
+              disabled={convertingDocx}
+              startIcon={
+                convertingDocx ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <AttachFileOutlinedIcon />
+                )
+              }
               sx={{ alignSelf: "flex-start" }}
             >
-              Attach Files
-              <input type="file" hidden multiple onChange={handleFileChange} />
+              {convertingDocx
+                ? "Converting Word document to PDF..."
+                : "Attach Files (.pdf, .docx)"}
+              <input
+                type="file"
+                hidden
+                multiple
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={handleFileChange}
+              />
             </Button>
 
             {files.length > 0 && (
