@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import dynamic from "next/dynamic";
 import { loginWithSigningToken } from "@/services/auth";
+import { getUser } from "@/services/user";
 import {
   getSigningContract,
   signContract,
@@ -34,6 +35,112 @@ const SigningDocumentViewer = dynamic(
   () => import("@/components/Contract/SigningDocumentViewer"),
   { ssr: false },
 );
+
+async function fetchClientIp(): Promise<string> {
+  // 1. Try internal Next.js API route first
+  try {
+    const res = await fetch("/api/ip", { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (
+        data?.ip &&
+        data.ip !== "::1" &&
+        data.ip !== "127.0.0.1" &&
+        data.ip !== "localhost"
+      ) {
+        return data.ip;
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  // 2. Fallback to public IP lookup service
+  try {
+    const res = await fetch("https://api.ipify.org?format=json");
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.ip) return data.ip;
+    }
+  } catch {
+    // fallback
+  }
+
+  return "";
+}
+
+function resolveSignerLabel(contractObj: any, partyKeyStr: string): string {
+  if (!contractObj) return "Verified Signer";
+
+  // 1. Check if contract, login response or user profile has direct name
+  const rawName =
+    contractObj.current_signer_name ||
+    contractObj.signer_name ||
+    (contractObj.first_name && contractObj.last_name
+      ? `${contractObj.first_name} ${contractObj.last_name}`
+      : contractObj.first_name || contractObj.last_name) ||
+    (contractObj.user?.first_name && contractObj.user?.last_name
+      ? `${contractObj.user.first_name} ${contractObj.user.last_name}`
+      : contractObj.user?.first_name || contractObj.user?.name) ||
+    contractObj.name;
+
+  // 2. Check if contract, login response or user profile has direct email
+  let rawEmail =
+    contractObj.current_signer_email ||
+    contractObj.signer_email ||
+    contractObj.email ||
+    contractObj.user?.email ||
+    contractObj.signer?.email;
+
+  // 3. If email not yet found, check partyKey (only if it contains @)
+  if (!rawEmail && partyKeyStr && partyKeyStr.includes("@")) {
+    rawEmail = partyKeyStr;
+  }
+
+  // 4. If email not yet found, check contractObj.parties matching partyKey or status
+  if (!rawEmail && Array.isArray(contractObj.parties)) {
+    const matchedParty =
+      contractObj.parties.find(
+        (p: any) =>
+          String(p.user_id) === partyKeyStr ||
+          p.email === partyKeyStr ||
+          String(p.id) === partyKeyStr,
+      ) ||
+      contractObj.parties.find(
+        (p: any) => p.status === "PENDING" || p.status === "WAITING",
+      ) ||
+      (contractObj.parties.length === 1 ? contractObj.parties[0] : null);
+
+    if (matchedParty) {
+      if (matchedParty.email) rawEmail = matchedParty.email;
+      if (!rawName && matchedParty.name) {
+        return matchedParty.email
+          ? `${matchedParty.name} (${matchedParty.email})`
+          : matchedParty.name;
+      }
+    }
+  }
+
+  if (rawName && rawEmail) {
+    return `${rawName} (${rawEmail})`;
+  }
+  if (rawName) {
+    return rawName;
+  }
+  if (rawEmail) {
+    return rawEmail;
+  }
+  // Never return pure numeric IDs like "5" or default "party1" as a person's name
+  if (
+    partyKeyStr &&
+    !/^\d+$/.test(partyKeyStr) &&
+    partyKeyStr !== "party1" &&
+    partyKeyStr !== "party"
+  ) {
+    return partyKeyStr;
+  }
+  return "Verified Signer";
+}
 
 export default function SignPage({
   params,
@@ -58,6 +165,16 @@ export default function SignPage({
   const [textValues, setTextValues] = useState<Record<string, string>>({});
   const [isAlreadySigned, setIsAlreadySigned] = useState(false);
   const [alreadySignedDialogOpen, setAlreadySignedDialogOpen] = useState(false);
+  const [clientIp, setClientIp] = useState<string>("");
+
+  useEffect(() => {
+    fetchClientIp().then((ip) => {
+      if (ip) {
+        console.log("[SignPage] Resolved signer IP:", ip);
+        setClientIp(ip);
+      }
+    });
+  }, []);
 
   const loadPdfFromUrl = useCallback(async (fileUrl: string) => {
     try {
@@ -124,14 +241,28 @@ export default function SignPage({
         ) {
           throw { data: response?.data || response };
         }
-        return { loginRes, response };
+        let userInfo = null;
+        try {
+          const userRes = await getUser();
+          userInfo = userRes?.data || userRes;
+          console.log("[SignPage] getUser response:", userInfo);
+        } catch {
+          // not logged in as a registered platform user
+        }
+
+        return { loginRes, response, userInfo };
       })
-      .then(async ({ loginRes, response }) => {
+      .then(async ({ loginRes, response, userInfo }) => {
         const rawContract = response?.contract ?? response?.data ?? response;
         const c = {
+          ...(userInfo ?? {}),
           ...(loginRes?.signer ?? {}),
           ...(loginRes?.user ?? {}),
           ...(loginRes?.party ?? {}),
+          ...(loginRes?.data?.signer ?? {}),
+          ...(loginRes?.data?.user ?? {}),
+          ...(loginRes?.data?.party ?? {}),
+          ...(loginRes?.data ?? {}),
           ...rawContract,
         };
         setContract(c);
@@ -257,6 +388,10 @@ export default function SignPage({
       setSigning(true);
       setError(null);
 
+      const ipToUse = clientIp || (await fetchClientIp());
+      const signerLabel = resolveSignerLabel(contract, partyKey);
+      const contractId = contract.id ?? contract.contract_id ?? contract.uuid;
+
       const signedPdfBytes = await embedSignatureIntoPdf(
         pdfBytes.slice(0),
         signatureData,
@@ -264,8 +399,9 @@ export default function SignPage({
         {
           signedAt: new Date(),
           device: navigator.userAgent,
-          signerName:
-            contract.current_signer_name ?? contract.signer_name ?? "Signer",
+          ipAddress: ipToUse || undefined,
+          signerName: signerLabel,
+          contractId: String(contractId),
         },
         textValues,
       );
@@ -280,7 +416,6 @@ export default function SignPage({
       // Calculate SHA-256 hashes
       const documentHash = pdfBytes ? sha256(pdfBytes) : String(contract.id);
       const signedHash = sha256(signedPdfBytes);
-      const contractId = contract.id ?? contract.contract_id ?? contract.uuid;
 
       // File metadata for signed PDF
       const originalFileName =
@@ -368,10 +503,13 @@ export default function SignPage({
         signature_svg: {
           data: signatureData,
           svg: signatureData,
+          ip: ipToUse,
+          signer: signerLabel,
+          signed_at: new Date().toISOString(),
         },
         document_hash: documentHash,
         device: navigator.userAgent,
-        location: "",
+        location: ipToUse ? `IP: ${ipToUse}` : "",
         signed_file: signedFileMeta,
         ...(base64Pdf ? { signed_pdf_base64: base64Pdf } : {}),
       });
