@@ -19,19 +19,49 @@ export default function ClientPage({
   const [client, setClient] = useState<OrgClientDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshClient = useCallback(() => {
-    if (!selectedOrgId) return;
-    getOrgClient(selectedOrgId, Number(client_id))
-      .then((response) => {
-        setClient(response.client);
-      })
-      .catch((err) => {
-        console.error("Failed to load client details:", err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [selectedOrgId, client_id]);
+  const refreshClient = useCallback(
+    (updatedFallback?: any) => {
+      if (updatedFallback) {
+        setClient((prev) => ({
+          ...(prev || ({} as OrgClientDetail)),
+          ...updatedFallback,
+          client_metadata: {
+            ...(prev?.client_metadata || {}),
+            ...(updatedFallback.client_metadata || {}),
+          },
+        }));
+      }
+
+      if (!selectedOrgId) return;
+      getOrgClient(selectedOrgId, Number(client_id))
+        .then((response) => {
+          const resolved = response?.client ?? response?.data ?? response;
+          if (resolved && typeof resolved === "object") {
+            setClient((prev) => ({
+              ...(prev || ({} as OrgClientDetail)),
+              ...resolved,
+              ...(updatedFallback
+                ? {
+                    client_name:
+                      updatedFallback.client_name || resolved.client_name,
+                    client_metadata: {
+                      ...(resolved.client_metadata || {}),
+                      ...(updatedFallback.client_metadata || {}),
+                    },
+                  }
+                : {}),
+            }));
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load client details:", err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    },
+    [selectedOrgId, client_id],
+  );
 
   useEffect(() => {
     refreshClient();
