@@ -16,7 +16,7 @@ import { OrgClientDetail } from "@/types/types";
 
 type ClientInfoProps = {
   client: OrgClientDetail;
-  onClientUpdated?: () => void;
+  onClientUpdated?: (updated?: any) => void;
 };
 
 export default function ClientInfo({
@@ -26,12 +26,28 @@ export default function ClientInfo({
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
 
-  const name = client.client_name || "Client Details";
-  const address = (client.client_metadata?.address as string) || "Not specified";
-  const firstName = client.user_details?.first_name || "";
-  const lastName = client.user_details?.last_name || "";
-  const contactPerson = `${firstName} ${lastName}`.trim() || "Not specified";
-  const email = client.user_details?.email || "Not specified";
+  const name =
+    client.client_name ||
+    (client.client_metadata?.client_name as string) ||
+    "Client Details";
+  const address =
+    (client.client_metadata?.address as string) || "Not specified";
+  const firstName =
+    (client.client_metadata?.first_name as string) ||
+    client.user_details?.first_name ||
+    "";
+  const lastName =
+    (client.client_metadata?.last_name as string) ||
+    client.user_details?.last_name ||
+    "";
+  const contactPerson =
+    (client.client_metadata?.contact_person as string) ||
+    `${firstName} ${lastName}`.trim() ||
+    "Not specified";
+  const email =
+    (client.client_metadata?.email as string) ||
+    client.user_details?.email ||
+    "Not specified";
   const phone =
     (client.client_metadata?.phone as string) ||
     (client.client_metadata?.phone_number as string) ||
@@ -156,8 +172,8 @@ export default function ClientInfo({
         open={editOpen}
         client={client}
         onClose={() => setEditOpen(false)}
-        onSuccess={() => {
-          if (onClientUpdated) onClientUpdated();
+        onSuccess={(updatedData) => {
+          if (onClientUpdated) onClientUpdated(updatedData);
         }}
       />
     </FloatingContainer>

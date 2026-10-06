@@ -19,6 +19,8 @@ export type SignatureMetadata = {
   ipAddress?: string;
   device?: string;
   signerName?: string;
+  signerEmail?: string;
+  contractId?: string;
 };
 
 /**
@@ -394,8 +396,9 @@ export async function embedSignatureIntoPdf(
     });
 
     const isCompact = f.height < 45;
-    const fontSize = isCompact ? 4.5 : 5.2;
-    const lineSpacing = fontSize + 1.6;
+    const isTall = f.height >= 55;
+    const fontSize = isCompact ? 4.5 : 5.0;
+    const lineSpacing = fontSize + 1.5;
 
     const stampLines: string[] = [];
     const signerLabel = metadata.signerName
@@ -411,17 +414,29 @@ export async function embedSignatureIntoPdf(
       second: "2-digit",
     });
 
+    const ip =
+      metadata.ipAddress &&
+      metadata.ipAddress !== "Získá backend" &&
+      metadata.ipAddress !== "unknown"
+        ? ` | IP: ${toWinAnsi(metadata.ipAddress)}`
+        : "";
+
+    const shortId = metadata.contractId
+      ? metadata.contractId.replace(/-/g, "").slice(0, 8)
+      : "";
+
     if (isCompact) {
       stampLines.push(
-        toWinAnsi(`Digitally signed by: ${signerLabel} (${dateStr})`),
+        toWinAnsi(`Digitally signed by: ${signerLabel} (${dateStr})${ip}`),
       );
-    } else {
+    } else if (isTall && shortId) {
       stampLines.push(toWinAnsi(`Digitally signed by: ${signerLabel}`));
-      const ip =
-        metadata.ipAddress && metadata.ipAddress !== "Získá backend"
-          ? ` • IP: ${toWinAnsi(metadata.ipAddress)}`
-          : "";
       stampLines.push(toWinAnsi(`Date: ${dateStr}${ip}`));
+      stampLines.push(toWinAnsi(`Envelope ID: ${shortId} | Signado Verified`));
+    } else {
+      const idPart = shortId ? ` | ID: ${shortId}` : "";
+      stampLines.push(toWinAnsi(`Digitally signed by: ${signerLabel}`));
+      stampLines.push(toWinAnsi(`Date: ${dateStr}${ip}${idPart}`));
     }
 
     const stampHeight = stampLines.length * lineSpacing + 2;
@@ -456,10 +471,26 @@ export async function embedSignatureIntoPdf(
       .slice()
       .reverse()
       .forEach((line, i) => {
+        const maxWidth = f.width - 10;
+        let actualFontSize = fontSize;
+        if (maxWidth > 20) {
+          try {
+            const textWidth = font.widthOfTextAtSize(line, actualFontSize);
+            if (textWidth > maxWidth) {
+              actualFontSize = Math.max(
+                3.5,
+                (actualFontSize * maxWidth) / textWidth,
+              );
+            }
+          } catch {
+            // fallback
+          }
+        }
+
         page.drawText(line, {
           x: f.x + 5,
           y: f.y + 2.5 + i * lineSpacing,
-          size: fontSize,
+          size: actualFontSize,
           font,
           color: rgb(0.4, 0.45, 0.5),
         });

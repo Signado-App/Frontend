@@ -51,3 +51,16 @@ export async function updateOrgContract(
   );
   return response.data;
 }
+
+export async function addContractParties(
+  orgId: number,
+  contractId: string,
+  parties: any[],
+) {
+  const response = await apiClient.post(
+    `/protected/organization/${orgId}/contracts/${contractId}/parties`,
+    { parties },
+  );
+  return response.data;
+}
+

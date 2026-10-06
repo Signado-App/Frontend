@@ -34,14 +34,32 @@ export async function updateOrgClient(
   clientId: number,
   data: {
     client_name?: string;
+    status?: string;
     email?: string;
     client_metadata?: Record<string, unknown>;
   },
 ) {
-  const response = await apiClient.put(
-    `/protected/organization/${orgId}/clients/${clientId}`,
-    data,
+  try {
+    const response = await apiClient.put(
+      `/protected/organization/${orgId}/clients/${clientId}/update`,
+      data,
+    );
+    return response.data;
+  } catch (err: any) {
+    if (err?.status === 405) {
+      const response = await apiClient.post(
+        `/protected/organization/${orgId}/clients/${clientId}/update`,
+        data,
+      );
+      return response.data;
+    }
+    throw err;
+  }
+}
+
+export async function deleteOrgClient(orgId: number, clientId: number) {
+  const response = await apiClient.delete(
+    `/protected/organization/${orgId}/clients/${clientId}/delete`,
   );
   return response.data;
 }
-

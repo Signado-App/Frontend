@@ -3,181 +3,183 @@
 import React, { useEffect, useState } from "react";
 import {
   Box,
+  IconButton,
+  Tooltip,
   Typography,
-  Select,
-  MenuItem,
-  Button,
-  Divider,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
+import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import PagesList from "./PagesList";
 import CompanyInfo from "./CompanyInfo";
-import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import CreateOrganizationModal from "../Organization/CreateOrganizationModal";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { useRouter } from "next/navigation";
 import { usePrivileges } from "@/context/PrivilegesContext";
 import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
-import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
-import { getOrganizationInfo } from "@/services/organizations";
+import { getOrganizationInfo, mergePrivileges } from "@/services/organizations";
 import { Privilege } from "@/types/types";
-import { Privileges } from "@/constants/privileges";
 
-const SIDEBAR_WIDTH = 280;
+export const SIDEBAR_EXPANDED_WIDTH = 240;
+export const SIDEBAR_COLLAPSED_WIDTH = 72;
 
-export default function Sidebar() {
+interface SidebarProps {
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+}
+
+export default function Sidebar({
+  isCollapsed = false,
+  onToggleCollapse,
+}: SidebarProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedOrg, setSelectedOrg] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("selectedOrgId");
-      return stored ? Number(stored) : 0;
-    }
-    return 0;
-  });
+
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
-  const { hasPrivilege, loadPrivileges } = usePrivileges();
-  const { mode, setMode } = useUserContext();
-  const { refresh, logout, user, organizations, refreshOrganizations } =
-    useAuthContext();
-  const validSelectedOrg = organizations.some(
-    (o) => o.organization_id === selectedOrg,
-  )
-    ? selectedOrg
-    : 0;
-
-  const mergePrivileges = (data: any): Privilege[] => {
-    const direct = (data.privileges ?? []).map(
-      (p: any) => parseInt(p.id) as Privilege,
-    );
-    const fromGroups = (data.groups ?? []).flatMap((g: any) =>
-      (g.privileges ?? []).map((p: any) => parseInt(p.id) as Privilege),
-    );
-    return [...new Set([...direct, ...fromGroups])];
-  };
+  const { loadPrivileges } = usePrivileges();
+  const { mode, selectedOrgId, setMode } = useUserContext();
+  const { organizations, refreshOrganizations } = useAuthContext();
 
   useEffect(() => {
-    if (validSelectedOrg === 0 && mode === "organization") {
-      setMode("client", null, null);
-    }
-  }, [validSelectedOrg]);
-
-  useEffect(() => {
-    if (selectedOrg && selectedOrg !== 0 && organizations.length > 0) {
-      getOrganizationInfo(selectedOrg)
+    if (mode === "organization" && selectedOrgId && organizations.length > 0) {
+      const isValid = organizations.some(
+        (o) => o.organization_id === selectedOrgId,
+      );
+      if (!isValid) {
+        loadPrivileges([]);
+        setMode("client", null, null);
+        return;
+      }
+      getOrganizationInfo(selectedOrgId)
         .then((response) => {
           const privileges = mergePrivileges(response.data);
-
           loadPrivileges(privileges);
-          setMode("organization", selectedOrg, response.data);
+          setMode("organization", selectedOrgId, response.data);
         })
         .catch(() => {
           showSnackbar("Failed to load organization info.", "error");
         });
+    } else if (mode === "client") {
+      loadPrivileges([]);
     }
-  }, [organizations, selectedOrg]);
+  }, [mode, selectedOrgId, organizations]);
+
+  const [isHovered, setIsHovered] = useState(false);
+  const isVisuallyExpanded = !isCollapsed || isHovered;
+  const width = isVisuallyExpanded ? SIDEBAR_EXPANDED_WIDTH : SIDEBAR_COLLAPSED_WIDTH;
 
   return (
     <Box
       component="aside"
+      onMouseEnter={() => {
+        if (isCollapsed) setIsHovered(true);
+      }}
+      onMouseLeave={() => {
+        if (isCollapsed) setIsHovered(false);
+      }}
       sx={{
-        width: SIDEBAR_WIDTH,
+        width,
         flexShrink: 0,
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        border: "1px solid #e5e7eb",
-        boxShadow: "0px 1px 3px rgba(0, 0, 0, 0.05)",
-        p: 3,
+        bgcolor: "#5046e5",
+        color: "#ffffff",
         position: "fixed",
         left: 0,
         top: 0,
-        zIndex: 1200,
-        gap: 2,
-        bgcolor: "background.paper",
+        zIndex: isHovered && isCollapsed ? 1300 : 1200,
+        px: !isVisuallyExpanded ? 1.5 : 2,
+        py: 2.5,
+        transition: "width 0.22s cubic-bezier(0.4, 0, 0.2, 1), padding 0.22s ease, box-shadow 0.22s ease",
+        boxShadow:
+          isHovered && isCollapsed
+            ? "8px 0 28px rgba(0, 0, 0, 0.25)"
+            : "4px 0 20px rgba(0, 0, 0, 0.05)",
+        overflowX: "hidden",
       }}
     >
-      <CompanyInfo />
-
-      <Select
-        value={validSelectedOrg ?? 0}
-        size="small"
-        onChange={(e) => {
-          const value = e.target.value as number;
-          setSelectedOrg(value);
-          setMode(
-            value === 0 ? "client" : "organization",
-            value === 0 ? null : value,
-          );
-          if (value && value !== 0) {
-            getOrganizationInfo(value)
-              .then((response) => {
-                const privileges = mergePrivileges(response.data);
-                loadPrivileges(privileges);
-                setMode("organization", value, response.data);
-              })
-              .catch(() => {
-                showSnackbar("Failed to load organization info.", "error");
-              });
-          } else {
-            loadPrivileges([]);
-            setMode("client", null, null);
-          }
-          router.push("/app/dashboard");
-        }}
-      >
-        <MenuItem value={0}>
-          {user?.first_name ?? ""} {user?.last_name ?? ""} (Client)
-        </MenuItem>
-        {(organizations ?? [])
-          .filter((org) => org.role_status !== "INVITED")
-          .map((org) => (
-            <MenuItem key={org.organization_id} value={org.organization_id}>
-              {org.name}
-            </MenuItem>
-          ))}
-      </Select>
-
-      <Button
-        variant="contained"
-        fullWidth
+      {/* Header: Logo and Organization */}
+      <Box
         sx={{
-          py: 1.5,
-        }}
-        startIcon={<BusinessOutlinedIcon />}
-        onClick={() => setModalOpen(true)}
-      >
-        New Organization
-      </Button>
-
-      <Divider />
-      {hasPrivilege(Privileges.CREATE_CONTRACTS) && (
-        <Button
-          variant="contained"
-          fullWidth
-          sx={{ py: 1.5 }}
-          startIcon={<AddIcon />}
-          onClick={() => router.push("/app/contracts/new")}
-        >
-          Create Contract
-        </Button>
-      )}
-      <Typography
-        variant="caption"
-        sx={{
-          color: "text.secondary",
-          fontWeight: "bold",
-          letterSpacing: 1,
-          // px: 1,
-          textTransform: "uppercase",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: !isVisuallyExpanded ? "center" : "space-between",
+          mb: 3,
         }}
       >
-        Navigation
-      </Typography>
-      <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
-        <PagesList mode={mode} />
+        <CompanyInfo isCollapsed={!isVisuallyExpanded} />
       </Box>
+
+      {/* Main Navigation List */}
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          "&::-webkit-scrollbar": { display: "none" },
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
+        }}
+      >
+        <PagesList mode={mode} isCollapsed={!isVisuallyExpanded} />
+      </Box>
+
+      {/* Lower Section: Collapse Toggle */}
+      <Box
+        sx={{
+          mt: "auto",
+          pt: 1.5,
+          borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 0.5,
+        }}
+      >
+
+        {/* Toggle Collapse Button */}
+        {onToggleCollapse && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: !isVisuallyExpanded ? "center" : "flex-end",
+              mt: 0.5,
+            }}
+          >
+            <Tooltip
+              title={
+                isCollapsed
+                  ? isHovered
+                    ? "Lock sidebar open"
+                    : "Expand sidebar"
+                  : "Collapse sidebar"
+              }
+              placement={!isVisuallyExpanded ? "right" : "top"}
+              arrow
+            >
+              <IconButton
+                onClick={onToggleCollapse}
+                size="small"
+                sx={{
+                  color: "rgba(255, 255, 255, 0.7)",
+                  "&:hover": {
+                    color: "#ffffff",
+                    bgcolor: "rgba(255, 255, 255, 0.12)",
+                  },
+                }}
+              >
+                {!isVisuallyExpanded ? (
+                  <ChevronRightRoundedIcon fontSize="small" />
+                ) : (
+                  <ChevronLeftRoundedIcon fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
+          </Box>
+        )}
+      </Box>
+
+      {/* Create Organization Modal */}
       <CreateOrganizationModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -187,18 +189,6 @@ export default function Sidebar() {
           refreshOrganizations();
         }}
       />
-      {/* <Button variant="text" fullWidth onClick={refresh} sx={{ mt: "auto" }}>
-        Test get user
-      </Button> */}
-      <Button
-        variant="text"
-        fullWidth
-        startIcon={<LogoutOutlinedIcon />}
-        onClick={logout}
-        sx={{ mt: "auto" }}
-      >
-        Logout
-      </Button>
     </Box>
   );
 }

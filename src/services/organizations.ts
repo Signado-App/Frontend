@@ -1,5 +1,19 @@
-import { OrganizationInfo, OrganizationListItem } from "@/types/types";
+import {
+  OrganizationInfo,
+  OrganizationListItem,
+  Privilege,
+} from "@/types/types";
 import apiClient from "./apiClient";
+
+export function mergePrivileges(data: any): Privilege[] {
+  const direct = (data?.privileges ?? []).map(
+    (p: any) => parseInt(p.id) as Privilege,
+  );
+  const fromGroups = (data?.groups ?? []).flatMap((g: any) =>
+    (g?.privileges ?? []).map((p: any) => parseInt(p.id) as Privilege),
+  );
+  return [...new Set([...direct, ...fromGroups])];
+}
 
 export async function getUserOrganizations(): Promise<{
   data: OrganizationListItem[];

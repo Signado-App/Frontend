@@ -1,41 +1,128 @@
-// src/components/StatusChip.tsx
 "use client";
 
-import Chip from "@mui/material/Chip";
+import React from "react";
+import { Box, Typography } from "@mui/material";
+import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
+import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
+import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
+import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  // general
-  active: { bg: "#dcfce7", text: "#22c55e" },
-  invited: { bg: "#fef9c3", text: "#eab308" },
-  disabled: { bg: "#f3f4f6", text: "#64748b" },
-  // contracts
-  draft: { bg: "#fef9c3", text: "#eab308" },
-  pending_signatures: { bg: "#e0f2fe", text: "#0ea5e9" },
-  waiting_for_files: { bg: "#fef3c7", text: "#f59e0b" },
-  signed: { bg: "#dcfce7", text: "#22c55e" },
-  completed: { bg: "#dcfce7", text: "#22c55e" },
-  expired: { bg: "#f3f4f6", text: "#64748b" },
-  cancelled: { bg: "#fee2e2", text: "#ef4444" },
+interface StatusConfig {
+  label: string;
+  bg: string;
+  color: string;
+  icon?: React.ReactNode;
+}
+
+const STATUS_MAP: Record<string, StatusConfig> = {
+  // Client statuses
+  active: {
+    label: "Active",
+    bg: "#dcfce7",
+    color: "#15803d",
+    icon: <CheckCircleOutlineRoundedIcon sx={{ fontSize: "0.85rem" }} />,
+  },
+  disabled: {
+    label: "Disabled",
+    bg: "#f1f5f9",
+    color: "#64748b",
+  },
+  invited: {
+    label: "Invited",
+    bg: "#fef3c7",
+    color: "#b45309",
+    icon: <AccessTimeRoundedIcon sx={{ fontSize: "0.85rem" }} />,
+  },
+
+  // Contract statuses
+  signed: {
+    label: "Completed",
+    bg: "#dcfce7",
+    color: "#15803d",
+    icon: <CheckCircleOutlineRoundedIcon sx={{ fontSize: "0.85rem" }} />,
+  },
+  completed: {
+    label: "Completed",
+    bg: "#dcfce7",
+    color: "#15803d",
+    icon: <CheckCircleOutlineRoundedIcon sx={{ fontSize: "0.85rem" }} />,
+  },
+  pending_signatures: {
+    label: "Awaiting signature",
+    bg: "#f1f5f9",
+    color: "#475569",
+    icon: <AccessTimeRoundedIcon sx={{ fontSize: "0.85rem" }} />,
+  },
+  waiting_for_files: {
+    label: "Needs action",
+    bg: "#fef3c7",
+    color: "#92400e",
+    icon: <ErrorOutlineRoundedIcon sx={{ fontSize: "0.85rem" }} />,
+  },
+  needs_action: {
+    label: "Needs action",
+    bg: "#fef3c7",
+    color: "#92400e",
+    icon: <ErrorOutlineRoundedIcon sx={{ fontSize: "0.85rem" }} />,
+  },
+  draft: {
+    label: "Draft",
+    bg: "#f1f5f9",
+    color: "#64748b",
+    icon: <EditNoteRoundedIcon sx={{ fontSize: "0.85rem" }} />,
+  },
+  expired: {
+    label: "Expired",
+    bg: "#f1f5f9",
+    color: "#64748b",
+  },
+  cancelled: {
+    label: "Cancelled",
+    bg: "#fee2e2",
+    color: "#b91c1c",
+  },
 };
 
-export default function StatusChip({ status }: { status: string }) {
-  const style = STATUS_COLORS[status?.toLowerCase()] ?? {
-    bg: "#f3f4f6",
-    text: "#64748b",
+export default function StatusChip({ status }: { status?: string }) {
+  if (!status) return null;
+
+  const key = status.toLowerCase();
+  const config = STATUS_MAP[key] || {
+    label: status.replace(/_/g, " "),
+    bg: "#f1f5f9",
+    color: "#475569",
   };
 
   return (
-    <Chip
-      label={status}
-      size="small"
+    <Box
       sx={{
-        bgcolor: style.bg,
-        color: style.text,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.6,
+        px: 1.2,
+        py: 0.4,
+        borderRadius: "9999px",
+        bgcolor: config.bg,
+        color: config.color,
+        fontSize: "0.78rem",
         fontWeight: 600,
-        borderRadius: "6px",
-        height: "24px",
-        fontSize: "0.75rem",
+        letterSpacing: "-0.01em",
+        whiteSpace: "nowrap",
+        width: "fit-content",
       }}
-    />
+    >
+      {config.icon}
+      <Typography
+        component="span"
+        sx={{
+          fontSize: "inherit",
+          fontWeight: "inherit",
+          color: "inherit",
+          lineHeight: 1.2,
+        }}
+      >
+        {config.label}
+      </Typography>
+    </Box>
   );
 }

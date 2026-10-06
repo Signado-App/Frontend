@@ -1,55 +1,206 @@
 "use client";
 
-import { Box, Button, Typography } from "@mui/material";
-import Headline from "@/components/Headline";
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  Typography,
+  IconButton,
+} from "@mui/material";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
+import EditNoteIcon from "@mui/icons-material/EditNote";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
-import FloatingContainer from "@/components/FloatingContainer/FloatingContainer";
 import { useSnackbar } from "@/context/SnackbarContext";
 import {
   getOrganizationDashboard,
   joinOrganization,
 } from "@/services/organizations";
-import { useEffect, useState } from "react";
-import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
+import { getOrgContracts } from "@/services/orgContracts";
+import { getContracts } from "@/services/contracts";
+import { OrgContract } from "@/types/types";
+import ContractDetailModal from "@/components/Contract/ContractDetailModal";
 import StatCard from "@/components/Dashboard/StatCard";
-import EditNoteIcon from "@mui/icons-material/EditNote";
+import StatusChip from "@/components/StatusChip";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
 
-function DashboardPage() {
-  const { organizations, refreshOrganizations } = useAuthContext();
+export default function DashboardPage() {
+  const router = useRouter();
+  const { user, organizations, refreshOrganizations } = useAuthContext();
   const { selectedOrgId, mode } = useUserContext();
+  const { hasPrivilege } = usePrivileges();
   const { showSnackbar } = useSnackbar();
+
   const [stats, setStats] = useState<{
     new_clients: number;
     new_contracts: number;
   } | null>(null);
+  const [contracts, setContracts] = useState<OrgContract[]>([]);
+  const [selectedContract, setSelectedContract] = useState<OrgContract | null>(null);
 
   const pendingInvites = (organizations || []).filter(
     (o) => o.role_status === "INVITED",
   );
 
   useEffect(() => {
-    if (!selectedOrgId || mode !== "organization") return;
-    getOrganizationDashboard(selectedOrgId)
-      .then((response) => {
-        setStats(response.data);
-      })
-      .catch(() => {
-        setStats(null);
-      });
-  }, [selectedOrgId, mode]);
+    if (selectedOrgId && mode === "organization") {
+      getOrganizationDashboard(selectedOrgId)
+        .then((response) => setStats(response.data))
+        .catch(() => setStats(null));
 
-  const displayStats = mode === "organization" ? stats : null;
+      getOrgContracts(selectedOrgId)
+        .then((res) => {
+          const list = Array.isArray(res?.contracts)
+            ? res.contracts
+            : Array.isArray(res?.data)
+              ? res.data
+              : [];
+          setContracts(list);
+        })
+        .catch(() => setContracts([]));
+    } else {
+      getContracts()
+        .then((res) => {
+          const list: any[] = Array.isArray(res?.contracts)
+            ? res.contracts
+            : Array.isArray(res?.data)
+              ? res.data
+              : [];
+          const userOrgIds = new Set(
+            (organizations || []).map((o) => Number(o.organization_id)),
+          );
+          const clientContracts = list.filter((c: any) => {
+            const role = (c.role || "").toUpperCase();
+            if (role === "CREATOR") return false;
+            const orgId = Number(c.organization_id || c.org_id);
+            if (orgId && (userOrgIds.has(orgId) || userOrgIds.size > 0)) {
+              if (userOrgIds.has(orgId)) return false;
+            }
+            if (c.creator_member_id && userOrgIds.size > 0) return false;
+            return true;
+          });
+          setContracts(clientContracts);
+        })
+        .catch(() => setContracts([]));
+    }
+  }, [selectedOrgId, mode, organizations]);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <Headline
-        title="Dashboard"
-        description="Monitor your client relationships and financial performance"
-      />
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
+      {/* Header */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h4"
+            fontWeight={700}
+            color="#0f172a"
+            sx={{ letterSpacing: "-0.02em" }}
+          >
+            Welcome back{user?.first_name ? `, ${user.first_name}` : ""}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Overview of your organization, recent contracts and activity.
+          </Typography>
+        </Box>
 
+        {hasPrivilege(Privileges.CREATE_CONTRACTS) && (
+          <Button
+            variant="contained"
+            startIcon={<AddRoundedIcon />}
+            onClick={() => router.push("/app/contracts/new")}
+            sx={{
+              borderRadius: "10px",
+              bgcolor: "#5046e5",
+              fontWeight: 600,
+              textTransform: "none",
+              px: 2.2,
+              py: 0.9,
+              boxShadow: "0 2px 4px rgba(80, 70, 229, 0.25)",
+              "&:hover": { bgcolor: "#4338ca" },
+            }}
+          >
+            Prepare Contract
+          </Button>
+        )}
+      </Box>
+
+      {/* Pending Organization Invitations */}
+      {pendingInvites.length > 0 && (
+        <Box
+          sx={{
+            p: 2.5,
+            bgcolor: "#fffbeb",
+            borderRadius: "16px",
+            border: "1px solid #fef3c7",
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight={700} color="#92400e" mb={1.5}>
+            Pending Invitations
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            {pendingInvites.map((org) => (
+              <Box
+                key={org.organization_id}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 1.5,
+                  p: 1.5,
+                  bgcolor: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #fde68a",
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" fontWeight={600} color="#0f172a">
+                    {org.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Invited {new Date(org.joined_at).toLocaleDateString("en-US")}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    sx={{ bgcolor: "#5046e5", "&:hover": { bgcolor: "#4338ca" } }}
+                    onClick={async () => {
+                      try {
+                        await joinOrganization(org.organization_id);
+                        showSnackbar("Joined organization successfully", "success");
+                        await refreshOrganizations();
+                      } catch {
+                        showSnackbar("Failed to join organization.", "error");
+                      }
+                    }}
+                  >
+                    Accept
+                  </Button>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {/* Real Stat Cards (Organization mode) */}
       {mode === "organization" && stats && (
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
           <StatCard
             icon={<PeopleOutlineIcon />}
             label="New Clients"
@@ -63,63 +214,144 @@ function DashboardPage() {
         </Box>
       )}
 
-      {pendingInvites.length > 0 && (
-        <FloatingContainer>
-          <Headline title="Pending Invitations" size="small" marginBottom={2} />
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {pendingInvites.map((org) => (
+      {/* Recent Contracts Section */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            px: 0.5,
+          }}
+        >
+          <Typography variant="h6" fontWeight={700} color="#0f172a">
+            Recent Contracts
+          </Typography>
+          <Box
+            component={Link}
+            href="/app/contracts"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.3,
+              color: "#5046e5",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              textDecoration: "none",
+              "&:hover": { textDecoration: "underline" },
+            }}
+          >
+            View all contracts
+            <ChevronRightRoundedIcon sx={{ fontSize: "1rem" }} />
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            bgcolor: "#ffffff",
+            borderRadius: "16px",
+            border: "1px solid #f1ede7",
+            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.02)",
+            overflow: "hidden",
+          }}
+        >
+          {contracts.length === 0 ? (
+            <Box sx={{ p: 4, textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary">
+                No contracts found yet.
+              </Typography>
+              {hasPrivilege(Privileges.CREATE_CONTRACTS) && (
+                <Button
+                  variant="contained"
+                  onClick={() => router.push("/app/contracts/new")}
+                  sx={{
+                    mt: 2,
+                    bgcolor: "#5046e5",
+                    "&:hover": { bgcolor: "#4338ca" },
+                    borderRadius: "10px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  Prepare Contract
+                </Button>
+              )}
+            </Box>
+          ) : (
+            contracts.slice(0, 6).map((contract, index) => (
               <Box
-                key={org.organization_id}
+                key={contract.id || index}
+                onClick={() => setSelectedContract(contract)}
                 sx={{
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
+                  justifyContent: "space-between",
+                  px: 3,
+                  py: 2,
+                  cursor: "pointer",
+                  borderBottom:
+                    index < Math.min(contracts.length, 6) - 1
+                      ? "1px solid #f8fafc"
+                      : "none",
+                  transition: "background-color 0.15s ease",
+                  "&:hover": {
+                    bgcolor: "#faf8f5",
+                  },
                 }}
               >
-                <Box>
-                  <Typography variant="body2" fontWeight={600}>
-                    {org.name}
+                <Box sx={{ minWidth: 0, flex: 1, pr: 2 }}>
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    color="#0f172a"
+                    noWrap
+                  >
+                    {contract.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Invited{" "}
-                    {new Date(org.joined_at).toLocaleDateString("en-US")}
-                  </Typography>
+                  {contract.description && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mt: 0.2 }}
+                      noWrap
+                    >
+                      {contract.description}
+                    </Typography>
+                  )}
                 </Box>
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={async () => {
-                      try {
-                        await joinOrganization(org.organization_id);
-                        showSnackbar(
-                          "Joined organization successfully",
-                          "success",
-                        );
-                        await refreshOrganizations();
-                      } catch {
-                        showSnackbar("Failed to join organization.", "error");
-                      }
-                    }}
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <StatusChip status={contract.status} />
+
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: { xs: "none", sm: "block" } }}
                   >
-                    Accept
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    disabled
-                  >
-                    Decline
-                  </Button>
+                    {contract.last_activity
+                      ? new Date(contract.last_activity).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "-"}
+                  </Typography>
+
+                  <IconButton size="small" sx={{ color: "#94a3b8" }}>
+                    <ChevronRightRoundedIcon fontSize="small" />
+                  </IconButton>
                 </Box>
               </Box>
-            ))}
-          </Box>
-        </FloatingContainer>
-      )}
+            ))
+          )}
+        </Box>
+      </Box>
+
+      {/* Contract Detail Modal */}
+      <ContractDetailModal
+        open={!!selectedContract}
+        onClose={() => setSelectedContract(null)}
+        contract={selectedContract}
+      />
     </Box>
   );
 }
-
-export default DashboardPage;

@@ -56,15 +56,16 @@ export default function AppTable<T>({
       elevation={0}
       variant="outlined"
       sx={{
-        // border: "1px solid",
-        // borderColor: "divider",
-        // borderRadius: "12px",
+        borderRadius: "16px",
+        border: "1px solid #f1ede7",
         overflow: "hidden",
+        bgcolor: "#ffffff",
+        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.02)",
       }}
     >
       <Table sx={{ minWidth: 650 }}>
         <TableHead>
-          <TableRow sx={{ bgcolor: "background.paper" }}>
+          <TableRow sx={{ bgcolor: "#fbf9f5" }}>
             {columns.map((col) => (
               <TableCell
                 key={col.id}
@@ -72,11 +73,13 @@ export default function AppTable<T>({
                 width={col.width}
                 sx={{
                   fontWeight: 600,
-                  fontSize: "0.875rem",
-                  color: "text.primary",
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                  py: 2,
+                  fontSize: "0.75rem",
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                  color: "#64748b",
+                  borderBottom: "1px solid #f1ede7",
+                  py: 1.8,
+                  px: 2.5,
                 }}
               >
                 {col.header}
@@ -95,9 +98,9 @@ export default function AppTable<T>({
                 sx={{
                   cursor: onRowClick ? "pointer" : "default",
                   "&:last-child td, &:last-child th": { border: 0 },
-                  transition: "background-color 0.2s ease",
+                  transition: "background-color 0.15s ease",
                   "&:hover": {
-                    backgroundColor: "#f3f4f6",
+                    backgroundColor: "#faf8f5",
                   },
                 }}
               >

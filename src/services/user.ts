@@ -38,6 +38,6 @@ export async function changePassword(data: {
 }
 
 export async function getSecurityStatus() {
-  const response = await apiClient.get("/protected/user/security/status");
+  const response = await apiClient.get("/protected/user/security");
   return response.data;
 }

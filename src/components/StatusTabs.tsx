@@ -18,9 +18,9 @@ export default function StatusTabs({
     <Box
       sx={{
         display: "inline-flex",
-        bgcolor: "#f3f4f6",
-        p: "4px",
-        borderRadius: "10px",
+        flexWrap: "wrap",
+        bgcolor: "transparent",
+        p: 0,
         gap: 1,
       }}
     >
@@ -34,18 +34,19 @@ export default function StatusTabs({
             disableRipple
             sx={{
               textTransform: "none",
-              fontWeight: 500,
+              fontWeight: isActive ? 600 : 500,
               fontSize: "0.875rem",
-              borderRadius: "8px",
-              px: 3,
-              minWidth: "100px",
-              color: isActive ? "text.primary" : "text.secondary",
-              bgcolor: isActive ? "#ffffff" : "transparent",
-              boxShadow: isActive ? "0px 1px 2px rgba(0,0,0,0.1)" : "none",
-
+              borderRadius: "20px",
+              px: 2.2,
+              py: 0.7,
+              minWidth: "unset",
+              color: isActive ? "#ffffff" : "#64748b",
+              bgcolor: isActive ? "#5046e5" : "transparent",
+              boxShadow: isActive ? "0px 2px 4px rgba(80, 70, 229, 0.2)" : "none",
+              transition: "all 0.15s ease",
               "&:hover": {
-                bgcolor: isActive ? "#ffffff" : "rgba(0,0,0,0.04)",
-                color: "text.primary",
+                bgcolor: isActive ? "#4338ca" : "rgba(0, 0, 0, 0.05)",
+                color: isActive ? "#ffffff" : "#1e293b",
               },
             }}
           >

@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import {
   updateUserMemberships,
   getAvailableUserPrivileges,
+  getOrgUser,
 } from "@/services/orgUsers";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { useUserContext } from "@/context/UserContext";
@@ -25,6 +26,8 @@ import { useUserContext } from "@/context/UserContext";
 type Props = {
   open: boolean;
   memberId: number;
+  userId?: number;
+  candidateIds?: number[];
   currentPrivilegeIds: number[];
   onClose: () => void;
   onSuccess: () => void;
@@ -33,6 +36,8 @@ type Props = {
 export default function EditUserPrivilegesModal({
   open,
   memberId,
+  userId,
+  candidateIds,
   currentPrivilegeIds,
   onClose,
   onSuccess,
@@ -69,7 +74,22 @@ export default function EditUserPrivilegesModal({
       .finally(() => {
         setFetchingPrivileges(false);
       });
-  }, [open, selectedOrgId]);
+
+    // Also fetch current privileges directly from getOrgUser if available
+    if (memberId || userId) {
+      getOrgUser(selectedOrgId, memberId, userId)
+        .then((res) => {
+          const u = res?.user ?? res?.data ?? res;
+          const userPrivs = (u?.privileges || []).map((p: any) =>
+            typeof p === "object" ? Number(p.id) : Number(p),
+          );
+          if (userPrivs.length > 0) {
+            setSelected(userPrivs);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [open, selectedOrgId, memberId, userId]);
 
   const togglePrivilege = (id: number) => {
     setSelected((prev) =>
@@ -81,7 +101,12 @@ export default function EditUserPrivilegesModal({
     if (!selectedOrgId) return;
     try {
       setLoading(true);
-      await updateUserMemberships(selectedOrgId, memberId, selected);
+      await updateUserMemberships(
+        selectedOrgId,
+        memberId,
+        selected,
+        userId,
+      );
       showSnackbar("User privileges updated successfully", "success");
       onSuccess();
       onClose();
@@ -90,6 +115,7 @@ export default function EditUserPrivilegesModal({
       const msg =
         err?.response?.data?.message ||
         err?.data?.message ||
+        err?.data?.specification ||
         err?.message ||
         "Failed to update privileges.";
       showSnackbar(msg, "error");

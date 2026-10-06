@@ -9,18 +9,21 @@ export const MuiButton = {
   styleOverrides: {
     root: ({ ownerState }) => ({
       textTransform: "none",
-      borderRadius: "6px",
-      fontWeight: 500,
+      borderRadius: "10px",
+      fontWeight: 600,
       fontSize: "0.875rem",
       lineHeight: 1.5,
       gap: "6px",
       "&:hover": {
-        opacity: 0.85,
+        opacity: 0.92,
       },
 
       ...(ownerState.variant === "contained" && {
         color: "#ffffff",
-        backgroundColor: "#000000",
+        backgroundColor: ownerState.color === "error" ? undefined : "#5046e5",
+        "&:hover": {
+          backgroundColor: ownerState.color === "error" ? undefined : "#4338ca",
+        },
       }),
 
       ...(ownerState.variant === "text" && {

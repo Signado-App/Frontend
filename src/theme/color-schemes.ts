@@ -1,6 +1,6 @@
 import type { ColorSystemOptions } from '@mui/material/styles';
 
-import { base, scarletFire, blue, seaGreen, eggschellYellow} from './colors';
+import { base, scarletFire, blue, seaGreen, eggschellYellow, brandIndigo } from './colors';
 import type { ColorScheme } from './types';
 
 export const colorSchemes = {
@@ -8,12 +8,12 @@ export const colorSchemes = {
     palette: {
       action: { disabledBackground: 'rgba(0, 0, 0, 0.06)' },
       background: {
-        default: base[50],
-        secondary: eggschellYellow[50]
+        default: '#faf8f5',
+        secondary: '#f5efe6',
       },
       common: { black: base[950], white: base[50] },
-      divider: base[200],
-      dividerChannel: base[200],
+      divider: '#e9e3da',
+      dividerChannel: '#e9e3da',
       error: {
         ...scarletFire,
         light: scarletFire[400],
@@ -30,10 +30,10 @@ export const colorSchemes = {
       },
       neutral: { ...base },
       primary: {
-        ...blue,
-        light: blue[400],
-        main: blue[500],
-        dark: blue[600],
+        ...brandIndigo,
+        light: brandIndigo[400],
+        main: brandIndigo[600], // #5046e5
+        dark: brandIndigo[700],
         contrastText: 'var(--mui-palette-common-white)',
       },
       secondary: {

@@ -24,7 +24,7 @@ type Props = {
   open: boolean;
   client: OrgClientDetail;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (updatedData?: any) => void;
 };
 
 export default function EditClientModal({
@@ -46,10 +46,26 @@ export default function EditClientModal({
 
   useEffect(() => {
     if (open && client) {
-      setClientName(client.client_name ?? "");
-      setFirstName(client.user_details?.first_name ?? "");
-      setLastName(client.user_details?.last_name ?? "");
-      setEmail(client.user_details?.email ?? "");
+      setClientName(
+        client.client_name ??
+          (client.client_metadata?.client_name as string) ??
+          "",
+      );
+      setFirstName(
+        (client.client_metadata?.first_name as string) ??
+          client.user_details?.first_name ??
+          "",
+      );
+      setLastName(
+        (client.client_metadata?.last_name as string) ??
+          client.user_details?.last_name ??
+          "",
+      );
+      setEmail(
+        (client.client_metadata?.email as string) ??
+          client.user_details?.email ??
+          "",
+      );
       setPhone(
         (client.client_metadata?.phone as string) ??
           (client.client_metadata?.phone_number as string) ??
@@ -68,28 +84,39 @@ export default function EditClientModal({
 
     try {
       setLoading(true);
-      await updateOrgClient(selectedOrgId, client.id, {
+      const updatePayload = {
         client_name: clientName.trim(),
-        email: email.trim(),
+        status: client.status || "ACTIVE",
         client_metadata: {
           ...(client.client_metadata || {}),
           address: address.trim(),
           phone: phone.trim(),
+          email: email.trim(),
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           contact_person: `${firstName.trim()} ${lastName.trim()}`.trim(),
         },
-      });
+      };
+
+      const res = await updateOrgClient(
+        selectedOrgId,
+        client.id,
+        updatePayload,
+      );
+      console.log("[EditClientModal] update response:", res);
 
       showSnackbar("Client details updated successfully", "success");
-      onSuccess();
+      onSuccess(res?.client ?? res?.data ?? updatePayload);
       onClose();
     } catch (err: any) {
       console.error("Failed to update client:", err);
-      const msg =
-        err?.response?.data?.message ||
-        err?.data?.message ||
-        "Failed to update client details.";
+      const isEndpointMissing = err?.status === 404 || err?.status === 405;
+      const msg = isEndpointMissing
+        ? "Client update is not supported by the backend yet (API endpoint not available)."
+        : err?.response?.data?.message ||
+          err?.data?.message ||
+          err?.message ||
+          "Failed to update client details.";
       showSnackbar(msg, "error");
     } finally {
       setLoading(false);
@@ -172,7 +199,9 @@ export default function EditClientModal({
           variant="contained"
           onClick={handleSubmit}
           disabled={loading}
-          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : undefined}
+          startIcon={
+            loading ? <CircularProgress size={16} color="inherit" /> : undefined
+          }
         >
           {loading ? "Saving..." : "Save Changes"}
         </Button>
