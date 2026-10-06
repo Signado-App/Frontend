@@ -17,7 +17,13 @@ import {
 } from "@mui/material";
 import dynamic from "next/dynamic";
 import { loginWithSigningToken } from "@/services/auth";
-import { getSigningContract, signContract } from "@/services/signing";
+import {
+  getSigningContract,
+  signContract,
+  uploadSignedContract,
+  uploadFileToPresignedUrl,
+  SignedFileMeta,
+} from "@/services/signing";
 import { embedSignatureIntoPdf, readPdfFields } from "@/utils/pdfSigning";
 import { sha256 } from "js-sha256";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
@@ -271,11 +277,68 @@ export default function SignPage({
       const localDownloadUrl = URL.createObjectURL(signedBlob);
       setSignedPdfUrl(localDownloadUrl);
 
-      // Calculate SHA-256 hash of document
+      // Calculate SHA-256 hashes
       const documentHash = pdfBytes ? sha256(pdfBytes) : String(contract.id);
+      const signedHash = sha256(signedPdfBytes);
       const contractId = contract.id ?? contract.contract_id ?? contract.uuid;
 
-      // Submit signature to backend
+      // File metadata for signed PDF
+      const originalFileName =
+        contract.files?.[0]?.name || contract.title || "contract";
+      const signedFileName = originalFileName.toLowerCase().endsWith(".pdf")
+        ? `${originalFileName.slice(0, -4)}_signed.pdf`
+        : `${originalFileName}_signed.pdf`;
+
+      const signedFileMeta: SignedFileMeta = {
+        name: signedFileName,
+        size: signedPdfBytes.byteLength,
+        type: "application/pdf",
+        hash: signedHash,
+      };
+
+      // Convert signed PDF bytes to base64
+      let base64Pdf = "";
+      try {
+        const u8 = new Uint8Array(signedPdfBytes);
+        const chunkSize = 8192;
+        let binary = "";
+        for (let i = 0; i < u8.length; i += chunkSize) {
+          const chunk = u8.subarray(i, i + chunkSize);
+          binary += String.fromCharCode.apply(null, chunk as unknown as number[]);
+        }
+        base64Pdf = window.btoa(binary);
+      } catch (b64Err) {
+        console.warn("[SignPage] Failed to convert PDF to base64:", b64Err);
+      }
+
+      // 1. Upload signed PDF via new /contract/{contract_id}/upload-signed endpoint
+      try {
+        console.log("[SignPage] Calling uploadSignedContract with metadata & base64...");
+        const uploadInfo = await uploadSignedContract(contractId, {
+          signed_file: signedFileMeta,
+          ...(base64Pdf ? { signed_pdf_base64: base64Pdf } : {}),
+        });
+        console.log("[SignPage] uploadSignedContract response:", uploadInfo);
+
+        if (uploadInfo?.upload_url) {
+          await uploadFileToPresignedUrl(
+            uploadInfo.upload_url,
+            signedBlob,
+            signedHash,
+          );
+          console.log("[SignPage] S3 PUT upload succeeded via uploadInfo.upload_url");
+        }
+        if (uploadInfo?.download_url) {
+          setSignedPdfUrl(uploadInfo.download_url);
+        }
+      } catch (uploadErr) {
+        console.warn(
+          "[SignPage] uploadSignedContract error (will still attempt sign):",
+          uploadErr,
+        );
+      }
+
+      // 2. Submit signature to backend
       const res = await signContract(contractId, {
         signature_svg: {
           data: signatureData,
@@ -284,7 +347,29 @@ export default function SignPage({
         document_hash: documentHash,
         device: navigator.userAgent,
         location: "",
+        signed_file: signedFileMeta,
+        ...(base64Pdf ? { signed_pdf_base64: base64Pdf } : {}),
       });
+
+      // If signContract returned upload_url, ensure file is uploaded
+      if (res?.upload_url) {
+        try {
+          await uploadFileToPresignedUrl(
+            res.upload_url,
+            signedBlob,
+            signedHash,
+          );
+          console.log("[SignPage] S3 PUT upload succeeded via res.upload_url");
+        } catch (s3Err) {
+          console.warn(
+            "[SignPage] S3 upload from signContract response failed:",
+            s3Err,
+          );
+        }
+      }
+      if (res?.download_url) {
+        setSignedPdfUrl(res.download_url);
+      }
 
       if (
         res?.specification === "already_signed" ||
