@@ -60,3 +60,26 @@ export async function updateUserMemberships(
   );
   return response.data;
 }
+
+export async function getOrgUser(orgId: number, memberId: number) {
+  const response = await apiClient.get(
+    `/protected/organization/${orgId}/users/${memberId}`,
+  );
+  return response.data;
+}
+
+export async function updateOrgUserStatus(
+  orgId: number,
+  memberId: number,
+  status: string,
+) {
+  const response = await apiClient.put(
+    `/protected/organization/${orgId}/users/update`,
+    {
+      member_id: memberId,
+      status,
+    },
+  );
+  return response.data;
+}
+

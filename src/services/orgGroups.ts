@@ -67,3 +67,22 @@ export async function getAvailableGroupPrivileges(orgId: number) {
   );
   return response.data;
 }
+
+export async function updateOrgGroup(
+  orgId: number,
+  groupId: number,
+  data: { name?: string; description?: string },
+) {
+  const response = await apiClient.put(
+    `/protected/organization/${orgId}/group/${groupId}/update`,
+    data,
+  );
+  return response.data;
+}
+
+export async function deleteOrgGroup(orgId: number, groupId: number) {
+  const response = await apiClient.delete(
+    `/protected/organization/${orgId}/group/${groupId}/delete`,
+  );
+  return response.data;
+}

@@ -56,3 +56,10 @@ export async function updateOrgClient(
     throw err;
   }
 }
+
+export async function deleteOrgClient(orgId: number, clientId: number) {
+  const response = await apiClient.delete(
+    `/protected/organization/${orgId}/clients/${clientId}/delete`,
+  );
+  return response.data;
+}

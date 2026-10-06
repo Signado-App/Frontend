@@ -99,3 +99,15 @@ export async function signContract(
   }
   return resData;
 }
+
+export async function rejectContract(contractId: string, reason?: string) {
+  const response = await apiClient.post(`/contract/${contractId}/reject`, {
+    reason,
+  });
+  return response.data;
+}
+
+export async function sendSigningCode(contractId: string) {
+  const response = await apiClient.post(`/contract/${contractId}/send-code`);
+  return response.data;
+}
