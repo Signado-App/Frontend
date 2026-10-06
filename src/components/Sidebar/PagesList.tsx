@@ -1,83 +1,96 @@
-import List from "@mui/material/List";
-import GridViewIcon from "@mui/icons-material/GridView";
-import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
-import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
-import EditNoteIcon from "@mui/icons-material/EditNote";
+"use client";
+
 import React from "react";
+import List from "@mui/material/List";
+import GridViewRoundedIcon from "@mui/icons-material/GridViewRounded";
+import PeopleOutlineRoundedIcon from "@mui/icons-material/PeopleOutlineRounded";
+import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import PagesListItem from "./PagesListItem";
-import SettingsIcon from "@mui/icons-material/Settings";
-import { Mode, PageItem, Privilege } from "@/types/types";
+import { Mode, PageItem } from "@/types/types";
 import { usePrivileges } from "@/context/PrivilegesContext";
 import { Privileges } from "@/constants/privileges";
 
 const pages: PageItem[] = [
   {
     href: "/app/dashboard",
-    icon: <GridViewIcon fontSize="small" />,
+    icon: <GridViewRoundedIcon />,
     primary: "Dashboard",
     secondary: "Overview & metrics",
     modes: ["client", "organization"],
   },
   {
     href: "/app/clients",
-    icon: <PeopleOutlineIcon fontSize="small" />,
+    icon: <PeopleOutlineRoundedIcon />,
     primary: "Clients",
     secondary: "Client management",
     modes: ["organization"],
     privilege: Privileges.SEE_ALL_CLIENTS,
   },
   {
+    href: "/app/contracts",
+    icon: <EditNoteRoundedIcon />,
+    primary: "Contracts",
+    secondary: "Contracts & agreements",
+    modes: ["client", "organization"],
+  },
+  {
     href: "/app/users",
-    icon: <PersonOutlineOutlinedIcon fontSize="small" />,
-    primary: "Users",
+    icon: <PersonOutlineRoundedIcon />,
+    primary: "Team",
     secondary: "Organization users",
     modes: ["organization"],
     privilege: Privileges.USERS_ACCESSIBLE,
   },
   {
     href: "/app/groups",
-    icon: <GroupsOutlinedIcon fontSize="small" />,
+    icon: <GroupsOutlinedIcon />,
     primary: "Groups",
-    secondary: "Groups within organization",
+    secondary: "Groups & privileges",
     modes: ["organization"],
     privilege: Privileges.GROUPS_ACCESSIBLE,
   },
   {
-    href: "/app/contracts",
-    icon: <EditNoteIcon fontSize="small" />,
-    primary: "Contracts",
-    secondary: "Contracts & agreements",
-    modes: ["client", "organization"],
-  },
-  {
     href: "/app/settings",
-    icon: <SettingsIcon fontSize="small" />,
+    icon: <SettingsOutlinedIcon />,
     primary: "Settings",
     secondary: "Account settings",
     modes: ["client"],
   },
   {
     href: "/app/settings",
-    icon: <SettingsIcon fontSize="small" />,
+    icon: <SettingsOutlinedIcon />,
     primary: "Settings",
-    secondary: "Organization & account",
+    secondary: "Organization settings",
     modes: ["organization"],
     privilege: Privileges.ADMIN_UPDATE,
   },
 ];
 
-export default function PagesList({ mode }: { mode: Mode }) {
+export default function PagesList({
+  mode,
+  isCollapsed = false,
+}: {
+  mode: Mode;
+  isCollapsed?: boolean;
+}) {
   const { hasPrivilege } = usePrivileges();
 
+  const filteredPages = pages
+    .filter((page) => page.modes.includes(mode))
+    .filter((page) => !page.privilege || hasPrivilege(page.privilege));
+
   return (
-    <List sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}>
-      {pages
-        .filter((page) => page.modes.includes(mode))
-        .filter((page) => !page.privilege || hasPrivilege(page.privilege))
-        .map((page) => (
-          <PagesListItem key={page.href} {...page} />
-        ))}
+    <List sx={{ width: "100%", p: 0 }}>
+      {filteredPages.map((page, index) => (
+        <PagesListItem
+          key={`${page.href}-${index}`}
+          {...page}
+          isCollapsed={isCollapsed}
+        />
+      ))}
     </List>
   );
 }
