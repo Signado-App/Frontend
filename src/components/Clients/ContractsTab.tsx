@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Headline from "@/components/Headline";
-import { Box, Button, Typography, Paper, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Button,
+  Typography,
+  Paper,
+  CircularProgress,
+} from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import StatCard from "../Dashboard/StatCard";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
@@ -163,7 +169,7 @@ export default function ContractsTab({ client }: Props) {
             color: "text.primary",
           }}
           startIcon={<VisibilityOutlinedIcon />}
-          onClick={() => setSelectedContract(row)}
+          onClick={() => router.push(`/app/contracts/${row.id}`)}
         >
           View
         </Button>
@@ -185,14 +191,6 @@ export default function ContractsTab({ client }: Props) {
           title="Contracts"
           description="Manage client contracts and agreements"
         />
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleAddContract}
-        >
-          Add New Contract
-        </Button>
       </Box>
 
       {/* Dynamic Statistics Cards */}
@@ -270,7 +268,12 @@ export default function ContractsTab({ client }: Props) {
         </Paper>
       ) : (
         <Box>
-          <AppTable<OrgContract> data={contracts} columns={columns} />
+          <AppTable<OrgContract>
+            data={contracts}
+            columns={columns}
+            getRowId={(row) => row.id}
+            onRowClick={(row) => router.push(`/app/contracts/${row.id}`)}
+          />
         </Box>
       )}
 

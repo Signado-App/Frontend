@@ -311,31 +311,56 @@ export default function SignPage({
         console.warn("[SignPage] Failed to convert PDF to base64:", b64Err);
       }
 
-      // 1. Upload signed PDF via new /contract/{contract_id}/upload-signed endpoint
+      // 1. Upload signed PDF via multipart/form-data directly to backend
       try {
-        console.log("[SignPage] Calling uploadSignedContract with metadata & base64...");
-        const uploadInfo = await uploadSignedContract(contractId, {
-          signed_file: signedFileMeta,
-          ...(base64Pdf ? { signed_pdf_base64: base64Pdf } : {}),
-        });
-        console.log("[SignPage] uploadSignedContract response:", uploadInfo);
+        console.log("[SignPage] Uploading signed PDF via FormData...");
+        const formData = new FormData();
+        formData.append(
+          "file",
+          signedBlob,
+          signedFileMeta.name || "podepsana_smlouva.pdf",
+        );
+        const uploadInfo = await uploadSignedContract(contractId, formData);
+        console.log("[SignPage] uploadSignedContract FormData response:", uploadInfo);
 
         if (uploadInfo?.upload_url) {
-          await uploadFileToPresignedUrl(
-            uploadInfo.upload_url,
-            signedBlob,
-            signedHash,
-          );
-          console.log("[SignPage] S3 PUT upload succeeded via uploadInfo.upload_url");
+          try {
+            await uploadFileToPresignedUrl(
+              uploadInfo.upload_url,
+              signedBlob,
+              signedHash,
+            );
+            console.log("[SignPage] S3 PUT upload succeeded via uploadInfo.upload_url");
+          } catch (putErr) {
+            console.warn("[SignPage] S3 presigned PUT failed (backend multipart handled):", putErr);
+          }
         }
         if (uploadInfo?.download_url) {
           setSignedPdfUrl(uploadInfo.download_url);
         }
       } catch (uploadErr) {
         console.warn(
-          "[SignPage] uploadSignedContract error (will still attempt sign):",
+          "[SignPage] FormData upload error, trying JSON fallback:",
           uploadErr,
         );
+        try {
+          const uploadInfo = await uploadSignedContract(contractId, {
+            signed_file: signedFileMeta,
+            ...(base64Pdf ? { signed_pdf_base64: base64Pdf } : {}),
+          });
+          if (uploadInfo?.upload_url) {
+            await uploadFileToPresignedUrl(
+              uploadInfo.upload_url,
+              signedBlob,
+              signedHash,
+            );
+          }
+          if (uploadInfo?.download_url) {
+            setSignedPdfUrl(uploadInfo.download_url);
+          }
+        } catch (fbErr) {
+          console.warn("[SignPage] Fallback upload error:", fbErr);
+        }
       }
 
       // 2. Submit signature to backend

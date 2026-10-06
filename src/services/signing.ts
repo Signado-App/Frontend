@@ -36,11 +36,16 @@ export type SignContractPayload = {
 
 export async function uploadSignedContract(
   contractId: string,
-  payload: UploadSignedPayload,
+  payload: UploadSignedPayload | FormData,
 ): Promise<UploadSignedResponse> {
+  const isForm =
+    typeof FormData !== "undefined" && payload instanceof FormData;
   const response = await apiClient.post(
     `/contract/${contractId}/upload-signed`,
     payload,
+    isForm
+      ? { headers: { "Content-Type": "multipart/form-data" } }
+      : undefined,
   );
   return response.data;
 }

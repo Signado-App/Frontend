@@ -325,7 +325,7 @@ export default function ContractsPage() {
           data={filteredData}
           columns={columns}
           getRowId={(row) => row.id}
-          onRowClick={(row) => setSelectedContract(row)}
+          onRowClick={(row) => router.push(`/app/contracts/${row.id}`)}
         />
       </Box>
 

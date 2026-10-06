@@ -98,7 +98,11 @@ export default function EditClientModal({
         },
       };
 
-      const res = await updateOrgClient(selectedOrgId, client.id, updatePayload);
+      const res = await updateOrgClient(
+        selectedOrgId,
+        client.id,
+        updatePayload,
+      );
       console.log("[EditClientModal] update response:", res);
 
       showSnackbar("Client details updated successfully", "success");
@@ -195,7 +199,9 @@ export default function EditClientModal({
           variant="contained"
           onClick={handleSubmit}
           disabled={loading}
-          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : undefined}
+          startIcon={
+            loading ? <CircularProgress size={16} color="inherit" /> : undefined
+          }
         >
           {loading ? "Saving..." : "Save Changes"}
         </Button>
