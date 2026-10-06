@@ -39,6 +39,8 @@ export default function UsersPage() {
   const { hasPrivilege } = usePrivileges();
   const [editPrivilegesOpen, setEditPrivilegesOpen] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editingCandidateIds, setEditingCandidateIds] = useState<number[]>([]);
   const [editingMemberPrivileges, setEditingMemberPrivileges] = useState<number[]>([]);
 
   const statusMap: Record<string, string> = {
@@ -94,11 +96,29 @@ export default function UsersPage() {
     return list;
   }, [usersList, currentTab, searchQuery, sortOrder]);
 
-  const handleRemove = async (memberId: number) => {
+  const handleRemove = async (row: OrgMember) => {
     if (!selectedOrgId) return;
+    const memId = Number(
+      row.member_id ??
+      (row as any).organization_member_id ??
+      (row as any).id ??
+      row.user_id ??
+      0,
+    );
+    const uId = Number(row.user_id ?? (row as any).id ?? 0);
     try {
-      await removeOrgUser(selectedOrgId, memberId);
-      setData((prev) => prev.filter((u) => u.member_id !== memberId));
+      await removeOrgUser(selectedOrgId, memId, uId);
+      setData((prev) =>
+        prev.filter((u) => {
+          const uMemId = Number(
+            u.member_id ??
+            (u as any).organization_member_id ??
+            (u as any).id ??
+            u.user_id,
+          );
+          return uMemId !== memId && u.user_id !== uId;
+        }),
+      );
       showSnackbar("Member removed successfully", "success");
     } catch {
       showSnackbar("Failed to remove member.", "error");
@@ -106,7 +126,24 @@ export default function UsersPage() {
   };
 
   const handleEditPrivileges = (row: OrgMember) => {
-    setEditingMemberId(row.member_id);
+    console.log("[UsersPage] handleEditPrivileges clicked for row:", row);
+    const memId = Number(
+      row.member_id ??
+      (row as any).organization_member_id ??
+      (row as any).id ??
+      row.user_id ??
+      0,
+    );
+    const uId = Number(row.user_id ?? (row as any).id ?? 0);
+    const candidates = [
+      row.member_id,
+      (row as any).organization_member_id,
+      (row as any).id,
+      row.user_id,
+    ].filter((x): x is number => typeof x === "number" && x > 0);
+    setEditingMemberId(memId);
+    setEditingUserId(uId);
+    setEditingCandidateIds(candidates);
     const privs = ((row as any).privileges || []).map((p: any) =>
       typeof p === "object" ? Number(p.id) : Number(p),
     );
@@ -192,7 +229,7 @@ export default function UsersPage() {
                 color="error"
                 size="small"
                 startIcon={<DeleteOutlineIcon fontSize="small" />}
-                onClick={() => handleRemove(row.member_id)}
+                onClick={() => handleRemove(row)}
                 sx={{
                   borderRadius: "8px",
                   textTransform: "none",
@@ -302,7 +339,12 @@ export default function UsersPage() {
         <AppTable<OrgMember>
           data={filteredData}
           columns={columns}
-          getRowId={(row) => row.member_id}
+          getRowId={(row) =>
+            row.member_id ??
+            (row as any).id ??
+            (row as any).organization_member_id ??
+            row.user_id
+          }
         />
       </Box>
 
@@ -322,6 +364,8 @@ export default function UsersPage() {
       <EditUserPrivilegesModal
         open={editPrivilegesOpen}
         memberId={editingMemberId ?? 0}
+        userId={editingUserId ?? undefined}
+        candidateIds={editingCandidateIds}
         currentPrivilegeIds={editingMemberPrivileges}
         onClose={() => setEditPrivilegesOpen(false)}
         onSuccess={() => {
