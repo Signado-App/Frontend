@@ -24,6 +24,7 @@ import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import DrawOutlinedIcon from "@mui/icons-material/DrawOutlined";
 import { useRouter } from "next/navigation";
 import { useUserContext } from "@/context/UserContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { usePrivileges } from "@/context/PrivilegesContext";
 import { Privileges } from "@/constants/privileges";
@@ -49,6 +50,7 @@ export default function ContractDetailView({
 }: ContractDetailViewProps) {
   const router = useRouter();
   const { selectedOrgId } = useUserContext();
+  const { organizations } = useAuthContext();
   const { showSnackbar } = useSnackbar();
   const { hasPrivilege } = usePrivileges();
 
@@ -66,20 +68,74 @@ export default function ContractDetailView({
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
-    if (!selectedOrgId || !contractId) return;
+    if (!contractId) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    getOrgContract(selectedOrgId, contractId)
-      .then((res) => {
-        const data = res?.contract ?? res?.data ?? res;
-        setContract(data);
-        setEditDesc(data?.description || "");
-      })
-      .catch((err) => {
-        console.error("Failed to load contract:", err);
-        showSnackbar("Failed to load contract details", "error");
-      })
-      .finally(() => setLoading(false));
-  }, [selectedOrgId, contractId, showSnackbar]);
+
+    if (selectedOrgId) {
+      getOrgContract(selectedOrgId, contractId)
+        .then((res) => {
+          const data = res?.contract ?? res?.data ?? res;
+          setContract(data);
+          setEditDesc(data?.description || "");
+        })
+        .catch((err) => {
+          console.error("Failed to load contract:", err);
+          showSnackbar("Failed to load contract details", "error");
+        })
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    // When selectedOrgId is not set (e.g. client mode or direct URL):
+    // Search for the contract across user's organizations
+    if (organizations && organizations.length > 0) {
+      let isMounted = true;
+      (async () => {
+        let foundData: any = null;
+        for (const org of organizations) {
+          try {
+            const orgId = Number(org.organization_id);
+            const res = await getOrgContract(orgId, contractId);
+            const data = res?.contract ?? res?.data ?? res;
+            if (data && (data.id === contractId || data.title)) {
+              foundData = data;
+              break;
+            }
+          } catch {
+            // not in this organization, try next
+          }
+        }
+        if (isMounted) {
+          if (foundData) {
+            setContract(foundData);
+            setEditDesc(foundData.description || "");
+          } else {
+            showSnackbar("Contract details not found in your organizations.", "warning");
+          }
+          setLoading(false);
+        }
+      })();
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    // No organization available to load contract from
+    setLoading(false);
+  }, [selectedOrgId, contractId, organizations, showSnackbar]);
+
+  const getActiveOrgId = () => {
+    if (selectedOrgId) return selectedOrgId;
+    if ((contract as any)?.organization_id) return Number((contract as any).organization_id);
+    if (organizations && organizations.length > 0) {
+      return Number(organizations[0].organization_id);
+    }
+    return null;
+  };
 
   const handleCopyId = () => {
     if (!contract?.id) return;
@@ -88,10 +144,11 @@ export default function ContractDetailView({
   };
 
   const handleSaveEdit = async () => {
-    if (!selectedOrgId || !contract) return;
+    const orgIdToUse = getActiveOrgId();
+    if (!orgIdToUse || !contract) return;
     try {
       setSaving(true);
-      await updateOrgContract(selectedOrgId, contract.id, {
+      await updateOrgContract(orgIdToUse, contract.id, {
         description: editDesc,
       });
       setContract((prev) => (prev ? { ...prev, description: editDesc } : null));
@@ -105,10 +162,11 @@ export default function ContractDetailView({
   };
 
   const handleCancelContract = async () => {
-    if (!selectedOrgId || !contract) return;
+    const orgIdToUse = getActiveOrgId();
+    if (!orgIdToUse || !contract) return;
     try {
       setCancelling(true);
-      await completeContract(selectedOrgId, contract.id, "CANCEL");
+      await completeContract(orgIdToUse, contract.id, "CANCEL");
       showSnackbar("Contract cancelled successfully", "success");
       setCancelOpen(false);
       setContract((prev) => (prev ? { ...prev, status: "CANCELLED" } : null));
@@ -143,21 +201,35 @@ export default function ContractDetailView({
   const files = contract.files || [];
   const isCompleted = ["SIGNED", "COMPLETED"].includes(contract.status);
 
-  // Identify signed file: either by name containing signed/podepsan or if completed and multiple files exist
-  const signedFile =
-    files.find(
-      (f) =>
-        f.name?.toLowerCase().includes("signed") ||
-        f.name?.toLowerCase().includes("podepsan"),
-    ) ||
-    (isCompleted && files.length > 1 ? files[files.length - 1] : null);
+  const isSignedFileName = (name?: string) => {
+    if (!name) return false;
+    const lower = name.toLowerCase();
+    return lower.includes("signed") || lower.includes("podepsan");
+  };
 
-  const originalFiles = signedFile
-    ? files.filter((f) => f !== signedFile)
-    : files;
+  // Signed files list (ordered chronologically as appended by subsequent signers)
+  const signedFiles = files.filter((f) => isSignedFileName(f.name));
+
+  // The true final signed file is the LATEST signed file in the list,
+  // which contains cumulative signatures from both parties!
+  const signedFile =
+    signedFiles.length > 0
+      ? signedFiles[signedFiles.length - 1]
+      : (isCompleted && files.length > 1 ? files[files.length - 1] : null);
+
+  // Original files: files that are NOT signed files and not the signed file
+  const originalFiles = files.filter(
+    (f) => !isSignedFileName(f.name) && f !== signedFile,
+  );
+
+  // Fallback if all files were named signed or no separate original file was found
+  const displayOriginalFiles =
+    originalFiles.length > 0
+      ? originalFiles
+      : (files.length > 1 && files[0] !== signedFile ? [files[0]] : []);
 
   const primaryDownloadFile =
-    isCompleted && signedFile ? signedFile : files[0] || null;
+    isCompleted && signedFile ? signedFile : displayOriginalFiles[0] || files[0] || null;
 
   const parties = contract.parties || [];
   const signedParties = parties.filter(
@@ -314,14 +386,14 @@ export default function ContractDetailView({
             </Button>
           ) : null}
 
-          {signedFile && originalFiles[0]?.download_url && (
+          {signedFile && displayOriginalFiles[0]?.download_url && (
             <Button
               variant="outlined"
               size="small"
               onClick={() =>
                 handleDownloadFile(
-                  originalFiles[0].download_url,
-                  originalFiles[0].name || "original_contract.pdf",
+                  displayOriginalFiles[0].download_url,
+                  displayOriginalFiles[0].name || "original_contract.pdf",
                 )
               }
               sx={{
@@ -852,7 +924,7 @@ export default function ContractDetailView({
               </Box>
             )}
 
-            {originalFiles.map((file, idx) => (
+            {displayOriginalFiles.map((file, idx) => (
               <Box
                 key={file.file_id || idx}
                 sx={{
@@ -880,7 +952,7 @@ export default function ContractDetailView({
                     </Typography>
                     {signedFile && (
                       <Chip
-                        label="Draft"
+                        label={isCompleted ? "Original" : "Draft"}
                         size="small"
                         sx={{
                           bgcolor: "#f1f5f9",

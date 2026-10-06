@@ -142,6 +142,27 @@ function resolveSignerLabel(contractObj: any, partyKeyStr: string): string {
   return "Verified Signer";
 }
 
+function normalizeHashToHex(hashStr?: string): string {
+  if (!hashStr) return "";
+  const trimmed = hashStr.trim();
+  if (/^[a-fA-F0-9]{64}$/.test(trimmed)) {
+    return trimmed.toLowerCase();
+  }
+  try {
+    const binary = atob(trimmed);
+    if (binary.length === 32) {
+      let hex = "";
+      for (let i = 0; i < binary.length; i++) {
+        hex += binary.charCodeAt(i).toString(16).padStart(2, "0");
+      }
+      return hex.toLowerCase();
+    }
+  } catch {
+    // not valid base64
+  }
+  return "";
+}
+
 export default function SignPage({
   params,
 }: {
@@ -150,6 +171,9 @@ export default function SignPage({
   const { token } = use(params);
   const [contract, setContract] = useState<any>(null);
   const [pdfBytes, setPdfBytes] = useState<ArrayBuffer | null>(null);
+  const [originalPdfBytes, setOriginalPdfBytes] = useState<ArrayBuffer | null>(
+    null,
+  );
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
   const [resolvedPartyKey, setResolvedPartyKey] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -204,11 +228,13 @@ export default function SignPage({
       }
 
       setPdfBytes(bytes);
+      return bytes;
     } catch (e: any) {
       console.error("[SignPage] Error loading PDF:", e);
       setError(
         `Failed to load contract document (${e?.message || e}). Please check the file status.`,
       );
+      return null;
     } finally {
       setFileLoading(false);
     }
@@ -275,17 +301,41 @@ export default function SignPage({
           setIsAlreadySigned(true);
         }
 
-        // Find file download URL
-        const fileUrl =
-          c?.files?.[0]?.download_url ||
-          c?.files?.[0]?.url ||
-          c?.files?.[0]?.file_url ||
+        // Separate original files vs already-signed files
+        const files: any[] = c?.files || [];
+        const signedFiles = files.filter(
+          (f: any) =>
+            f.name?.toLowerCase().includes("signed") ||
+            f.name?.toLowerCase().includes("podepsan"),
+        );
+        const originalFiles = files.filter(
+          (f: any) =>
+            !f.name?.toLowerCase().includes("signed") &&
+            !f.name?.toLowerCase().includes("podepsan"),
+        );
+
+        const originalFile = originalFiles[0] || files[0] || null;
+        const latestSignedFile =
+          signedFiles.length > 0 ? signedFiles[signedFiles.length - 1] : null;
+
+        // When previous signatures exist, subsequent signers must sign onto the latest signed version!
+        const fileToSign = latestSignedFile || originalFile;
+
+        const fileToSignUrl =
+          fileToSign?.download_url ||
+          fileToSign?.url ||
+          fileToSign?.file_url ||
           c?.download_url ||
           c?.file_url ||
           response?.files?.[0]?.download_url ||
           response?.files?.[0]?.url;
 
-        if (!fileUrl) {
+        const originalFileUrl =
+          originalFile?.download_url ||
+          originalFile?.url ||
+          originalFile?.file_url;
+
+        if (!fileToSignUrl) {
           console.warn(
             "[SignPage] No download_url found in GET /contract/get response:",
             c,
@@ -294,7 +344,36 @@ export default function SignPage({
           return;
         }
 
-        await loadPdfFromUrl(fileUrl);
+        console.log(
+          "[SignPage] Loading document to sign:",
+          fileToSign?.name,
+          "Original document for hash:",
+          originalFile?.name,
+        );
+
+        const loadedBytes = await loadPdfFromUrl(fileToSignUrl);
+
+        if (originalFileUrl && originalFileUrl !== fileToSignUrl) {
+          try {
+            console.log(
+              "[SignPage] Fetching original document for contract hash verification:",
+              originalFileUrl,
+            );
+            const origRes = await fetch(originalFileUrl);
+            if (origRes.ok) {
+              const origBytes = await origRes.arrayBuffer();
+              setOriginalPdfBytes(origBytes);
+            }
+          } catch (origErr) {
+            console.warn(
+              "[SignPage] Failed to fetch original file bytes:",
+              origErr,
+            );
+          }
+        } else if (loadedBytes) {
+          setOriginalPdfBytes(loadedBytes);
+        }
+
         setLoading(false);
       })
       .catch((err) => {
@@ -413,13 +492,61 @@ export default function SignPage({
       const localDownloadUrl = URL.createObjectURL(signedBlob);
       setSignedPdfUrl(localDownloadUrl);
 
-      // Calculate SHA-256 hashes
-      const documentHash = pdfBytes ? sha256(pdfBytes) : String(contract.id);
+      // Find original file from contract.files
+      const contractFilesList: any[] = contract.files || [];
+      const originalFilesList = contractFilesList.filter(
+        (f: any) =>
+          !f.name?.toLowerCase().includes("signed") &&
+          !f.name?.toLowerCase().includes("podepsan"),
+      );
+      const originalFileItem =
+        originalFilesList[0] || contractFilesList[0] || null;
+
+      // The backend validates document_hash against the contract's ORIGINAL file!
+      let documentHash = "";
+      if (originalPdfBytes) {
+        documentHash = sha256(originalPdfBytes);
+      } else if (originalFileItem?.download_url) {
+        try {
+          const res = await fetch(originalFileItem.download_url);
+          if (res.ok) {
+            const buf = await res.arrayBuffer();
+            setOriginalPdfBytes(buf);
+            documentHash = sha256(buf);
+          }
+        } catch (e) {
+          console.warn("[SignPage] Failed to fetch original file for hash:", e);
+        }
+      }
+
+      const candidateContractHash =
+        normalizeHashToHex(contract.document_hash) ||
+        normalizeHashToHex(contract.hash) ||
+        normalizeHashToHex(originalFileItem?.hash);
+
+      if (!documentHash && candidateContractHash) {
+        documentHash = candidateContractHash;
+      }
+
+      if (!documentHash && pdfBytes) {
+        documentHash = sha256(pdfBytes);
+      }
+
+      console.log(
+        "[SignPage] Submitting signature with document_hash:",
+        documentHash,
+        "Original file:",
+        originalFileItem?.name,
+      );
+
       const signedHash = sha256(signedPdfBytes);
 
       // File metadata for signed PDF
       const originalFileName =
-        contract.files?.[0]?.name || contract.title || "contract";
+        originalFileItem?.name ||
+        contract.files?.[0]?.name ||
+        contract.title ||
+        "contract";
       const signedFileName = originalFileName.toLowerCase().endsWith(".pdf")
         ? `${originalFileName.slice(0, -4)}_signed.pdf`
         : `${originalFileName}_signed.pdf`;
@@ -629,6 +756,17 @@ export default function SignPage({
   }
 
   const contractFiles: any[] = contract?.files || [];
+  const originalFiles: any[] = contractFiles.filter(
+    (f: any) =>
+      !f.name?.toLowerCase().includes("signed") &&
+      !f.name?.toLowerCase().includes("podepsan"),
+  );
+  const signedFiles: any[] = contractFiles.filter(
+    (f: any) =>
+      f.name?.toLowerCase().includes("signed") ||
+      f.name?.toLowerCase().includes("podepsan"),
+  );
+  const hasPreviousSignatures = signedFiles.length > 0;
 
   return (
     <Box sx={{ maxWidth: 840, mx: "auto", p: { xs: 2, sm: 4 }, mt: 2 }}>
@@ -682,8 +820,26 @@ export default function SignPage({
         </Paper>
       )}
 
-      {/* Multi-document handling & attachments list */}
-      {contractFiles.length > 1 && (
+      {/* Informational banner when previous signatures exist */}
+      {hasPreviousSignatures && (
+        <Box sx={{ mb: 2.5 }}>
+          <Alert
+            severity="info"
+            sx={{
+              borderRadius: "12px",
+              bgcolor: "#f0fdf4",
+              color: "#166534",
+              border: "1px solid #bbf7d0",
+              "& .MuiAlert-icon": { color: "#16a34a" },
+            }}
+          >
+            A previous party has already signed this document. All prior signatures are preserved in this version.
+          </Alert>
+        </Box>
+      )}
+
+      {/* Multi-document handling for genuine distinct attachments only */}
+      {originalFiles.length > 1 && (
         <Paper
           variant="outlined"
           sx={{ p: 2, mb: 3, borderRadius: 2, bgcolor: "#f8fafc" }}
@@ -697,14 +853,14 @@ export default function SignPage({
             gap={1}
           >
             <AttachFileOutlinedIcon fontSize="small" /> Contract Documents (
-            {contractFiles.length})
+            {originalFiles.length})
           </Typography>
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={1.5}
             flexWrap="wrap"
           >
-            {contractFiles.map((file: any, idx: number) => {
+            {originalFiles.map((file: any, idx: number) => {
               const isSelected = selectedFileIndex === idx;
               const fileName =
                 file.name ||

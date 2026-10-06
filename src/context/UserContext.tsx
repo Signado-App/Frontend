@@ -20,7 +20,17 @@ const UserContext = createContext<UserContextValue | undefined>(undefined);
 export const UserContextProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [mode, setModeState] = useState<Mode>("client");
+  const [mode, setModeState] = useState<Mode>(() => {
+    if (typeof window !== "undefined") {
+      const storedMode = localStorage.getItem("mode");
+      if (storedMode === "organization" || storedMode === "client") {
+        return storedMode;
+      }
+      const stored = localStorage.getItem("selectedOrgId");
+      if (stored && Number(stored) > 0) return "organization";
+    }
+    return "client";
+  });
   const [selectedOrg, setSelectedOrgState] = useState<OrganizationInfo | null>(
     null,
   );
@@ -41,10 +51,12 @@ export const UserContextProvider: React.FC<{ children: React.ReactNode }> = ({
     setSelectedOrgId(orgId);
     setSelectedOrgState(org ?? null);
 
-    if (orgId) {
+    if (mode === "organization" && orgId) {
       localStorage.setItem("selectedOrgId", String(orgId));
+      localStorage.setItem("mode", "organization");
     } else {
       localStorage.removeItem("selectedOrgId");
+      localStorage.setItem("mode", "client");
     }
   };
 

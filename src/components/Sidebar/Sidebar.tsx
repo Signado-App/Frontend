@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import { usePrivileges } from "@/context/PrivilegesContext";
 import { useUserContext } from "@/context/UserContext";
 import { useAuthContext } from "@/context/AuthContext";
-import { getOrganizationInfo } from "@/services/organizations";
+import { getOrganizationInfo, mergePrivileges } from "@/services/organizations";
 import { Privilege } from "@/types/types";
 
 export const SIDEBAR_EXPANDED_WIDTH = 240;
@@ -33,78 +33,36 @@ export default function Sidebar({
   onToggleCollapse,
 }: SidebarProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedOrg, setSelectedOrg] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("selectedOrgId");
-      return stored ? Number(stored) : 0;
-    }
-    return 0;
-  });
 
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const { loadPrivileges } = usePrivileges();
-  const { mode, setMode } = useUserContext();
+  const { mode, selectedOrgId, setMode } = useUserContext();
   const { organizations, refreshOrganizations } = useAuthContext();
 
-  const validSelectedOrg = organizations.some(
-    (o) => o.organization_id === selectedOrg,
-  )
-    ? selectedOrg
-    : 0;
-
-  const mergePrivileges = (data: any): Privilege[] => {
-    const direct = (data.privileges ?? []).map(
-      (p: any) => parseInt(p.id) as Privilege,
-    );
-    const fromGroups = (data.groups ?? []).flatMap((g: any) =>
-      (g.privileges ?? []).map((p: any) => parseInt(p.id) as Privilege),
-    );
-    return [...new Set([...direct, ...fromGroups])];
-  };
-
   useEffect(() => {
-    if (validSelectedOrg === 0 && mode === "organization") {
-      setMode("client", null, null);
-    }
-  }, [validSelectedOrg]);
-
-  useEffect(() => {
-    if (selectedOrg && selectedOrg !== 0 && organizations.length > 0) {
-      getOrganizationInfo(selectedOrg)
+    if (mode === "organization" && selectedOrgId && organizations.length > 0) {
+      const isValid = organizations.some(
+        (o) => o.organization_id === selectedOrgId,
+      );
+      if (!isValid) {
+        loadPrivileges([]);
+        setMode("client", null, null);
+        return;
+      }
+      getOrganizationInfo(selectedOrgId)
         .then((response) => {
           const privileges = mergePrivileges(response.data);
           loadPrivileges(privileges);
-          setMode("organization", selectedOrg, response.data);
+          setMode("organization", selectedOrgId, response.data);
         })
         .catch(() => {
           showSnackbar("Failed to load organization info.", "error");
         });
-    }
-  }, [organizations, selectedOrg]);
-
-  const handleSelectOrg = (value: number) => {
-    setSelectedOrg(value);
-    setMode(
-      value === 0 ? "client" : "organization",
-      value === 0 ? null : value,
-    );
-    if (value && value !== 0) {
-      getOrganizationInfo(value)
-        .then((response) => {
-          const privileges = mergePrivileges(response.data);
-          loadPrivileges(privileges);
-          setMode("organization", value, response.data);
-        })
-        .catch(() => {
-          showSnackbar("Failed to load organization info.", "error");
-        });
-    } else {
+    } else if (mode === "client") {
       loadPrivileges([]);
-      setMode("client", null, null);
     }
-    router.push("/app/dashboard");
-  };
+  }, [mode, selectedOrgId, organizations]);
 
   const [isHovered, setIsHovered] = useState(false);
   const isVisuallyExpanded = !isCollapsed || isHovered;
@@ -150,11 +108,7 @@ export default function Sidebar({
           mb: 3,
         }}
       >
-        <CompanyInfo
-          isCollapsed={!isVisuallyExpanded}
-          onOpenCreateOrgModal={() => setModalOpen(true)}
-          onSelectOrg={handleSelectOrg}
-        />
+        <CompanyInfo isCollapsed={!isVisuallyExpanded} />
       </Box>
 
       {/* Main Navigation List */}

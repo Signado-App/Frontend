@@ -30,10 +30,14 @@ import BoltOutlinedIcon from "@mui/icons-material/BoltOutlined";
 import FormatListBulletedRoundedIcon from "@mui/icons-material/FormatListBulletedRounded";
 import DriveFileRenameOutlineRoundedIcon from "@mui/icons-material/DriveFileRenameOutlineRounded";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUserContext } from "@/context/UserContext";
+import { usePrivileges } from "@/context/PrivilegesContext";
+import { Privileges } from "@/constants/privileges";
 import { useSnackbar } from "@/context/SnackbarContext";
+import { getOrganizationInfo, mergePrivileges } from "@/services/organizations";
 import CreateOrganizationModal from "../Organization/CreateOrganizationModal";
 
 export default function AppHeader() {
@@ -41,13 +45,52 @@ export default function AppHeader() {
   const { user, logout, organizations, refreshOrganizations } =
     useAuthContext();
   const { mode, selectedOrgId, setMode } = useUserContext();
+  const { hasPrivilege, loadPrivileges } = usePrivileges();
   const { showSnackbar } = useSnackbar();
+
+  const isOrg = mode === "organization";
+  const canCreateContract = isOrg && hasPrivilege(Privileges.CREATE_CONTRACTS);
+  const canSeeClients =
+    isOrg &&
+    (hasPrivilege(Privileges.CREATE_CLIENTS) ||
+      hasPrivilege(Privileges.SEE_ALL_CLIENTS));
+  const canSeeUsers =
+    isOrg &&
+    (hasPrivilege(Privileges.ADD_USERS) ||
+      hasPrivilege(Privileges.USERS_ACCESSIBLE));
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newMenuAnchor, setNewMenuAnchor] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
     null,
   );
+
+  const handleSwitchToClient = () => {
+    setUserMenuAnchor(null);
+    loadPrivileges([]);
+    setMode("client", null, null);
+    showSnackbar("Switched to Personal client account", "success");
+    router.push("/app/dashboard");
+  };
+
+  const handleSwitchToOrg = async (orgId: number) => {
+    setUserMenuAnchor(null);
+    setMode("organization", orgId);
+    try {
+      const response = await getOrganizationInfo(orgId);
+      const privileges = mergePrivileges(response.data);
+      loadPrivileges(privileges);
+      setMode("organization", orgId, response.data);
+      showSnackbar(
+        `Switched to ${response.data?.organization_name || "organization"}`,
+        "success",
+      );
+    } catch {
+      showSnackbar("Failed to load organization info.", "error");
+    } finally {
+      router.push("/app/dashboard");
+    }
+  };
 
   const handleLogout = async () => {
     setUserMenuAnchor(null);
@@ -133,7 +176,7 @@ export default function AppHeader() {
             paper: {
               sx: {
                 borderRadius: "20px",
-                width: 370,
+                width: isOrg ? 370 : 320,
                 maxWidth: "calc(100vw - 32px)",
                 mt: 1.25,
                 p: 0.75,
@@ -144,9 +187,100 @@ export default function AppHeader() {
             },
           }}
         >
-          {/* Section 1: DOCUMENT REQUESTS */}
+          {/* Section: CONTRACTS */}
+          {canCreateContract && (
+            <Typography
+              sx={{
+                px: 2,
+                pt: 0.75,
+                pb: 0.75,
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                letterSpacing: "0.06em",
+                color: "#94a3b8",
+                textTransform: "uppercase",
+              }}
+            >
+              Contracts
+            </Typography>
+          )}
 
-          {/* Section 2: FORMS, TEMPLATES & CONTRACTS */}
+          {canCreateContract && (
+            <MenuItem
+              onClick={() => {
+                setNewMenuAnchor(null);
+                router.push("/app/contracts/new");
+              }}
+              sx={{
+                py: 1.25,
+                px: 1.5,
+                mx: 0.5,
+                my: 0.25,
+                borderRadius: "14px",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 1.75,
+                whiteSpace: "normal",
+                transition: "all 0.15s ease",
+                "&:hover": {
+                  bgcolor: "#f8fafc",
+                  "& .menu-icon-box": {
+                    bgcolor: "#ede9fe",
+                    color: "#4f46e5",
+                    borderColor: "#ddd6fe",
+                  },
+                },
+              }}
+            >
+              <Box
+                className="menu-icon-box"
+                sx={{
+                  width: 40,
+                  height: 40,
+                  minWidth: 40,
+                  borderRadius: "12px",
+                  bgcolor: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#475569",
+                  mt: 0.25,
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <DriveFileRenameOutlineRoundedIcon sx={{ fontSize: "1.25rem" }} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    color: "#0f172a",
+                    fontSize: "0.9rem",
+                    lineHeight: 1.25,
+                    mb: 0.35,
+                  }}
+                >
+                  New Contract
+                </Typography>
+                <Typography
+                  sx={{
+                    color: "#64748b",
+                    fontSize: "0.78rem",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Document for digital signature
+                </Typography>
+              </Box>
+            </MenuItem>
+          )}
+
+          {canCreateContract && (
+            <Divider sx={{ my: 1, borderColor: "#f1f5f9" }} />
+          )}
+
+          {/* Section: PEOPLE & ORGANIZATIONS / ORGANIZATION */}
           <Typography
             sx={{
               px: 2,
@@ -159,233 +293,150 @@ export default function AppHeader() {
               textTransform: "uppercase",
             }}
           >
-            Contracts
+            {isOrg ? "People & Organizations" : "Organization"}
           </Typography>
 
-          <MenuItem
-            onClick={() => {
-              setNewMenuAnchor(null);
-              router.push("/app/contracts/new");
-            }}
-            sx={{
-              py: 1.25,
-              px: 1.5,
-              mx: 0.5,
-              my: 0.25,
-              borderRadius: "14px",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 1.75,
-              whiteSpace: "normal",
-              transition: "all 0.15s ease",
-              "&:hover": {
-                bgcolor: "#f8fafc",
-                "& .menu-icon-box": {
-                  bgcolor: "#ede9fe",
-                  color: "#4f46e5",
-                  borderColor: "#ddd6fe",
-                },
-              },
-            }}
-          >
-            <Box
-              className="menu-icon-box"
+          {canSeeClients && (
+            <MenuItem
+              onClick={() => {
+                setNewMenuAnchor(null);
+                router.push("/app/clients");
+              }}
               sx={{
-                width: 40,
-                height: 40,
-                minWidth: 40,
-                borderRadius: "12px",
-                bgcolor: "#f1f5f9",
-                border: "1px solid #e2e8f0",
+                py: 1.25,
+                px: 1.5,
+                mx: 0.5,
+                my: 0.25,
+                borderRadius: "14px",
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#475569",
-                mt: 0.25,
+                alignItems: "flex-start",
+                gap: 1.75,
+                whiteSpace: "normal",
                 transition: "all 0.15s ease",
+                "&:hover": {
+                  bgcolor: "#f8fafc",
+                  "& .menu-icon-box": {
+                    bgcolor: "#ede9fe",
+                    color: "#4f46e5",
+                    borderColor: "#ddd6fe",
+                  },
+                },
               }}
             >
-              <DriveFileRenameOutlineRoundedIcon sx={{ fontSize: "1.25rem" }} />
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography
+              <Box
+                className="menu-icon-box"
                 sx={{
-                  fontWeight: 600,
-                  color: "#0f172a",
-                  fontSize: "0.9rem",
-                  lineHeight: 1.25,
-                  mb: 0.35,
+                  width: 40,
+                  height: 40,
+                  minWidth: 40,
+                  borderRadius: "12px",
+                  bgcolor: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#475569",
+                  mt: 0.25,
+                  transition: "all 0.15s ease",
                 }}
               >
-                New Contract
-              </Typography>
-              <Typography
-                sx={{
-                  color: "#64748b",
-                  fontSize: "0.78rem",
-                  lineHeight: 1.35,
-                }}
-              >
-                Document for digital signature
-              </Typography>
-            </Box>
-          </MenuItem>
+                <PersonAddOutlinedIcon sx={{ fontSize: "1.25rem" }} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    color: "#0f172a",
+                    fontSize: "0.9rem",
+                    lineHeight: 1.25,
+                    mb: 0.35,
+                  }}
+                >
+                  New Client
+                </Typography>
+                <Typography
+                  sx={{
+                    color: "#64748b",
+                    fontSize: "0.78rem",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Person or company you send requests to
+                </Typography>
+              </Box>
+            </MenuItem>
+          )}
 
-          <Divider sx={{ my: 1, borderColor: "#f1f5f9" }} />
-
-          {/* Section 3: PEOPLE & ORGANIZATIONS */}
-          <Typography
-            sx={{
-              px: 2,
-              pt: 0.75,
-              pb: 0.75,
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              color: "#94a3b8",
-              textTransform: "uppercase",
-            }}
-          >
-            People & Organizations
-          </Typography>
-
-          <MenuItem
-            onClick={() => {
-              setNewMenuAnchor(null);
-              router.push("/app/clients");
-            }}
-            sx={{
-              py: 1.25,
-              px: 1.5,
-              mx: 0.5,
-              my: 0.25,
-              borderRadius: "14px",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 1.75,
-              whiteSpace: "normal",
-              transition: "all 0.15s ease",
-              "&:hover": {
-                bgcolor: "#f8fafc",
-                "& .menu-icon-box": {
-                  bgcolor: "#ede9fe",
-                  color: "#4f46e5",
-                  borderColor: "#ddd6fe",
-                },
-              },
-            }}
-          >
-            <Box
-              className="menu-icon-box"
+          {canSeeUsers && (
+            <MenuItem
+              onClick={() => {
+                setNewMenuAnchor(null);
+                router.push("/app/users");
+              }}
               sx={{
-                width: 40,
-                height: 40,
-                minWidth: 40,
-                borderRadius: "12px",
-                bgcolor: "#f1f5f9",
-                border: "1px solid #e2e8f0",
+                py: 1.25,
+                px: 1.5,
+                mx: 0.5,
+                my: 0.25,
+                borderRadius: "14px",
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#475569",
-                mt: 0.25,
+                alignItems: "flex-start",
+                gap: 1.75,
+                whiteSpace: "normal",
                 transition: "all 0.15s ease",
+                "&:hover": {
+                  bgcolor: "#f8fafc",
+                  "& .menu-icon-box": {
+                    bgcolor: "#ede9fe",
+                    color: "#4f46e5",
+                    borderColor: "#ddd6fe",
+                  },
+                },
               }}
             >
-              <PersonAddOutlinedIcon sx={{ fontSize: "1.25rem" }} />
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography
+              <Box
+                className="menu-icon-box"
                 sx={{
-                  fontWeight: 600,
-                  color: "#0f172a",
-                  fontSize: "0.9rem",
-                  lineHeight: 1.25,
-                  mb: 0.35,
+                  width: 40,
+                  height: 40,
+                  minWidth: 40,
+                  borderRadius: "12px",
+                  bgcolor: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#475569",
+                  mt: 0.25,
+                  transition: "all 0.15s ease",
                 }}
               >
-                New Client
-              </Typography>
-              <Typography
-                sx={{
-                  color: "#64748b",
-                  fontSize: "0.78rem",
-                  lineHeight: 1.35,
-                }}
-              >
-                Person or company you send requests to
-              </Typography>
-            </Box>
-          </MenuItem>
-
-          <MenuItem
-            onClick={() => {
-              setNewMenuAnchor(null);
-              router.push("/app/users");
-            }}
-            sx={{
-              py: 1.25,
-              px: 1.5,
-              mx: 0.5,
-              my: 0.25,
-              borderRadius: "14px",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 1.75,
-              whiteSpace: "normal",
-              transition: "all 0.15s ease",
-              "&:hover": {
-                bgcolor: "#f8fafc",
-                "& .menu-icon-box": {
-                  bgcolor: "#ede9fe",
-                  color: "#4f46e5",
-                  borderColor: "#ddd6fe",
-                },
-              },
-            }}
-          >
-            <Box
-              className="menu-icon-box"
-              sx={{
-                width: 40,
-                height: 40,
-                minWidth: 40,
-                borderRadius: "12px",
-                bgcolor: "#f1f5f9",
-                border: "1px solid #e2e8f0",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#475569",
-                mt: 0.25,
-                transition: "all 0.15s ease",
-              }}
-            >
-              <GroupsOutlinedIcon sx={{ fontSize: "1.25rem" }} />
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography
-                sx={{
-                  fontWeight: 600,
-                  color: "#0f172a",
-                  fontSize: "0.9rem",
-                  lineHeight: 1.25,
-                  mb: 0.35,
-                }}
-              >
-                New Team Member
-              </Typography>
-              <Typography
-                sx={{
-                  color: "#64748b",
-                  fontSize: "0.78rem",
-                  lineHeight: 1.35,
-                }}
-              >
-                Invite colleague to organization
-              </Typography>
-            </Box>
-          </MenuItem>
+                <GroupsOutlinedIcon sx={{ fontSize: "1.25rem" }} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    color: "#0f172a",
+                    fontSize: "0.9rem",
+                    lineHeight: 1.25,
+                    mb: 0.35,
+                  }}
+                >
+                  New Team Member
+                </Typography>
+                <Typography
+                  sx={{
+                    color: "#64748b",
+                    fontSize: "0.78rem",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Invite colleague to organization
+                </Typography>
+              </Box>
+            </MenuItem>
+          )}
 
           <MenuItem
             onClick={() => {
@@ -509,7 +560,9 @@ export default function AppHeader() {
             paper: {
               sx: {
                 borderRadius: "16px",
-                minWidth: 260,
+                width: 300,
+                minWidth: 280,
+                maxWidth: "calc(100vw - 32px)",
                 mt: 1.5,
                 boxShadow:
                   "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
@@ -574,17 +627,68 @@ export default function AppHeader() {
 
           <Divider />
 
-          {/* Companies Section */}
+          {/* Workspaces & Accounts Section */}
           <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
             <Typography
               variant="caption"
               color="text.secondary"
-              fontWeight={600}
+              fontWeight={700}
+              sx={{
+                fontSize: "0.72rem",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+              }}
             >
-              Companies
+              Workspaces & Accounts
             </Typography>
           </Box>
 
+          {/* Personal Client Account */}
+          <MenuItem
+            selected={mode === "client" || !selectedOrgId}
+            onClick={handleSwitchToClient}
+            sx={{ px: 2, py: 1 }}
+          >
+            <Avatar
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: mode === "client" ? "#ede9fe" : "#f1f5f9",
+                color: mode === "client" ? "#4f46e5" : "#334155",
+                fontWeight: 700,
+                fontSize: "0.75rem",
+                mr: 1.5,
+              }}
+            >
+              <PersonRoundedIcon sx={{ fontSize: "1.05rem" }} />
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                color="#0f172a"
+                noWrap
+              >
+                {user?.first_name ?? "Personal"} {user?.last_name ?? "Account"}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="#64748b"
+                noWrap
+                sx={{ display: "block" }}
+              >
+                Personal client account
+              </Typography>
+            </Box>
+            {(mode === "client" || !selectedOrgId) && (
+              <CheckRoundedIcon
+                fontSize="small"
+                sx={{ color: "#5046e5", ml: 1 }}
+              />
+            )}
+          </MenuItem>
+
+          {/* Organizations List */}
           {(organizations ?? [])
             .filter((org) => org.role_status !== "INVITED")
             .map((org) => {
@@ -603,19 +707,15 @@ export default function AppHeader() {
                 <MenuItem
                   key={org.organization_id}
                   selected={isSelected}
-                  onClick={() => {
-                    setUserMenuAnchor(null);
-                    setMode("organization", org.organization_id);
-                    router.push("/app/dashboard");
-                  }}
+                  onClick={() => handleSwitchToOrg(org.organization_id)}
                   sx={{ px: 2, py: 1 }}
                 >
                   <Avatar
                     sx={{
                       width: 28,
                       height: 28,
-                      bgcolor: "#f1f5f9",
-                      color: "#334155",
+                      bgcolor: isSelected ? "#ede9fe" : "#f1f5f9",
+                      color: isSelected ? "#4f46e5" : "#334155",
                       fontWeight: 700,
                       fontSize: "0.75rem",
                       mr: 1.5,
@@ -650,6 +750,42 @@ export default function AppHeader() {
                 </MenuItem>
               );
             })}
+
+          {/* New Organization Option */}
+          <MenuItem
+            onClick={() => {
+              setUserMenuAnchor(null);
+              setCreateModalOpen(true);
+            }}
+            sx={{ px: 2, py: 1 }}
+          >
+            <Box
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                border: "1px dashed #cbd5e1",
+                bgcolor: "#f8fafc",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#64748b",
+                mr: 1.5,
+              }}
+            >
+              <AddRoundedIcon sx={{ fontSize: "1rem" }} />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                variant="body2"
+                fontWeight={500}
+                color="#475569"
+                noWrap
+              >
+                New Organization
+              </Typography>
+            </Box>
+          </MenuItem>
 
           <Divider />
 

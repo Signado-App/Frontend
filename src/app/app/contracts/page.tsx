@@ -24,10 +24,12 @@ import { getOrgContracts } from "@/services/orgContracts";
 import { getContracts } from "@/services/contracts";
 import { Privileges } from "@/constants/privileges";
 import { usePrivileges } from "@/context/PrivilegesContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 export default function ContractsPage() {
   const router = useRouter();
   const { selectedOrgId } = useUserContext();
+  const { organizations } = useAuthContext();
   const { hasPrivilege } = usePrivileges();
 
   const [data, setData] = useState<OrgContract[]>([]);
@@ -58,16 +60,31 @@ export default function ContractsPage() {
     } else {
       getContracts()
         .then((response) => {
-          const list = Array.isArray(response?.contracts)
+          const list: any[] = Array.isArray(response?.contracts)
             ? response.contracts
             : Array.isArray(response?.data)
               ? response.data
               : [];
-          setData(list);
+          const userOrgIds = new Set(
+            (organizations || []).map((o) => Number(o.organization_id)),
+          );
+          // In client account, only show contracts received as a client/signer,
+          // not contracts created and sent on behalf of the user's organizations!
+          const clientContracts = list.filter((c: any) => {
+            const role = (c.role || "").toUpperCase();
+            if (role === "CREATOR") return false;
+            const orgId = Number(c.organization_id || c.org_id);
+            if (orgId && (userOrgIds.has(orgId) || userOrgIds.size > 0)) {
+              if (userOrgIds.has(orgId)) return false;
+            }
+            if (c.creator_member_id && userOrgIds.size > 0) return false;
+            return true;
+          });
+          setData(clientContracts);
         })
         .catch(() => setData([]));
     }
-  }, [selectedOrgId]);
+  }, [selectedOrgId, organizations]);
 
   const contractsList = Array.isArray(data) ? data : [];
 

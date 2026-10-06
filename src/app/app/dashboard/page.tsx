@@ -66,16 +66,29 @@ export default function DashboardPage() {
     } else {
       getContracts()
         .then((res) => {
-          const list = Array.isArray(res?.contracts)
+          const list: any[] = Array.isArray(res?.contracts)
             ? res.contracts
             : Array.isArray(res?.data)
               ? res.data
               : [];
-          setContracts(list);
+          const userOrgIds = new Set(
+            (organizations || []).map((o) => Number(o.organization_id)),
+          );
+          const clientContracts = list.filter((c: any) => {
+            const role = (c.role || "").toUpperCase();
+            if (role === "CREATOR") return false;
+            const orgId = Number(c.organization_id || c.org_id);
+            if (orgId && (userOrgIds.has(orgId) || userOrgIds.size > 0)) {
+              if (userOrgIds.has(orgId)) return false;
+            }
+            if (c.creator_member_id && userOrgIds.size > 0) return false;
+            return true;
+          });
+          setContracts(clientContracts);
         })
         .catch(() => setContracts([]));
     }
-  }, [selectedOrgId, mode]);
+  }, [selectedOrgId, mode, organizations]);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
