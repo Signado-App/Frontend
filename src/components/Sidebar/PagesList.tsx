@@ -8,6 +8,7 @@ import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import Divider from "@mui/material/Divider";
 import PagesListItem from "./PagesListItem";
 import { Mode, PageItem } from "@/types/types";
 import { usePrivileges } from "@/context/PrivilegesContext";
@@ -82,15 +83,37 @@ export default function PagesList({
     .filter((page) => page.modes.includes(mode))
     .filter((page) => !page.privilege || hasPrivilege(page.privilege));
 
+  const mainPages = filteredPages.filter((page) => page.primary !== "Settings");
+  const settingsPages = filteredPages.filter((page) => page.primary === "Settings");
+
   return (
     <List sx={{ width: "100%", p: 0 }}>
-      {filteredPages.map((page, index) => (
+      {mainPages.map((page, index) => (
         <PagesListItem
           key={`${page.href}-${index}`}
           {...page}
           isCollapsed={isCollapsed}
         />
       ))}
+
+      {settingsPages.length > 0 && (
+        <>
+          <Divider
+            sx={{
+              my: 1.5,
+              mx: isCollapsed ? 0.5 : 1,
+              borderColor: "rgba(255, 255, 255, 0.15)",
+            }}
+          />
+          {settingsPages.map((page, index) => (
+            <PagesListItem
+              key={`${page.href}-${index}`}
+              {...page}
+              isCollapsed={isCollapsed}
+            />
+          ))}
+        </>
+      )}
     </List>
   );
 }
