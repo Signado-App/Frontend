@@ -37,20 +37,22 @@ export default function PagesListItem({
       href={href}
       selected={isActive}
       sx={{
-        borderRadius: "10px",
-        mb: 0.5,
-        px: isCollapsed ? 1 : 1.5,
+        borderRadius: "12px",
+        mb: 0.8,
+        px: isCollapsed ? 0 : 1.5,
         py: 1,
-        minHeight: 42,
+        width: isCollapsed ? 44 : "100%",
+        height: isCollapsed ? 44 : 42,
+        mx: isCollapsed ? "auto" : 0,
         justifyContent: isCollapsed ? "center" : "flex-start",
         color: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.78)",
-        bgcolor: isActive ? "rgba(255, 255, 255, 0.18)" : "transparent",
+        bgcolor: isActive ? "rgba(255, 255, 255, 0.2)" : "transparent",
         transition: "all 0.15s ease-in-out",
         "&.Mui-selected": {
-          bgcolor: "rgba(255, 255, 255, 0.18)",
+          bgcolor: "rgba(255, 255, 255, 0.2)",
           color: "#ffffff",
           "&:hover": {
-            bgcolor: "rgba(255, 255, 255, 0.24)",
+            bgcolor: "rgba(255, 255, 255, 0.26)",
           },
         },
         "&:hover": {
@@ -83,6 +85,7 @@ export default function PagesListItem({
             fontWeight: isActive ? 600 : 500,
             fontSize: "0.92rem",
             color: "inherit",
+            noWrap: true,
           }}
         />
       )}

@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
-  InputBase,
   Button,
   IconButton,
-  Badge,
   Avatar,
   Menu,
   MenuItem,
@@ -15,19 +13,17 @@ import {
   Divider,
   Typography,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
-import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
-import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/context/AuthContext";
 import { useUserContext } from "@/context/UserContext";
 import { useSnackbar } from "@/context/SnackbarContext";
@@ -35,7 +31,6 @@ import CreateOrganizationModal from "../Organization/CreateOrganizationModal";
 
 export default function AppHeader() {
   const router = useRouter();
-  const pathname = usePathname();
   const { user, logout, organizations, refreshOrganizations } = useAuthContext();
   const { mode, selectedOrgId, setMode } = useUserContext();
   const { showSnackbar } = useSnackbar();
@@ -43,24 +38,6 @@ export default function AppHeader() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newMenuAnchor, setNewMenuAnchor] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
-  const [searchValue, setSearchValue] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Keyboard shortcut listener for '/'
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.key === "/" &&
-        document.activeElement?.tagName !== "INPUT" &&
-        document.activeElement?.tagName !== "TEXTAREA"
-      ) {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   const handleLogout = async () => {
     setUserMenuAnchor(null);
@@ -73,12 +50,6 @@ export default function AppHeader() {
       router.push("/auth/login");
     }
   };
-
-  const placeholder = pathname.includes("/clients")
-    ? "Search client, contact or email..."
-    : pathname.includes("/contracts")
-      ? "Search contracts or recipients..."
-      : "Search contracts or recipients...";
 
   const userInitial = user?.first_name?.[0]?.toUpperCase() || "S";
 
@@ -99,60 +70,8 @@ export default function AppHeader() {
         zIndex: 1100,
       }}
     >
-      {/* Search pill */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          bgcolor: "#ffffff",
-          borderRadius: "9999px",
-          px: 2,
-          py: 0.6,
-          width: { xs: "220px", sm: "340px", md: "420px" },
-          border: "1px solid rgba(0, 0, 0, 0.08)",
-          boxShadow: "0 1px 2px rgba(0, 0, 0, 0.03)",
-          transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-          "&:focus-within": {
-            borderColor: "#5046e5",
-            boxShadow: "0 0 0 3px rgba(80, 70, 229, 0.1)",
-          },
-        }}
-      >
-        <SearchIcon sx={{ color: "#94a3b8", fontSize: "1.25rem", mr: 1 }} />
-        <InputBase
-          inputRef={searchInputRef}
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-          placeholder={placeholder}
-          sx={{
-            flex: 1,
-            fontSize: "0.875rem",
-            color: "#1e293b",
-            "& input::placeholder": {
-              color: "#94a3b8",
-              opacity: 1,
-            },
-          }}
-        />
-        <Box
-          sx={{
-            display: { xs: "none", sm: "flex" },
-            alignItems: "center",
-            justifyContent: "center",
-            bgcolor: "#f8fafc",
-            border: "1px solid #e2e8f0",
-            borderRadius: "6px",
-            width: 22,
-            height: 22,
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            color: "#94a3b8",
-            userSelect: "none",
-          }}
-        >
-          /
-        </Box>
-      </Box>
+      {/* Left spacer / header */}
+      <Box sx={{ flex: 1 }} />
 
       {/* Right Actions */}
       <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.5 } }}>
@@ -246,19 +165,7 @@ export default function AppHeader() {
           </MenuItem>
         </Menu>
 
-        {/* Chat icon */}
-        <IconButton
-          size="medium"
-          sx={{
-            color: "#334155",
-            bgcolor: "transparent",
-            "&:hover": { bgcolor: "rgba(0, 0, 0, 0.04)" },
-          }}
-        >
-          <ChatBubbleOutlineRoundedIcon sx={{ fontSize: "1.3rem" }} />
-        </IconButton>
-
-        {/* Notification bell with badge "3" */}
+        {/* Notifications button */}
         <IconButton
           onClick={() => router.push("/app/notifications")}
           size="medium"
@@ -268,35 +175,7 @@ export default function AppHeader() {
             "&:hover": { bgcolor: "rgba(0, 0, 0, 0.04)" },
           }}
         >
-          <Badge
-            badgeContent={3}
-            sx={{
-              "& .MuiBadge-badge": {
-                bgcolor: "#5046e5",
-                color: "#ffffff",
-                fontSize: "0.65rem",
-                fontWeight: 700,
-                minWidth: 16,
-                height: 16,
-                borderRadius: "8px",
-                padding: "0 4px",
-              },
-            }}
-          >
-            <NotificationsNoneRoundedIcon sx={{ fontSize: "1.35rem" }} />
-          </Badge>
-        </IconButton>
-
-        {/* Calendar icon */}
-        <IconButton
-          size="medium"
-          sx={{
-            color: "#334155",
-            bgcolor: "transparent",
-            "&:hover": { bgcolor: "rgba(0, 0, 0, 0.04)" },
-          }}
-        >
-          <CalendarTodayOutlinedIcon sx={{ fontSize: "1.2rem" }} />
+          <NotificationsNoneRoundedIcon sx={{ fontSize: "1.35rem" }} />
         </IconButton>
 
         {/* User avatar with dropdown */}
@@ -329,7 +208,7 @@ export default function AppHeader() {
           />
         </Box>
 
-        {/* User Menu */}
+        {/* User Menu matching screenshot */}
         <Menu
           anchorEl={userMenuAnchor}
           open={Boolean(userMenuAnchor)}
@@ -337,91 +216,149 @@ export default function AppHeader() {
           slotProps={{
             paper: {
               sx: {
-                borderRadius: "14px",
-                minWidth: 230,
-                mt: 1,
-                boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
+                borderRadius: "16px",
+                minWidth: 260,
+                mt: 1.5,
+                boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
                 border: "1px solid #f1f5f9",
+                overflow: "hidden",
+                p: 0,
               },
             },
           }}
         >
-          <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="body2" fontWeight={700} color="text.primary">
-              {user?.first_name} {user?.last_name}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {user?.email}
-            </Typography>
+          {/* User profile header card */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 2 }}>
+            <Avatar
+              sx={{
+                width: 42,
+                height: 42,
+                bgcolor: "#e0e7ff",
+                color: "#4338ca",
+                fontWeight: 700,
+                fontSize: "0.95rem",
+              }}
+            >
+              {userInitial}
+            </Avatar>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography variant="body2" fontWeight={700} color="#0f172a" noWrap>
+                {user?.first_name} {user?.last_name}
+              </Typography>
+              <Typography variant="caption" color="#64748b" noWrap sx={{ display: "block" }}>
+                {user?.email}
+              </Typography>
+            </Box>
           </Box>
           <Divider />
 
-          {/* Org switch options in user menu */}
-          <Box sx={{ px: 2, pt: 1, pb: 0.5 }}>
-            <Typography variant="caption" color="text.secondary" fontWeight={600}>
-              ACCOUNT MODE
-            </Typography>
-          </Box>
-          <MenuItem
-            selected={mode === "client"}
-            onClick={() => {
-              setUserMenuAnchor(null);
-              setMode("client", null, null);
-              router.push("/app/dashboard");
-            }}
-            sx={{ mx: 0.5, borderRadius: "8px" }}
-          >
-            <ListItemText
-              primary="Client profile"
-              primaryTypographyProps={{ variant: "body2" }}
-            />
-            {mode === "client" && <CheckRoundedIcon fontSize="small" sx={{ color: "#5046e5" }} />}
-          </MenuItem>
-
-          {(organizations ?? [])
-            .filter((org) => org.role_status !== "INVITED")
-            .map((org) => (
-              <MenuItem
-                key={org.organization_id}
-                selected={mode === "organization" && selectedOrgId === org.organization_id}
-                onClick={() => {
-                  setUserMenuAnchor(null);
-                  setMode("organization", org.organization_id);
-                  router.push("/app/dashboard");
-                }}
-                sx={{ mx: 0.5, borderRadius: "8px" }}
-              >
-                <ListItemText
-                  primary={org.name}
-                  primaryTypographyProps={{ variant: "body2" }}
-                />
-                {mode === "organization" && selectedOrgId === org.organization_id && (
-                  <CheckRoundedIcon fontSize="small" sx={{ color: "#5046e5" }} />
-                )}
-              </MenuItem>
-            ))}
-
-          <Divider sx={{ my: 1 }} />
+          {/* My Account */}
           <MenuItem
             onClick={() => {
               setUserMenuAnchor(null);
               router.push("/app/settings");
             }}
-            sx={{ mx: 0.5, borderRadius: "8px" }}
+            sx={{ px: 2, py: 1.2 }}
           >
-            <ListItemIcon>
-              <SettingsOutlinedIcon fontSize="small" />
+            <ListItemIcon sx={{ minWidth: 32, color: "#64748b" }}>
+              <PersonOutlineOutlinedIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary="Settings" primaryTypographyProps={{ variant: "body2" }} />
+            <ListItemText
+              primary="My account"
+              primaryTypographyProps={{ variant: "body2", fontWeight: 500 }}
+            />
           </MenuItem>
+
+          <Divider />
+
+          {/* Companies Section */}
+          <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              Companies
+            </Typography>
+          </Box>
+
+          {(organizations ?? [])
+            .filter((org) => org.role_status !== "INVITED")
+            .map((org) => {
+              const orgInitials = org.name
+                .split(" ")
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((w) => w[0]?.toUpperCase())
+                .join("") || "CO";
+              const isSelected = mode === "organization" && selectedOrgId === org.organization_id;
+
+              return (
+                <MenuItem
+                  key={org.organization_id}
+                  selected={isSelected}
+                  onClick={() => {
+                    setUserMenuAnchor(null);
+                    setMode("organization", org.organization_id);
+                    router.push("/app/dashboard");
+                  }}
+                  sx={{ px: 2, py: 1 }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      bgcolor: "#f1f5f9",
+                      color: "#334155",
+                      fontWeight: 700,
+                      fontSize: "0.75rem",
+                      mr: 1.5,
+                    }}
+                  >
+                    {orgInitials}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" fontWeight={600} color="#0f172a" noWrap>
+                      {org.name}
+                    </Typography>
+                    <Typography variant="caption" color="#64748b" noWrap sx={{ display: "block" }}>
+                      {org.role_status || "Member · Business"}
+                    </Typography>
+                  </Box>
+                  {isSelected && (
+                    <CheckRoundedIcon fontSize="small" sx={{ color: "#5046e5", ml: 1 }} />
+                  )}
+                </MenuItem>
+              );
+            })}
+
+          {/* Add company */}
+          <MenuItem
+            onClick={() => {
+              setUserMenuAnchor(null);
+              setCreateModalOpen(true);
+            }}
+            sx={{ px: 2, py: 1 }}
+          >
+            <ListItemIcon sx={{ minWidth: 32, color: "#64748b" }}>
+              <StorefrontOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Add company"
+              primaryTypographyProps={{ variant: "body2", fontWeight: 500 }}
+            />
+          </MenuItem>
+
+          <Divider />
+
+          {/* Logout */}
           <MenuItem
             onClick={handleLogout}
-            sx={{ mx: 0.5, borderRadius: "8px", color: "error.main" }}
+            sx={{ px: 2, py: 1.2, color: "#ef4444" }}
           >
-            <ListItemIcon>
-              <LogoutOutlinedIcon fontSize="small" sx={{ color: "error.main" }} />
+            <ListItemIcon sx={{ minWidth: 32, color: "#ef4444" }}>
+              <LogoutOutlinedIcon fontSize="small" sx={{ color: "#ef4444" }} />
             </ListItemIcon>
-            <ListItemText primary="Log out" primaryTypographyProps={{ variant: "body2" }} />
+            <ListItemText
+              primary="Log out"
+              primaryTypographyProps={{ variant: "body2", fontWeight: 500, color: "#ef4444" }}
+            />
           </MenuItem>
         </Menu>
       </Box>

@@ -141,13 +141,30 @@ export default function ContractDetailModal({
 
       if (response.upload_urls && response.upload_urls.length > 0) {
         await Promise.all(
-          response.upload_urls.map((uploadInfo: any, index: number) =>
-            fetch(uploadInfo.upload_url, {
+          response.upload_urls.map(async (uploadInfo: any, index: number) => {
+            const headers: Record<string, string> = {
+              "Content-Type": newFiles[index].type || "application/pdf",
+            };
+
+            const urlStr = uploadInfo.upload_url || "";
+            if (urlStr.includes("x-amz-checksum-sha256") && filesData[index]?.hash) {
+              headers["x-amz-checksum-sha256"] = filesData[index].hash;
+            }
+            if (urlStr.includes("x-amz-sdk-checksum-algorithm")) {
+              headers["x-amz-sdk-checksum-algorithm"] = "SHA256";
+            }
+
+            const uploadRes = await fetch(uploadInfo.upload_url, {
               method: "PUT",
               body: newFiles[index],
-              headers: { "Content-Type": newFiles[index].type },
-            }),
-          ),
+              headers,
+            });
+            if (!uploadRes.ok) {
+              throw new Error(
+                `Error uploading file to storage (${uploadRes.status}: ${uploadRes.statusText})`,
+              );
+            }
+          }),
         );
         await completeContract(selectedOrgId, displayContract.id, "VERIFY");
       }

@@ -9,7 +9,6 @@ import {
 } from "@mui/material";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import CloudQueueRoundedIcon from "@mui/icons-material/CloudQueueRounded";
 import PagesList from "./PagesList";
 import CompanyInfo from "./CompanyInfo";
 import CreateOrganizationModal from "../Organization/CreateOrganizationModal";
@@ -107,11 +106,19 @@ export default function Sidebar({
     router.push("/app/dashboard");
   };
 
-  const width = isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH;
+  const [isHovered, setIsHovered] = useState(false);
+  const isVisuallyExpanded = !isCollapsed || isHovered;
+  const width = isVisuallyExpanded ? SIDEBAR_EXPANDED_WIDTH : SIDEBAR_COLLAPSED_WIDTH;
 
   return (
     <Box
       component="aside"
+      onMouseEnter={() => {
+        if (isCollapsed) setIsHovered(true);
+      }}
+      onMouseLeave={() => {
+        if (isCollapsed) setIsHovered(false);
+      }}
       sx={{
         width,
         flexShrink: 0,
@@ -123,11 +130,14 @@ export default function Sidebar({
         position: "fixed",
         left: 0,
         top: 0,
-        zIndex: 1200,
-        px: isCollapsed ? 1.5 : 2,
+        zIndex: isHovered && isCollapsed ? 1300 : 1200,
+        px: !isVisuallyExpanded ? 1.5 : 2,
         py: 2.5,
-        transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease",
-        boxShadow: "4px 0 20px rgba(0, 0, 0, 0.05)",
+        transition: "width 0.22s cubic-bezier(0.4, 0, 0.2, 1), padding 0.22s ease, box-shadow 0.22s ease",
+        boxShadow:
+          isHovered && isCollapsed
+            ? "8px 0 28px rgba(0, 0, 0, 0.25)"
+            : "4px 0 20px rgba(0, 0, 0, 0.05)",
         overflowX: "hidden",
       }}
     >
@@ -136,12 +146,12 @@ export default function Sidebar({
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: isCollapsed ? "center" : "space-between",
+          justifyContent: !isVisuallyExpanded ? "center" : "space-between",
           mb: 3,
         }}
       >
         <CompanyInfo
-          isCollapsed={isCollapsed}
+          isCollapsed={!isVisuallyExpanded}
           onOpenCreateOrgModal={() => setModalOpen(true)}
           onSelectOrg={handleSelectOrg}
         />
@@ -158,10 +168,10 @@ export default function Sidebar({
           scrollbarWidth: "none",
         }}
       >
-        <PagesList mode={mode} isCollapsed={isCollapsed} />
+        <PagesList mode={mode} isCollapsed={!isVisuallyExpanded} />
       </Box>
 
-      {/* Lower Section: Storage meter and Collapse Toggle */}
+      {/* Lower Section: Collapse Toggle */}
       <Box
         sx={{
           mt: "auto",
@@ -172,97 +182,25 @@ export default function Sidebar({
           gap: 0.5,
         }}
       >
-        {/* Storage Meter */}
-        <Box
-          sx={{
-            mt: 0.5,
-            mb: 0.5,
-            px: isCollapsed ? 0.5 : 1.5,
-            py: 1,
-            borderRadius: "10px",
-            bgcolor: "rgba(255, 255, 255, 0.08)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 0.8,
-            alignItems: isCollapsed ? "center" : "stretch",
-          }}
-        >
-          {isCollapsed ? (
-            <Tooltip title="Storage usage: 2.4 / 50 GB" placement="right" arrow>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <CloudQueueRoundedIcon sx={{ fontSize: "1.25rem", color: "rgba(255, 255, 255, 0.85)" }} />
-              </Box>
-            </Tooltip>
-          ) : (
-            <>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
-                  <CloudQueueRoundedIcon
-                    sx={{ fontSize: "1.1rem", color: "rgba(255, 255, 255, 0.8)" }}
-                  />
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontSize: "0.75rem",
-                      color: "rgba(255, 255, 255, 0.75)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Storage
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontSize: "0.75rem",
-                    color: "rgba(255, 255, 255, 0.95)",
-                    fontWeight: 600,
-                  }}
-                >
-                  2.4 / 50 GB
-                </Typography>
-              </Box>
-              {/* Progress bar */}
-              <Box
-                sx={{
-                  width: "100%",
-                  height: "3px",
-                  borderRadius: "2px",
-                  bgcolor: "rgba(255, 255, 255, 0.25)",
-                  overflow: "hidden",
-                }}
-              >
-                <Box
-                  sx={{
-                    width: "5%",
-                    height: "100%",
-                    borderRadius: "2px",
-                    bgcolor: "rgba(255, 255, 255, 0.95)",
-                  }}
-                />
-              </Box>
-            </>
-          )}
-        </Box>
 
         {/* Toggle Collapse Button */}
         {onToggleCollapse && (
           <Box
             sx={{
               display: "flex",
-              justifyContent: isCollapsed ? "center" : "flex-end",
+              justifyContent: !isVisuallyExpanded ? "center" : "flex-end",
               mt: 0.5,
             }}
           >
             <Tooltip
-              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              placement={isCollapsed ? "right" : "top"}
+              title={
+                isCollapsed
+                  ? isHovered
+                    ? "Lock sidebar open"
+                    : "Expand sidebar"
+                  : "Collapse sidebar"
+              }
+              placement={!isVisuallyExpanded ? "right" : "top"}
               arrow
             >
               <IconButton
@@ -276,7 +214,7 @@ export default function Sidebar({
                   },
                 }}
               >
-                {isCollapsed ? (
+                {!isVisuallyExpanded ? (
                   <ChevronRightRoundedIcon fontSize="small" />
                 ) : (
                   <ChevronLeftRoundedIcon fontSize="small" />

@@ -17,9 +17,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("sidebar_collapsed") === "true";
+      const stored = localStorage.getItem("sidebar_collapsed");
+      return stored !== null ? stored === "true" : true;
     }
-    return false;
+    return true;
   });
 
   const handleToggleCollapse = () => {
