@@ -1,60 +1,147 @@
-import { Button } from "@relume_io/relume-ui";
-import type { ButtonProps } from "@relume_io/relume-ui";
+"use client";
 
-type ImageProps = {
-  src: string;
-  alt?: string;
-};
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
-type Props = {
-  heading: string;
-  description: string;
-  buttons: ButtonProps[];
-  image: ImageProps;
-};
+export const Hero: React.FC = () => {
+  const [isDrawn, setIsDrawn] = useState(false);
 
-export type HeroProps = React.ComponentPropsWithoutRef<"section"> & Partial<Props>;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsDrawn(true);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
 
-export const Hero = (props: HeroProps) => {
-  const { heading, description, buttons, image } = {
-    ...HeroDefaults,
-    ...props,
-  };
   return (
-    <section id="relume" className="px-[5%] py-24 md:py-28 lg:py-36">
+    <section className="hero hero--v2">
       <div className="container">
-        <div className="flex flex-col items-center">
-          <div className="rb-12 mb-12 text-center md:mb-18 lg:mb-20">
-            <div className="w-full max-w-7xl">
-              <h1 className="mb-5 text-6xl font-bold md:mb-6 md:text-9xl lg:text-10xl">
-                {heading}
-              </h1>
-              <p className="md:text-md">{description}</p>
-              <div className="mt-6 flex items-center justify-center gap-x-4 md:mt-8">
-                {buttons.map((button, index) => (
-                  <Button key={index} {...button}>
-                    {button.title}
-                  </Button>
-                ))}
+        <div className="hero__grid">
+          <div className="hero__copy">
+            <span className="hero__eyebrow">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              Podklady od klientů pro české firmy
+            </span>
+
+            <h1 className="hero__title">
+              Než začnete pracovat,
+              <br />
+              <span className={`hero__uline ${isDrawn ? "is-drawn" : ""}`}>
+                mějte všechno.
+                <svg viewBox="0 0 300 20" preserveAspectRatio="none" aria-hidden="true">
+                  <path pathLength="1" d="M3 14 C 60 6, 110 6, 150 11 S 245 16, 297 8" />
+                </svg>
+              </span>
+            </h1>
+
+            <p className="hero__lead">
+              Pošlete klientovi jeden odkaz na všechno, co od něj potřebujete: údaje, doklady,
+              odsouhlasení i&nbsp;podpis. Vyplní to bez účtu z&nbsp;telefonu a&nbsp;vy každou položku
+              přijmete, nebo vrátíte s&nbsp;důvodem.
+            </p>
+
+            <ul className="hp-checks hp-checks--hero">
+              <li>Připomínky jen na to, co chybí</li>
+              <li>Vrátíte jen položku, která nesedí</li>
+              <li>Další etapu, třeba smlouvu, otevřete, až budete mít podklady</li>
+            </ul>
+
+            <div className="hp-tlacitka">
+              <div className="hero__cta-row">
+                <a
+                  href="/z/ukazka"
+                  className="btn btn--primary btn--lg"
+                >
+                  Rezervovat demo{" "}
+                  <span className="hp-go">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  </span>
+                </a>
+                <a
+                  href="/z/ukazka"
+                  className="btn btn--secondary btn--lg"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ marginRight: 8 }}
+                    aria-hidden="true"
+                  >
+                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  Očima klienta
+                </a>
               </div>
+              <p className="hp-mikro">
+                Demo objednáte přes skutečnou žádost ze Signada. Rovnou uvidíte, co dostane váš
+                klient.
+              </p>
             </div>
           </div>
-          <div>
-            <img src={image.src} className="size-full object-cover" alt={image.alt} />
+
+          <div className="hero__media">
+            <figure
+              className="hp-vizual"
+              data-slot="v-hero-macbook"
+              style={
+                {
+                  "--vw": 880,
+                  "--vh": 640,
+                  "--mw": 360,
+                  "--mh": 460,
+                } as React.CSSProperties
+              }
+            >
+              <picture>
+                <source
+                  media="(max-width: 767px)"
+                  srcSet="/assets/vizualy/v-hero-macbook-m.webp?v=134"
+                  width="360"
+                  height="460"
+                />
+                <img
+                  src="/assets/vizualy/v-hero-macbook.webp?v=134"
+                  width={880}
+                  height={640}
+                  alt="Firma vrací položku s důvodem a klient ji vidí v telefonu"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+              </picture>
+            </figure>
           </div>
         </div>
       </div>
     </section>
   );
-};
-
-export const HeroDefaults: Props = {
-  heading: "Medium length hero heading goes here",
-  description:
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.",
-  buttons: [{ title: "Button" }, { title: "Button", variant: "secondary" }],
-  image: {
-    src: "https://d22po4pjz3o32e.cloudfront.net/placeholder-image-landscape.svg",
-    alt: "Relume placeholder image",
-  },
 };
