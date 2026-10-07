@@ -1,218 +1,96 @@
 "use client";
 
-import { Button, Input } from "@relume_io/relume-ui";
-import type { ButtonProps } from "@relume_io/relume-ui";
-import { FaXTwitter } from "react-icons/fa6";
-import {
-  BiLogoFacebookCircle,
-  BiLogoInstagram,
-  BiLogoLinkedinSquare,
-  BiLogoYoutube,
-} from "react-icons/bi";
-import { useState } from "react";
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
 
-type ImageProps = {
-  url?: string;
-  src: string;
-  alt?: string;
-};
-
-type Links = {
-  title: string;
-  url: string;
-};
-
-type ColumnLinks = {
-  title: string;
-  links: Links[];
-};
-
-type SocialMediaLinks = {
-  url: string;
-  icon: React.ReactNode;
-};
-
-type FooterLink = {
-  title: string;
-  url: string;
-};
-
-type Props = {
-  logo: ImageProps;
-  newsletterHeading: string;
-  newsletterDescription: string;
-  inputPlaceholder?: string;
-  button: ButtonProps;
-  termsAndConditions: string;
-  columnLinks: ColumnLinks[];
-  socialMediaLinks: SocialMediaLinks[];
-  footerText?: string;
-  footerLinks: FooterLink[];
-};
-
-export type FooterProps = React.ComponentPropsWithoutRef<"section"> & Partial<Props>;
-
-export const Footer = (props: FooterProps) => {
-  const {
-    logo,
-    newsletterHeading,
-    newsletterDescription,
-    inputPlaceholder,
-    button,
-    termsAndConditions,
-    columnLinks,
-    socialMediaLinks,
-    footerText,
-    footerLinks,
-  } = {
-    ...FooterDefaults,
-    ...props,
-  };
-
-  const [emailInput, setEmailInput] = useState<string>("");
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    console.log({
-      emailInput,
-    });
-  };
-
+export const Footer: React.FC = () => {
   return (
-    <footer id="relume" className="px-[5%] py-12 md:py-18 lg:py-20">
+    <footer className="footer">
       <div className="container">
-        <div className="grid grid-cols-1 items-start gap-x-[8vw] gap-y-12 pb-12 md:gap-y-16 md:pb-18 lg:grid-cols-[1fr_0.5fr] lg:gap-y-4 lg:pb-20">
-          <div className="grid grid-cols-1 items-start gap-x-8 gap-y-10 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-12 md:gap-x-8 lg:grid-cols-4">
-            <a
-              href={logo.url}
-              className="sm:col-start-1 sm:col-end-4 sm:row-start-1 sm:row-end-2 lg:col-start-auto lg:col-end-auto lg:row-start-auto lg:row-end-auto"
-            >
-              <img src={logo.src} alt={logo.alt} />
-            </a>
-            {columnLinks.map((column, index) => (
-              <div key={index} className="flex flex-col items-start justify-start">
-                <h2 className="mb-3 font-semibold md:mb-4">{column.title}</h2>
-                <ul>
-                  {column.links.map((link, linkIndex) => (
-                    <li key={linkIndex} className="py-2 text-sm">
-                      <a href={link.url} className="flex items-center gap-3">
-                        {link.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col">
-            <h1 className="mb-3 font-semibold md:mb-4">{newsletterHeading}</h1>
-            <p className="mb-3 text-sm md:mb-4">{newsletterDescription}</p>
-            <div className="w-full max-w-md">
-              <form
-                className="mb-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-[1fr_max-content] md:gap-y-4"
-                onSubmit={handleSubmit}
+        <div className="footer__grid">
+          <div className="footer__brand">
+            <Link href="/" className="footer__logo">
+              <Image
+                src="/assets/brand/signado-full-black.svg"
+                alt="Signado"
+                width={120}
+                height={34}
+                style={{ height: 34, width: "auto" }}
+              />
+            </Link>
+            <p>
+              Podklady od klientů jedním odkazem. Kontrola po položkách, automatické připomínky
+              a&nbsp;vaše značka. Pro české firmy.
+            </p>
+            <div className="footer__social">
+              <a
+                href="https://linkedin.com/company/signado"
+                aria-label="LinkedIn"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder={inputPlaceholder}
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                />
-                <Button {...button}>{button.title}</Button>
-              </form>
-              <div dangerouslySetInnerHTML={{ __html: termsAndConditions }} />
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                </svg>
+              </a>
+              <a
+                href="https://x.com/signado_cz"
+                aria-label="X"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+              </a>
             </div>
+          </div>
+
+          <div className="footer__col">
+            <div className="footer__col-title">Produkt</div>
+            <a href="/jak-to-funguje.html">Jak to funguje</a>
+            <a href="/produkt/etapy-zadosti.html">Etapy žádosti</a>
+            <a href="/produkt/sprava-klientu.html">Kontrola a připomínky</a>
+            <a href="/produkt/klientsky-portal.html">Klientský portál</a>
+            <a href="/produkt/elektronicky-podpis.html">Schválení a podpis</a>
+            <a href="/bezpecnost.html">Bezpečnost a data</a>
+            <a href="/cenik.html">Ceník</a>
+          </div>
+
+          <div className="footer__col">
+            <div className="footer__col-title">Řešení</div>
+            <a href="/reseni/ucetni.html">Účetní a daňové kanceláře</a>
+            <a href="/reseni/zakazkova-vyroba.html">Zakázková výroba a montáž</a>
+            <a href="/reseni/pravnici.html">Advokátní kanceláře</a>
+            <a href="/reseni/hr-a-nabor.html">HR a nábor</a>
+            <a href="/reseni/stavebnictvi.html">Stavební firmy</a>
+          </div>
+
+          <div className="footer__col">
+            <div className="footer__col-title">Proč Signado</div>
+            <a href="/srovnani.html">Signado, nebo e-mail?</a>
+            <a href="/caste-otazky.html">Časté otázky</a>
+            <a href="/z/ukazka">Očima klienta</a>
+            <a href="/o-nas.html">O nás</a>
+            <a href="/blog/">Blog</a>
+            <a href="/kontakt.html">Kontakt</a>
+          </div>
+
+          <div className="footer__col">
+            <div className="footer__col-title">Právní</div>
+            <a href="/podminky-pouziti.html">Podmínky použití</a>
+            <a href="/ochrana-osobnich-udaju.html">Ochrana osobních údajů</a>
+            <a href="/ochrana-osobnich-udaju.html#cookies">Cookies</a>
           </div>
         </div>
-        <div className="h-px w-full bg-black" />
-        <div className="flex flex-col-reverse items-start pb-4 pt-6 text-sm md:justify-start md:pb-0 md:pt-8 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col-reverse items-start md:flex-row md:gap-6 lg:items-center">
-            <p className="mt-8 md:mt-0">{footerText}</p>
-            <div className="grid grid-flow-row grid-cols-[max-content] justify-center gap-y-4 md:grid-flow-col md:justify-center md:gap-x-6 md:gap-y-0 lg:text-left">
-              {footerLinks.map((link, index) => (
-                <p key={index} className="underline">
-                  <a href={link.url}>{link.title}</a>
-                </p>
-              ))}
-            </div>
-          </div>
-          <div className="mb-8 flex items-center justify-center gap-3 lg:mb-0">
-            {socialMediaLinks.map((link, index) => (
-              <a key={index} href={link.url}>
-                {link.icon}
-              </a>
-            ))}
-          </div>
+
+        <div className="footer__bottom">
+          <span>© 2026 Signado. Provozováno v Česku 🇨🇿</span>
+          <span className="spacer"></span>
+          <a href="mailto:ahoj@signado.cz">ahoj@signado.cz</a>
         </div>
       </div>
     </footer>
   );
-};
-
-export const FooterDefaults: Props = {
-  logo: {
-    url: "#",
-    src: "https://d22po4pjz3o32e.cloudfront.net/logo-image.svg",
-    alt: "Logo image",
-  },
-  newsletterHeading: "Subscribe",
-  newsletterDescription: "Join our newsletter to stay up to date on features and releases.",
-  inputPlaceholder: "Enter your email",
-  button: {
-    title: "Subscribe",
-    variant: "secondary",
-    size: "sm",
-  },
-  termsAndConditions: `
-  <p class='text-xs'>
-    By subscribing you agree to with our
-    <a href='#' class='underline'>Privacy Policy</a>
-    and provide consent to receive updates from our company.
-  </p>
-  `,
-  columnLinks: [
-    {
-      title: "Column One",
-      links: [
-        { title: "Link One", url: "#" },
-        { title: "Link Two", url: "#" },
-        { title: "Link Three", url: "#" },
-        { title: "Link Four", url: "#" },
-        { title: "Link Five", url: "#" },
-      ],
-    },
-    {
-      title: "Column Two",
-      links: [
-        { title: "Link Six", url: "#" },
-        { title: "Link Seven", url: "#" },
-        { title: "Link Eight", url: "#" },
-        { title: "Link Nine", url: "#" },
-        { title: "Link Ten", url: "#" },
-      ],
-    },
-    {
-      title: "Column Three",
-      links: [
-        { title: "Link Eleven", url: "#" },
-        { title: "Link Twelve", url: "#" },
-        { title: "Link Thirteen", url: "#" },
-        { title: "Link Fourteen", url: "#" },
-        { title: "Link Fifteen", url: "#" },
-      ],
-    },
-  ],
-  socialMediaLinks: [
-    { url: "#", icon: <BiLogoFacebookCircle className="size-6" /> },
-    { url: "#", icon: <BiLogoInstagram className="size-6" /> },
-    { url: "#", icon: <FaXTwitter className="size-6 p-0.5" /> },
-    { url: "#", icon: <BiLogoLinkedinSquare className="size-6" /> },
-    { url: "#", icon: <BiLogoYoutube className="size-6" /> },
-  ],
-  footerText: "© 2024 Relume. All rights reserved.",
-  footerLinks: [
-    { title: "Privacy Policy", url: "#" },
-    { title: "Terms of Service", url: "#" },
-    { title: "Cookies Settings", url: "#" },
-  ],
 };
