@@ -4,16 +4,11 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-interface NavigationProps {
-  onSearch?: (query: string) => void;
-}
+interface NavigationProps {}
 
 export const Navigation: React.FC<NavigationProps> = () => {
   const [isStuck, setIsStuck] = useState(false);
   const [activeMega, setActiveMega] = useState<"produkt" | "reseni" | "proc" | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isLangOpen, setIsLangOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState<"cs" | "en">("cs");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [openDrawerGroups, setOpenDrawerGroups] = useState<{ [key: string]: boolean }>({
     produkt: false,
@@ -22,7 +17,6 @@ export const Navigation: React.FC<NavigationProps> = () => {
   });
 
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Scroll handler for sticky header
   useEffect(() => {
@@ -39,13 +33,6 @@ export const Navigation: React.FC<NavigationProps> = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setActiveMega(null);
-        setIsSearching(false);
-        setIsLangOpen(false);
-      }
-      if (e.key === "/" && document.activeElement === document.body) {
-        e.preventDefault();
-        setIsSearching(true);
-        setTimeout(() => searchInputRef.current?.focus(), 60);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -80,8 +67,6 @@ export const Navigation: React.FC<NavigationProps> = () => {
 
   const closeAll = () => {
     setActiveMega(null);
-    setIsSearching(false);
-    setIsLangOpen(false);
     setIsDrawerOpen(false);
   };
 
@@ -92,7 +77,7 @@ export const Navigation: React.FC<NavigationProps> = () => {
   return (
     <>
       <nav
-        className={`nav ${isStuck ? "is-stuck" : ""} ${isSearching ? "is-searching" : ""}`}
+        className={`nav ${isStuck ? "is-stuck" : ""}`}
         id="nav"
       >
         <div className="container nav__inner">
@@ -482,124 +467,10 @@ export const Navigation: React.FC<NavigationProps> = () => {
           <span className="nav__spacer"></span>
 
           <div className="nav__actions">
-            {/* Search */}
-            <form
-              className={`nav__search ${isSearching ? "is-searching" : ""}`}
-              id="nav-search"
-              role="search"
-              onSubmit={e => {
-                e.preventDefault();
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                className="nav__icon-btn nav__search-toggle"
-                id="nav-search-btn"
-                aria-label="Hledat na webu"
-                aria-expanded={isSearching}
-                onClick={e => {
-                  e.stopPropagation();
-                  setIsSearching(!isSearching);
-                  if (!isSearching) {
-                    setTimeout(() => searchInputRef.current?.focus(), 60);
-                  }
-                }}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="M20 20l-3.5-3.5" />
-                </svg>
-              </button>
-              <input
-                ref={searchInputRef}
-                className="nav__search-input"
-                id="nav-search-input"
-                type="search"
-                placeholder="Hledat"
-                autoComplete="off"
-                tabIndex={isSearching ? 0 : -1}
-              />
-              <button
-                type="button"
-                className="nav__search-close"
-                id="nav-search-close"
-                aria-label="Zavřít hledání"
-                onClick={() => setIsSearching(false)}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            </form>
-
-            {/* Language */}
-            <div className={`nav__lang ${isLangOpen ? "is-open" : ""}`} id="nav-lang">
-              <button
-                className="nav__icon-btn nav__lang-btn"
-                id="nav-lang-btn"
-                aria-label="Změnit jazyk"
-                aria-expanded={isLangOpen}
-                onClick={e => {
-                  e.stopPropagation();
-                  setIsLangOpen(!isLangOpen);
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18" />
-                </svg>
-                <svg
-                  className="nav__lang-caret"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-              <div className="nav__lang-menu" id="nav-lang-menu" role="menu">
-                <button
-                  className={`nav__lang-opt ${currentLang === "cs" ? "is-active" : ""}`}
-                  role="menuitem"
-                  onClick={() => {
-                    setCurrentLang("cs");
-                    setIsLangOpen(false);
-                  }}
-                >
-                  Čeština
-                </button>
-                <button
-                  className={`nav__lang-opt ${currentLang === "en" ? "is-active" : ""}`}
-                  role="menuitem"
-                  onClick={() => {
-                    setCurrentLang("en");
-                    setIsLangOpen(false);
-                  }}
-                >
-                  English
-                </button>
-              </div>
-            </div>
-
             <Link href="/auth/login" className="btn btn--ghost nav__login">
               Přihlásit se
             </Link>
-            <Link href="/auth/login" className="btn btn--primary nav__cta-desktop">
+            <Link href="/auth/register" className="btn btn--primary nav__cta-desktop">
               Vyzkoušet zdarma
             </Link>
 
@@ -751,7 +622,7 @@ export const Navigation: React.FC<NavigationProps> = () => {
             Přihlásit se
           </Link>
           <Link
-            href="/auth/login"
+            href="/auth/register"
             className="btn btn--primary"
             style={{ marginTop: 12 }}
             onClick={closeAll}
@@ -764,7 +635,7 @@ export const Navigation: React.FC<NavigationProps> = () => {
             style={{ marginTop: 12 }}
             onClick={closeAll}
           >
-            Rezervovat demo
+            Očima klienta
           </a>
         </div>
       </div>
