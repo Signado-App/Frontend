@@ -409,13 +409,6 @@ export const Navigation: React.FC<NavigationProps> = () => {
                         <small>Kdo za Signadem stojí</small>
                       </span>
                     </a>
-                    <a className="mega__link mega__link--sub" href="/blog/" onClick={closeAll}>
-                      <span className="arr">→</span>
-                      <span>
-                        <b>Blog</b>
-                        <small>Články o podkladech a podpisu</small>
-                      </span>
-                    </a>
                     <a
                       className="mega__link mega__link--sub"
                       href="/kontakt.html"
@@ -595,9 +588,6 @@ export const Navigation: React.FC<NavigationProps> = () => {
             </a>
             <a href="/o-nas.html" onClick={closeAll}>
               O nás
-            </a>
-            <a href="/blog/" onClick={closeAll}>
-              Blog
             </a>
             <a href="/kontakt.html" onClick={closeAll}>
               Kontakt

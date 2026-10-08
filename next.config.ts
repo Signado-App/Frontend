@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
       { source: '/ochrana-osobnich-udaju', destination: '/ochrana-osobnich-udaju.html' },
       { source: '/blog', destination: '/blog/index.html' },
       { source: '/produkt/:slug', destination: '/produkt/:slug.html' },
+      { source: '/reseni', destination: '/#obory' },
       { source: '/reseni/:slug', destination: '/reseni/:slug.html' },
     ];
   },
