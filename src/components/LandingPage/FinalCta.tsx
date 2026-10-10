@@ -13,7 +13,7 @@ export const FinalCta: React.FC = () => {
           nejčastěji, pošlete mu jeden odkaz a&nbsp;uvidíte, co od něj dorazí.
         </p>
         <div className="final__cta-row">
-          <Link href="/auth/login" className="btn btn--primary btn--lg">
+          <Link href="/auth/register" className="btn btn--primary btn--lg">
             Vyzkoušet zdarma{" "}
             <span className="hp-go">
               <svg
@@ -32,7 +32,7 @@ export const FinalCta: React.FC = () => {
             href="/z/ukazka"
             className="btn btn--light btn--lg"
           >
-            Rezervovat demo
+            Očima klienta
           </a>
         </div>
         <p className="hp-mikro">Bez platební karty. Bez ročního závazku.</p>

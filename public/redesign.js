@@ -13,10 +13,8 @@
      řídí <body data-cta="demo|zkusit">: demo → Rezervovat demo, jinak
      Vyzkoušet zdarma. */
   var DEMO_URL = '/z/ukazka';
-  var ZKUSIT_URL = '/auth/login';
-  var ctaDemo = !!(document.body && document.body.getAttribute('data-cta') === 'demo');
-  var CTA_HLAVNI = ctaDemo ? [DEMO_URL, 'Rezervovat demo'] : [ZKUSIT_URL, 'Vyzkoušet zdarma'];
-  var CTA_DRUHE = ctaDemo ? [ZKUSIT_URL, 'Vyzkoušet zdarma'] : [DEMO_URL, 'Rezervovat demo'];
+  var LOGIN_URL = '/auth/login';
+  var REGISTER_URL = '/auth/register';
 
   /* Menu jako Clustdoc (3. 10. 2026): každá položka Produktu má vlastní stránku,
      Řešení jsou karty oborů s fotkou, Proč Signado sdružuje srovnání, začátek a firmu. */
@@ -39,7 +37,7 @@
   var PROC = [
     ['/srovnani.html', 'Signado, nebo e-mail?', 'Kdy e-mail stačí a kdy už ne'],
     ['/caste-otazky.html', 'Časté otázky', 'Účet klienta, připomínky, data, cena'],
-    [DEMO_URL, 'Očima klienta', 'Ukázková žádost, na konci objednáte demo']
+    [DEMO_URL, 'Očima klienta', 'Ukázková žádost očima vašeho klienta']
   ];
   /* Lehká scéna jako u Clustdocu: barevná plocha s ornamenty oboru (kreslí CSS podle třídy). */
   function oborKarta(o){
@@ -83,43 +81,24 @@
       navMega('Řešení', RESENI.map(oborKarta).concat([oborKontakt()]), '', 'reseni') +
       navMega('Proč Signado', [
         colI('proc', 'Proč Signado', [sub(PROC[0]), sub(PROC[1])]),
-        colI('firma', 'Společnost', [lk('/o-nas.html', 'O nás', 'Kdo za Signadem stojí'), lk('/blog/', 'Blog', 'Články o podkladech a podpisu'), lk('/kontakt.html', 'Kontakt', 'Odpovídáme česky')]),
-        hlavniKarta(PROC[2][0], 'Vyzkoušejte', PROC[2][1], 'Projděte si ukázkovou žádost jako váš klient. Na konci objednáte demo.', SCENA_TELEFON)
+        colI('firma', 'Společnost', [lk('/o-nas.html', 'O nás', 'Kdo za Signadem stojí'), lk('/kontakt.html', 'Kontakt', 'Odpovídáme česky')]),
+        hlavniKarta(PROC[2][0], 'Vyzkoušejte', PROC[2][1], 'Projděte si ukázkovou žádost jako váš klient.', SCENA_TELEFON)
       ], '', 'proc') +
       '<li class="nav__item"><a class="nav__plain" href="/cenik.html">Ceník</a></li>' +
     '</ul>' +
     '<span class="nav__spacer"></span>' +
     '<div class="nav__actions">' +
-      '<form class="nav__search" id="nav-search" role="search" action="/index.html">' +
-        '<button type="button" class="nav__icon-btn nav__search-toggle" id="nav-search-btn" aria-label="Hledat na webu" aria-expanded="false">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>' +
-        '</button>' +
-        '<input class="nav__search-input" id="nav-search-input" type="search" placeholder="Hledat" autocomplete="off" tabindex="-1">' +
-        '<button type="button" class="nav__search-close" id="nav-search-close" aria-label="Zavřít hledání">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
-        '</button>' +
-      '</form>' +
-      '<div class="nav__lang" id="nav-lang">' +
-        '<button class="nav__icon-btn nav__lang-btn" id="nav-lang-btn" aria-label="Změnit jazyk" aria-expanded="false">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/></svg>' +
-          '<svg class="nav__lang-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>' +
-        '</button>' +
-        '<div class="nav__lang-menu" id="nav-lang-menu" role="menu">' +
-          '<button class="nav__lang-opt is-active" role="menuitem" data-lang="cs">Čeština</button>' +
-          '<button class="nav__lang-opt" role="menuitem" data-lang="en">English</button>' +
-        '</div>' +
-      '</div>' +
-      '<a href="' + ZKUSIT_URL + '" class="btn btn--ghost nav__login">Přihlásit se</a>' +
-      '<a href="' + CTA_HLAVNI[0] + '" class="btn btn--primary nav__cta-desktop">' + CTA_HLAVNI[1] + '</a>' +
+      '<a href="' + LOGIN_URL + '" class="btn btn--ghost nav__login">Přihlásit se</a>' +
+      '<a href="' + REGISTER_URL + '" class="btn btn--primary nav__cta-desktop">Vyzkoušet zdarma</a>' +
       '<button class="nav__burger" id="nav-burger" aria-label="Otevřít menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>' +
     '</div>' +
   '</div></nav>' +
   '<div class="drawer" id="drawer">' +
     drawerGroup('Produkt', PRODUKT) +
     drawerGroup('Řešení', RESENI.map(function (l) { return [l[0], l[1]]; })) +
-    drawerGroup('Proč Signado', PROC.map(function (l) { return [l[0], l[1]]; }).concat([['/o-nas.html','O nás'],['/blog/','Blog'],['/kontakt.html','Kontakt']])) +
+    drawerGroup('Proč Signado', PROC.map(function (l) { return [l[0], l[1]]; }).concat([['/o-nas.html','O nás'],['/kontakt.html','Kontakt']])) +
     '<div class="drawer__group"><button class="drawer__gtoggle" onclick="location.href=\'/cenik.html\'">Ceník</button></div>' +
-    '<div class="drawer__cta"><a href="' + ZKUSIT_URL + '" class="btn btn--outline">Přihlásit se</a><a href="' + CTA_HLAVNI[0] + '" class="btn btn--primary" style="margin-top:12px;">' + CTA_HLAVNI[1] + '</a><a href="' + CTA_DRUHE[0] + '" class="btn btn--secondary" style="margin-top:12px;">' + CTA_DRUHE[1] + '</a></div>' +
+    '<div class="drawer__cta"><a href="' + LOGIN_URL + '" class="btn btn--outline">Přihlásit se</a><a href="' + REGISTER_URL + '" class="btn btn--primary" style="margin-top:12px;">Vyzkoušet zdarma</a><a href="' + DEMO_URL + '" class="btn btn--secondary" style="margin-top:12px;">Očima klienta</a></div>' +
   '</div>';
 
   function lk(href, label, sub){
@@ -149,14 +128,10 @@
       '<div class="footer__brand">' +
         '<a href="/" class="footer__logo"><img src="/assets/brand/signado-full-black.svg?v=2" alt="Signado" style="height:34px;width:auto;"></a>' +
         '<p>Podklady od klientů jedním odkazem. Kontrola po položkách, automatické připomínky a vaše značka. Pro české firmy.</p>' +
-        '<div class="footer__social">' +
-          '<a href="https://linkedin.com/company/signado" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>' +
-          '<a href="https://x.com/signado_cz" aria-label="X"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>' +
-        '</div>' +
       '</div>' +
       fcol('Produkt', PRODUKT.concat([['/cenik.html','Ceník']])) +
       fcol('Řešení', RESENI.map(function (l) { return [l[0], l[1]]; })) +
-      fcol('Proč Signado', PROC.map(function (l) { return [l[0], l[1]]; }).concat([['/o-nas.html','O nás'],['/blog/','Blog'],['/kontakt.html','Kontakt']])) +
+      fcol('Proč Signado', PROC.map(function (l) { return [l[0], l[1]]; }).concat([['/o-nas.html','O nás'],['/kontakt.html','Kontakt']])) +
       fcol('Právní', [['/podminky-pouziti.html','Podmínky použití'],['/ochrana-osobnich-udaju.html','Ochrana osobních údajů'],['/ochrana-osobnich-udaju.html#cookies','Cookies']]) +
     '</div>' +
     '<div class="footer__bottom"><span>© 2026 Signado. Provozováno v Česku 🇨🇿</span><span class="spacer"></span><a href="mailto:ahoj@signado.cz">ahoj@signado.cz</a></div>' +
@@ -259,69 +234,7 @@
   if (document.readyState === 'complete') requestAnimationFrame(drawUnderline);
   else window.addEventListener('load', function () { setTimeout(drawUnderline, 120); });
 
-  /* ── Hledání v liště ────────────────────────────────────────────────
-     Malé tlačítko se po kliknutí rozbalí v pole přes celou lištu,
-     zvýrazní se a zbytek lišty zbledne – ať je jasné, kde teď jste. */
-  (function navSearch() {
-    var nav = document.getElementById('nav');
-    var btn = document.getElementById('nav-search-btn');
-    var form = document.getElementById('nav-search');
-    var input = document.getElementById('nav-search-input');
-    var close = document.getElementById('nav-search-close');
-    if (!nav || !btn || !form || !input) return;
 
-    function open() {
-      nav.classList.add('is-searching');
-      btn.setAttribute('aria-expanded', 'true');
-      setTimeout(function () { input.focus(); }, 60);
-    }
-    function shut() {
-      nav.classList.remove('is-searching');
-      btn.setAttribute('aria-expanded', 'false');
-      input.value = '';
-    }
-
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      nav.classList.contains('is-searching') ? shut() : open();
-    });
-    if (close) close.addEventListener('click', shut);
-    form.addEventListener('click', function (e) { e.stopPropagation(); });
-    document.addEventListener('click', function () {
-      if (nav.classList.contains('is-searching')) shut();
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') shut();
-      // Lomítko otevře hledání, pokud uživatel zrovna nepíše jinam.
-      if (e.key === '/' && document.activeElement === document.body) {
-        e.preventDefault();
-        open();
-      }
-    });
-  })();
-
-  /* ── Přepínač jazyka ───────────────────────────────────────────────── */
-  (function navLang() {
-    var wrap = document.getElementById('nav-lang');
-    var btn = document.getElementById('nav-lang-btn');
-    if (!wrap || !btn) return;
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var open = wrap.classList.toggle('is-open');
-      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-    document.addEventListener('click', function () {
-      wrap.classList.remove('is-open');
-      btn.setAttribute('aria-expanded', 'false');
-    });
-    wrap.querySelectorAll('.nav__lang-opt').forEach(function (o) {
-      o.addEventListener('click', function () {
-        wrap.querySelectorAll('.nav__lang-opt').forEach(function (x) { x.classList.remove('is-active'); });
-        o.classList.add('is-active');
-        wrap.classList.remove('is-open');
-      });
-    });
-  })();
 
   /* FAQ accordion (supports new .faq__q and legacy .faq__question) */
   document.querySelectorAll('.faq__item, .payfaq__item').forEach(function (item) {

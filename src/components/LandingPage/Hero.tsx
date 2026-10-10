@@ -61,11 +61,11 @@ export const Hero: React.FC = () => {
 
             <div className="hp-tlacitka">
               <div className="hero__cta-row">
-                <a
-                  href="/z/ukazka"
+                <Link
+                  href="/auth/register"
                   className="btn btn--primary btn--lg"
                 >
-                  Rezervovat demo{" "}
+                  Vyzkoušet zdarma{" "}
                   <span className="hp-go">
                     <svg
                       viewBox="0 0 24 24"
@@ -78,7 +78,7 @@ export const Hero: React.FC = () => {
                       <path d="M5 12h14M13 6l6 6-6 6" />
                     </svg>
                   </span>
-                </a>
+                </Link>
                 <a
                   href="/z/ukazka"
                   className="btn btn--secondary btn--lg"
@@ -102,8 +102,7 @@ export const Hero: React.FC = () => {
                 </a>
               </div>
               <p className="hp-mikro">
-                Demo objednáte přes skutečnou žádost ze Signada. Rovnou uvidíte, co dostane váš
-                klient.
+                Bez platební karty. Vyzkoušejte zdarma nebo si projděte ukázkovou žádost.
               </p>
             </div>
           </div>

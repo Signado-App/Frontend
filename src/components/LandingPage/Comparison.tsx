@@ -123,7 +123,7 @@ export const Comparison: React.FC = () => {
         </div>
         <div className="hp-tlacitka">
           <div className="hp-sub__cta">
-            <Link href="/auth/login" className="btn btn--primary btn--lg">
+            <Link href="/auth/register" className="btn btn--primary btn--lg">
               Vyzkoušet zdarma{" "}
               <span className="hp-go">
                 <svg
