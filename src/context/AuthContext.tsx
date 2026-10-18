@@ -47,6 +47,14 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
+      const isAppRoute =
+        typeof window !== "undefined" &&
+        window.location.pathname.startsWith("/app");
+
+      if (!isAppRoute) {
+        return;
+      }
+
       localStorage.removeItem("access_csrf");
       localStorage.removeItem("refresh_csrf");
       localStorage.removeItem("selectedOrgId");
@@ -59,17 +67,11 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(null);
       setOrganizations([]);
 
-      const isAppRoute =
-        typeof window !== "undefined" &&
-        window.location.pathname.startsWith("/app");
-
-      if (isAppRoute) {
-        showSnackbar(
-          "Your session has expired. Please log in again.",
-          "warning",
-        );
-        router.push("/auth/login");
-      }
+      showSnackbar(
+        "Your session has expired. Please log in again.",
+        "warning",
+      );
+      router.push("/auth/login");
     });
 
     if (window.location.pathname.startsWith("/app")) {

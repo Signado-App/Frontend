@@ -15,7 +15,12 @@ export const setUnauthorizedHandler = (fn: () => void) => {
   onUnauthorized = fn;
 };
 
-const AUTH_BYPASS_ENDPOINTS = ["/auth/login", "/auth/register"];
+const AUTH_BYPASS_ENDPOINTS = [
+  "/auth/login",
+  "/auth/register",
+  "/public/",
+  "/contract/",
+];
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -50,7 +55,10 @@ apiClient.interceptors.response.use(
 
     const { status, data } = error.response;
     const url = error.config?.url ?? "";
-    const isBypassed = AUTH_BYPASS_ENDPOINTS.some((p) => url.endsWith(p));
+    const isBypassed =
+      AUTH_BYPASS_ENDPOINTS.some((p) => url.includes(p)) ||
+      (typeof window !== "undefined" &&
+        window.location.pathname.startsWith("/sign/"));
 
     // 401 - session expired (auth different)
     if (status === 401 && !isBypassed) {

@@ -17,7 +17,6 @@ import {
 } from "@mui/material";
 import dynamic from "next/dynamic";
 import { loginWithSigningToken } from "@/services/auth";
-import { getUser } from "@/services/user";
 import {
   getSigningContract,
   signContract,
@@ -267,21 +266,11 @@ export default function SignPage({
         ) {
           throw { data: response?.data || response };
         }
-        let userInfo = null;
-        try {
-          const userRes = await getUser();
-          userInfo = userRes?.data || userRes;
-          console.log("[SignPage] getUser response:", userInfo);
-        } catch {
-          // not logged in as a registered platform user
-        }
-
-        return { loginRes, response, userInfo };
+        return { loginRes, response };
       })
-      .then(async ({ loginRes, response, userInfo }) => {
+      .then(async ({ loginRes, response }) => {
         const rawContract = response?.contract ?? response?.data ?? response;
         const c = {
-          ...(userInfo ?? {}),
           ...(loginRes?.signer ?? {}),
           ...(loginRes?.user ?? {}),
           ...(loginRes?.party ?? {}),
