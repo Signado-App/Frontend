@@ -285,10 +285,14 @@ export async function embedSignatureIntoPdf(
 ): Promise<Uint8Array> {
   const allFields = await readPdfFields(pdfBytes.slice(0));
   const mySigFields = allFields.filter(
-    (f) => f.type === "signature" && f.partyKey === partyKey,
+    (f) =>
+      f.type === "signature" &&
+      f.partyKey.toLowerCase() === partyKey.toLowerCase(),
   );
   const myTextFields = allFields.filter(
-    (f) => f.type === "text" && f.partyKey === partyKey,
+    (f) =>
+      f.type === "text" &&
+      f.partyKey.toLowerCase() === partyKey.toLowerCase(),
   );
 
   const pdfDoc = await PDFDocument.load(pdfBytes.slice(0));

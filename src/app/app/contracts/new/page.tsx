@@ -17,6 +17,7 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  Chip,
 } from "@mui/material";
 import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -71,6 +72,8 @@ export default function NewContractPage() {
     placedFields,
     setPlacedFields,
     convertingDocx,
+    missingSignatureParties,
+    isFilesStepValid,
   } = useCreateContractForm();
 
   const stageLabel: Record<string, string> = {
@@ -303,9 +306,34 @@ export default function NewContractPage() {
               />
             )}
 
+            {files.length === 0 && (
+              <Alert severity="info">
+                Prosím nahrajte alespoň jeden dokument (.pdf nebo .docx) pro umístění podpisových polí.
+              </Alert>
+            )}
+
+            {files.length > 0 && missingSignatureParties.length > 0 && (
+              <Alert severity="warning">
+                Každá strana ve smlouvě musí mít v dokumentu umístěné alespoň jedno podpisové pole.
+                <br />
+                Chybí podpisové pole pro:{" "}
+                <strong>{missingSignatureParties.map((p) => p.email).join(", ")}</strong>.
+              </Alert>
+            )}
+
+            {files.length > 0 && missingSignatureParties.length === 0 && (
+              <Alert severity="success">
+                Všechny strany mají umístěné podpisové pole. Můžete pokračovat ke shrnutí smlouvy.
+              </Alert>
+            )}
+
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Button onClick={handleBack}>Back</Button>
-              <Button variant="contained" onClick={handleNext}>
+              <Button
+                variant="contained"
+                disabled={!isFilesStepValid}
+                onClick={handleNext}
+              >
                 Next
               </Button>
             </Box>
@@ -339,11 +367,41 @@ export default function NewContractPage() {
               <Typography variant="body2" color="text.secondary">
                 Parties ({parties.length})
               </Typography>
-              {parties.map((p, i) => (
-                <Typography key={i} variant="body2">
-                  {p.email}
-                </Typography>
-              ))}
+              {parties.map((p, i) => {
+                const pKey = String(p.user_id ?? p.email);
+                const sigCount = placedFields.filter(
+                  (f) =>
+                    f.type === "signature" &&
+                    (f.partyKey === pKey ||
+                      f.partyKey.toLowerCase() === p.email.toLowerCase() ||
+                      (p.user_id !== null &&
+                        f.partyKey === String(p.user_id))),
+                ).length;
+                return (
+                  <Box
+                    key={i}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      my: 0.5,
+                    }}
+                  >
+                    <Typography variant="body2">{p.email}</Typography>
+                    <Chip
+                      size="small"
+                      label={
+                        sigCount > 0
+                          ? `${sigCount} ${sigCount === 1 ? "podpis" : "podpisy"}`
+                          : "Chybí podpis"
+                      }
+                      color={sigCount > 0 ? "success" : "error"}
+                      variant="outlined"
+                      sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600 }}
+                    />
+                  </Box>
+                );
+              })}
             </Box>
             <Box>
               <Typography variant="body2" color="text.secondary">
