@@ -23,6 +23,8 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import DrawOutlinedIcon from "@mui/icons-material/DrawOutlined";
 import TextFieldsIcon from "@mui/icons-material/TextFields";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import { FieldType, PlacedField } from "@/types/types";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -131,6 +133,30 @@ export default function FieldPlacementEditor({
       ? activePartyState
       : (parties[0]?.key ?? "");
 
+  const partySignatureCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of parties) {
+      counts[p.key] = 0;
+    }
+    for (const f of fields) {
+      if (f.type === "signature") {
+        for (const p of parties) {
+          if (
+            f.partyKey === p.key ||
+            f.partyKey.toLowerCase() === p.label.toLowerCase()
+          ) {
+            counts[p.key] = (counts[p.key] || 0) + 1;
+          }
+        }
+      }
+    }
+    return counts;
+  }, [parties, fields]);
+
+  const allPartiesHaveSignature =
+    parties.length > 0 &&
+    parties.every((p) => (partySignatureCounts[p.key] || 0) > 0);
+
   const pageFields = fields.filter((f) => f.page === currentPage);
   const pageSize = pageDims[currentPage] ?? { width: 0, height: 0 };
 
@@ -202,13 +228,33 @@ export default function FieldPlacementEditor({
           size="small"
           value={activeParty}
           onChange={(e) => setActivePartyState(e.target.value)}
-          sx={{ minWidth: 220 }}
+          sx={{ minWidth: 260 }}
         >
-          {parties.map((p) => (
-            <MenuItem key={p.key} value={p.key}>
-              {p.label}
-            </MenuItem>
-          ))}
+          {parties.map((p) => {
+            const hasSig = (partySignatureCounts[p.key] || 0) > 0;
+            return (
+              <MenuItem key={p.key} value={p.key}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
+                    gap: 1.5,
+                  }}
+                >
+                  <Typography variant="body2">{p.label}</Typography>
+                  <Chip
+                    size="small"
+                    label={hasSig ? "✓ Podpis" : "Chybí podpis"}
+                    color={hasSig ? "success" : "warning"}
+                    variant={hasSig ? "outlined" : "filled"}
+                    sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600 }}
+                  />
+                </Box>
+              </MenuItem>
+            );
+          })}
         </Select>
 
         {activeType === "text" && (
@@ -242,8 +288,73 @@ export default function FieldPlacementEditor({
         )}
       </Stack>
 
+      {/* Checklist požadovaných podpisů pro všechny strany */}
+      {parties.length > 0 && (
+        <Box
+          sx={{
+            mb: 1.5,
+            p: 1.5,
+            borderRadius: 2,
+            bgcolor: allPartiesHaveSignature ? "#f0fdf4" : "#fffbeb",
+            border: `1px solid ${
+              allPartiesHaveSignature ? "#bbf7d0" : "#fef08a"
+            }`,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 700,
+              display: "block",
+              mb: 0.8,
+              color: allPartiesHaveSignature ? "#166534" : "#854d0e",
+            }}
+          >
+            {allPartiesHaveSignature
+              ? "✓ Všechny strany mají umístěné podpisové pole:"
+              : "⚠️ Každá strana ve smlouvě musí mít alespoň jedno podpisové pole (kliknutím na stranu můžete umístit):"}
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {parties.map((p) => {
+              const sigCount = partySignatureCounts[p.key] || 0;
+              const hasSig = sigCount > 0;
+              const isSelected = activeParty === p.key;
+              return (
+                <Chip
+                  key={p.key}
+                  size="small"
+                  icon={
+                    hasSig ? (
+                      <CheckCircleOutlineIcon fontSize="small" />
+                    ) : (
+                      <WarningAmberOutlinedIcon fontSize="small" />
+                    )
+                  }
+                  label={
+                    hasSig
+                      ? `${p.label} (${sigCount} ${sigCount === 1 ? "podpis" : "podpisy"})`
+                      : `${p.label} (Chybí podpis)`
+                  }
+                  color={hasSig ? "success" : "warning"}
+                  variant={hasSig ? (isSelected ? "filled" : "outlined") : "filled"}
+                  onClick={() => {
+                    setActivePartyState(p.key);
+                    setActiveType("signature");
+                  }}
+                  sx={{
+                    cursor: "pointer",
+                    fontWeight: isSelected ? 700 : 500,
+                    boxShadow: isSelected ? "0 0 0 2px #6366f1" : "none",
+                  }}
+                />
+              );
+            })}
+          </Stack>
+        </Box>
+      )}
+
       <Typography variant="body2" color="text.secondary" mb={1}>
-        Click anywhere on the document to place a field. Drag to move or resize.
+        Klikněte kamkoli na dokument pro umístění vybraného pole. Pole můžete přetahovat nebo měnit jeho velikost.
       </Typography>
 
       <Document

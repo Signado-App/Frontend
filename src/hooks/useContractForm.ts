@@ -87,7 +87,20 @@ export function useCreateContractForm() {
   };
 
   const removeParty = (index: number) => {
+    const removedParty = parties[index];
     setParties((prev) => prev.filter((_, i) => i !== index));
+    if (removedParty) {
+      const removedKey = String(removedParty.user_id ?? removedParty.email);
+      setPlacedFields((prev) =>
+        prev.filter(
+          (f) =>
+            f.partyKey !== removedKey &&
+            f.partyKey.toLowerCase() !== removedParty.email.toLowerCase() &&
+            (removedParty.user_id === null ||
+              f.partyKey !== String(removedParty.user_id)),
+        ),
+      );
+    }
   };
   useEffect(() => {
     if (!selectedOrgId) return;
@@ -129,6 +142,22 @@ export function useCreateContractForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
   const [convertingDocx, setConvertingDocx] = useState(false);
+
+  const missingSignatureParties = parties.filter((p) => {
+    const pKey = String(p.user_id ?? p.email);
+    return !placedFields.some(
+      (f) =>
+        f.type === "signature" &&
+        (f.partyKey === pKey ||
+          f.partyKey.toLowerCase() === p.email.toLowerCase() ||
+          (p.user_id !== null && f.partyKey === String(p.user_id))),
+    );
+  });
+
+  const isFilesStepValid =
+    files.length > 0 &&
+    !convertingDocx &&
+    missingSignatureParties.length === 0;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -175,6 +204,20 @@ export function useCreateContractForm() {
   const handleSubmit = async () => {
     if (!selectedOrgId) return;
     setSubmitError(null);
+
+    if (files.length === 0) {
+      setSubmitError("Please attach at least one contract file.");
+      setActiveStep(2);
+      return;
+    }
+
+    if (missingSignatureParties.length > 0) {
+      setSubmitError(
+        `Každá strana ve smlouvě musí mít v dokumentu umístěné alespoň jedno podpisové pole. Chybí pole pro: ${missingSignatureParties.map((p) => p.email).join(", ")}`,
+      );
+      setActiveStep(2);
+      return;
+    }
 
     let contractId: string | null = null;
     let stage: SubmitStage = "creating";
@@ -315,6 +358,8 @@ export function useCreateContractForm() {
     placedFields,
     setPlacedFields,
     convertingDocx,
+    missingSignatureParties,
+    isFilesStepValid,
 
     submitStage,
     submitError,

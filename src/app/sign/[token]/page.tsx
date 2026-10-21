@@ -410,6 +410,21 @@ export default function SignPage({
         String(contract.current_signer_email ?? ""),
         String(contract.signer_email ?? ""),
         String(contract.email ?? ""),
+        String(contract.user_id ?? ""),
+        String(contract.id ?? ""),
+        String(contract.signer?.id ?? ""),
+        String(contract.signer?.user_id ?? ""),
+        String(contract.signer?.email ?? ""),
+        String(contract.party?.id ?? ""),
+        String(contract.party?.user_id ?? ""),
+        String(contract.party?.email ?? ""),
+        ...(Array.isArray(contract.parties)
+          ? contract.parties.flatMap((p: any) => [
+              String(p.user_id ?? ""),
+              String(p.email ?? ""),
+              String(p.id ?? ""),
+            ])
+          : []),
       ].filter(Boolean);
 
       const matched = all.find((f) =>
