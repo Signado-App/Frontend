@@ -2,7 +2,6 @@
 
 module.exports = {
   content: [
-    "./node_modules/@relume_io/relume-ui/dist/**/*.{js,ts,jsx,tsx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
